@@ -1,21 +1,7 @@
 import Navbar from "@/components/Navbar";
 import ContentMarquee from "@/components/ContentMarquee";
+import FeatureShowcase from "@/components/FeatureShowcase";
 import ProductMockup from "@/components/ProductMockup";
-
-const features = [
-  {
-    title: "Upload PDF",
-    description: "Drop any PDF. Your next lesson is ready in seconds."
-  },
-  {
-    title: "Learn in Context",
-    description: "Tap a word. See meaning, usage, and context—right in the sentence."
-  },
-  {
-    title: "Flashcards & Quiz",
-    description: "Cards and quizzes from what you read. Review what actually sticks."
-  }
-];
 
 export default function Home() {
   return (
@@ -38,17 +24,7 @@ export default function Home() {
 
       <ContentMarquee />
 
-      <section className="mt-20 grid gap-5 md:grid-cols-3">
-        {features.map((feature) => (
-          <article
-            key={feature.title}
-            className="rounded-2xl border border-border bg-card/80 p-6 backdrop-blur-sm transition hover:border-accent/60 hover:bg-card"
-          >
-            <h2 className="text-xl font-semibold text-white">{feature.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-300">{feature.description}</p>
-          </article>
-        ))}
-      </section>
+      <FeatureShowcase />
       </main>
     </>
   );
