@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import ContentMarquee from "@/components/ContentMarquee";
 import FeatureShowcase from "@/components/FeatureShowcase";
 import ReadingWorkflow from "@/components/ReadingWorkflow";
+import KnowledgeOrbit from "@/components/KnowledgeOrbit";
 import ProductMockup from "@/components/ProductMockup";
 
 export default function Home() {
@@ -28,6 +29,8 @@ export default function Home() {
       <FeatureShowcase />
 
       <ReadingWorkflow />
+
+      <KnowledgeOrbit />
       </main>
     </>
   );
