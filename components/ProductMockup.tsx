@@ -1,10 +1,12 @@
+import type { ReactNode } from "react";
+
 const sidebarItems = [
-  { label: "Library", active: false },
-  { label: "Saved Words", active: false },
-  { label: "Flashcards", active: false },
-  { label: "Reading Progress", active: true },
-  { label: "Settings", active: false }
-];
+  { label: "Library", active: false, icon: "library" },
+  { label: "Saved Words", active: false, icon: "saved" },
+  { label: "Flashcards", active: false, icon: "flashcards" },
+  { label: "Reading Progress", active: true, icon: "progress" },
+  { label: "Settings", active: false, icon: "settings" }
+] as const;
 
 const flashcards = [
   { term: "effortless", due: "Now" },
@@ -12,16 +14,54 @@ const flashcards = [
   { term: "coherent", due: "Tomorrow" }
 ];
 
-function NavIcon({ active }: { active?: boolean }) {
+function SidebarNavIcon({ type, active }: { type: (typeof sidebarItems)[number]["icon"]; active?: boolean }) {
+  const className = `h-3.5 w-3.5 shrink-0 ${active ? "text-accentSoft" : "text-slate-600"}`;
+
   return (
-    <span
-      className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-accent" : "bg-white/20"}`}
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
       aria-hidden
-    />
+    >
+      {type === "library" && (
+        <>
+          <path d="M3 3.5h4v9H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z" />
+          <path d="M8.5 3.5H12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H8.5" />
+          <path d="M8.5 3.5v9" />
+        </>
+      )}
+      {type === "saved" && (
+        <>
+          <path d="M4 2.5h8v11l-4-2.5L4 13.5V2.5z" />
+        </>
+      )}
+      {type === "flashcards" && (
+        <>
+          <rect x="3" y="4" width="9" height="7" rx="1" />
+          <rect x="5" y="2.5" width="9" height="7" rx="1" />
+        </>
+      )}
+      {type === "progress" && (
+        <>
+          <path d="M3 11.5V8.5M6.5 11.5V6M10 11.5V9.5M13 11.5V4" />
+        </>
+      )}
+      {type === "settings" && (
+        <>
+          <circle cx="8" cy="8" r="2" />
+          <path d="M8 2.5v1.5M8 12v1.5M2.5 8h1.5M12 8h1.5M4.2 4.2l1 1M10.8 10.8l1 1M11.8 4.2l-1 1M5.2 10.8l-1 1" />
+        </>
+      )}
+    </svg>
   );
 }
 
-function PanelLabel({ children }: { children: React.ReactNode }) {
+function PanelLabel({ children }: { children: ReactNode }) {
   return (
     <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-slate-600">
       {children}
@@ -84,7 +124,7 @@ export default function ProductMockup() {
                       : "text-slate-500"
                   }`}
                 >
-                  <NavIcon active={item.active} />
+                  <SidebarNavIcon type={item.icon} active={item.active} />
                   {item.label}
                 </div>
               ))}

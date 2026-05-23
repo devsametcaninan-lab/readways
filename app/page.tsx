@@ -14,7 +14,7 @@ export default function Home() {
       <Navbar />
       <main className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-20 pt-12 md:px-10">
       <section id="hero" className="flex w-full max-w-4xl flex-col items-start pt-20 md:pt-28">
-        <h1 className="max-w-4xl text-balance text-5xl font-medium tracking-tight leading-[1.08] text-white md:text-7xl lg:text-[5.25rem]">
+        <h1 className="max-w-4xl text-balance text-3xl font-medium tracking-tight leading-[1.1] text-white md:text-5xl lg:text-[3.75rem]">
           The language learning system for real readers.
         </h1>
         <p className="mt-8 max-w-xl text-lg leading-relaxed text-slate-400 md:mt-10 md:text-xl">
