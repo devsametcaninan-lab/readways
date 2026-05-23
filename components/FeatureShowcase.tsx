@@ -113,6 +113,12 @@ export default function FeatureShowcase() {
           ))}
         </div>
       </div>
+
+      <div
+        className="mt-16 h-px w-full bg-gradient-to-r from-transparent via-border to-transparent md:mt-20"
+        role="separator"
+        aria-hidden
+      />
     </section>
   );
 }
