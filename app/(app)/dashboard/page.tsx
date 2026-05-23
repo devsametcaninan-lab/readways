@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AppCard from "@/components/app/AppCard";
 import { appText } from "@/components/app/app-typography";
+import UploadPdfButton from "@/components/upload/UploadPdfButton";
 import {
   flashcardsDue,
   mockUser,
@@ -22,12 +23,7 @@ export default function DashboardPage() {
             Continue reading or upload a new document to grow your vocabulary.
           </p>
         </div>
-        <button
-          type="button"
-          className="shrink-0 rounded-full border border-accent/30 bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-premium transition hover:bg-[#6D7EFF]"
-        >
-          Upload PDF
-        </button>
+        <UploadPdfButton />
       </div>
 
       <section className="mb-8">

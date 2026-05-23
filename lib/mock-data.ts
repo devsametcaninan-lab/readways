@@ -4,6 +4,7 @@ export type Document = {
   source: string;
   progress: number;
   updatedAt: string;
+  savedWordsCount: number;
 };
 
 export type SavedWord = {
@@ -37,21 +38,24 @@ export const recentDocuments: Document[] = [
     title: "The_Economist_Article.pdf",
     source: "The Economist",
     progress: 68,
-    updatedAt: "2 hours ago"
+    updatedAt: "2 hours ago",
+    savedWordsCount: 24
   },
   {
     id: "2",
     title: "Neuroscience_Review.pdf",
     source: "Academic",
     progress: 34,
-    updatedAt: "Yesterday"
+    updatedAt: "Yesterday",
+    savedWordsCount: 11
   },
   {
     id: "3",
     title: "Product_Strategy_Essay.pdf",
     source: "Essay",
     progress: 12,
-    updatedAt: "3 days ago"
+    updatedAt: "3 days ago",
+    savedWordsCount: 6
   }
 ];
 
@@ -83,13 +87,15 @@ export const libraryDocuments: Document[] = [
     title: "Climate_Policy_Brief.pdf",
     source: "Research",
     progress: 0,
-    updatedAt: "1 week ago"
+    updatedAt: "1 week ago",
+    savedWordsCount: 0
   },
   {
     id: "5",
     title: "UX_Writing_Guide.pdf",
     source: "Documentation",
     progress: 91,
-    updatedAt: "2 weeks ago"
+    updatedAt: "2 weeks ago",
+    savedWordsCount: 31
   }
 ];
