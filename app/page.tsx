@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import ContentMarquee from "@/components/ContentMarquee";
 import ProductMockup from "@/components/ProductMockup";
 
 const features = [
@@ -35,11 +36,7 @@ export default function Home() {
 
       <ProductMockup />
 
-      <div
-        className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent"
-        role="separator"
-        aria-hidden
-      />
+      <ContentMarquee />
 
       <section className="mt-20 grid gap-5 md:grid-cols-3">
         {features.map((feature) => (
