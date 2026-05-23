@@ -4,6 +4,7 @@ import FeatureShowcase from "@/components/FeatureShowcase";
 import ReadingWorkflow from "@/components/ReadingWorkflow";
 import KnowledgeOrbit from "@/components/KnowledgeOrbit";
 import PricingSection from "@/components/PricingSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
 import ProductMockup from "@/components/ProductMockup";
 
 export default function Home() {
@@ -34,6 +35,8 @@ export default function Home() {
       <KnowledgeOrbit />
 
       <PricingSection />
+
+      <TestimonialsSection />
       </main>
     </>
   );
