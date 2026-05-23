@@ -3,6 +3,7 @@ import ContentMarquee from "@/components/ContentMarquee";
 import FeatureShowcase from "@/components/FeatureShowcase";
 import ReadingWorkflow from "@/components/ReadingWorkflow";
 import KnowledgeOrbit from "@/components/KnowledgeOrbit";
+import PricingSection from "@/components/PricingSection";
 import ProductMockup from "@/components/ProductMockup";
 
 export default function Home() {
@@ -31,6 +32,8 @@ export default function Home() {
       <ReadingWorkflow />
 
       <KnowledgeOrbit />
+
+      <PricingSection />
       </main>
     </>
   );
