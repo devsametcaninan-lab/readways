@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import ContentMarquee from "@/components/ContentMarquee";
 import FeatureShowcase from "@/components/FeatureShowcase";
+import ReadingWorkflow from "@/components/ReadingWorkflow";
 import ProductMockup from "@/components/ProductMockup";
 
 export default function Home() {
@@ -25,6 +26,8 @@ export default function Home() {
       <ContentMarquee />
 
       <FeatureShowcase />
+
+      <ReadingWorkflow />
       </main>
     </>
   );
