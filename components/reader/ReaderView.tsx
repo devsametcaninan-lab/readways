@@ -4,7 +4,17 @@ import { useCallback, useState } from "react";
 import { appText } from "@/components/app/app-typography";
 import type { StoredReaderDocument } from "@/lib/document-storage";
 import { readerDocument, vocabularyById } from "@/lib/reader-mock-data";
+import { panelEntryFromMockId } from "@/lib/reader/vocabulary-lookup";
+import type { PanelVocabularySelection } from "@/lib/reader/types";
+import {
+  readerArticleClass,
+  readerColumnClass,
+  readerParagraphClass,
+  readerTitleClass
+} from "./reader-typography";
+import SelectableParagraph from "./SelectableParagraph";
 import VocabularyPanel from "./VocabularyPanel";
+import { wordHighlightClass } from "./word-highlight";
 
 type ReaderViewProps =
   | { variant: "mock" }
@@ -14,11 +24,12 @@ export default function ReaderView(props: ReaderViewProps) {
   const isMock = props.variant === "mock";
   const storedDocument = props.variant === "stored" ? props.storedDocument : null;
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [selection, setSelection] = useState<PanelVocabularySelection | null>(null);
+  const [activeHighlightKey, setActiveHighlightKey] = useState<string | null>(null);
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
 
-  const handleSave = useCallback((id: string) => {
-    setSavedIds((prev) => new Set(prev).add(id));
+  const handleSave = useCallback((saveKey: string) => {
+    setSavedKeys((prev) => new Set(prev).add(saveKey));
   }, []);
 
   const title = isMock ? readerDocument.title : storedDocument!.title;
@@ -27,6 +38,18 @@ export default function ReaderView(props: ReaderViewProps) {
     ? `Page ${readerDocument.page}`
     : `${storedDocument!.pageCount} page${storedDocument!.pageCount === 1 ? "" : "s"}`;
   const progress = isMock ? readerDocument.progress : storedDocument!.progress;
+
+  const handleMockWordClick = (id: string) => {
+    const entry = panelEntryFromMockId(id, title);
+    if (!entry) return;
+    setSelection(entry);
+    setActiveHighlightKey(id);
+  };
+
+  const handleStoredWordSelect = (entry: PanelVocabularySelection, highlightKey: string) => {
+    setSelection(entry);
+    setActiveHighlightKey(highlightKey);
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -38,18 +61,18 @@ export default function ReaderView(props: ReaderViewProps) {
           {pageLabel} · {progress}% complete
         </span>
         <span className="hidden text-zinc-400 sm:inline">
-          {isMock ? "Highlight mode on" : "Uploaded PDF"}
+          {isMock ? "Highlight mode on" : "Select words to learn"}
         </span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#0e1016] px-6 py-8 md:px-12 md:py-10">
-          <h2 className="mb-8 text-lg font-medium text-zinc-100 md:text-xl">{title}</h2>
+        <div className={readerColumnClass}>
+          <h1 className={readerTitleClass}>{title}</h1>
 
-          <div className="mx-auto max-w-prose space-y-6 text-[15px] leading-[1.92] text-zinc-400">
+          <article className={readerArticleClass}>
             {isMock
               ? readerDocument.paragraphs.map((paragraph, index) => (
-                  <p key={index}>
+                  <p key={index} className={readerParagraphClass}>
                     {paragraph.segments.map((segment, segIndex) => {
                       if (segment.type === "text") {
                         return <span key={segIndex}>{segment.value}</span>;
@@ -58,18 +81,14 @@ export default function ReaderView(props: ReaderViewProps) {
                       const vocab = vocabularyById[segment.id];
                       if (!vocab) return null;
 
-                      const isActive = selectedId === segment.id;
+                      const isActive = activeHighlightKey === segment.id;
 
                       return (
                         <button
                           key={segIndex}
                           type="button"
-                          onClick={() => setSelectedId(segment.id)}
-                          className={`mx-0.5 inline cursor-pointer rounded-sm px-0.5 transition-colors duration-200 ${
-                            isActive
-                              ? "border-b-2 border-accent bg-accent/[0.16] text-white"
-                              : "border-b border-accent/60 bg-accent/[0.1] text-zinc-200 hover:bg-accent/[0.14] hover:text-white"
-                          }`}
+                          onClick={() => handleMockWordClick(segment.id)}
+                          className={wordHighlightClass(isActive, true)}
                         >
                           {vocab.word}
                         </button>
@@ -78,16 +97,28 @@ export default function ReaderView(props: ReaderViewProps) {
                   </p>
                 ))
               : storedDocument!.paragraphs.map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
+                  <SelectableParagraph
+                    key={index}
+                    paragraph={paragraph}
+                    paragraphIndex={index}
+                    activeHighlightKey={activeHighlightKey}
+                    sourceTitle={title}
+                    onSelect={handleStoredWordSelect}
+                  />
                 ))}
-          </div>
+          </article>
         </div>
 
         <VocabularyPanel
-          mode={isMock ? "mock" : "uploaded"}
-          selectedId={selectedId}
-          savedIds={savedIds}
+          selection={selection}
+          savedKeys={savedKeys}
           onSave={handleSave}
+          emptyTitle={isMock ? "Select a word" : "Select a word"}
+          emptyDescription={
+            isMock
+              ? "Click any highlighted word in the article to see its meaning in context, review the original sentence, and save it as a flashcard."
+              : "Select any word from your document to understand it in context."
+          }
         />
       </div>
     </div>

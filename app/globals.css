@@ -86,3 +86,9 @@ body {
 .flashcard-back {
   transform: rotateY(180deg);
 }
+
+/* Reader long-form text */
+.reader-article {
+  font-feature-settings: "kern" 1, "liga" 1;
+  hanging-punctuation: first last;
+}
