@@ -6,10 +6,12 @@ import AppSidebar from "./AppSidebar";
 
 export default function AppShell({
   children,
-  showActivityPanel = false
+  showActivityPanel = false,
+  fullHeightMain = false
 }: {
   children: ReactNode;
   showActivityPanel?: boolean;
+  fullHeightMain?: boolean;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -34,7 +36,15 @@ export default function AppShell({
         </header>
 
         <div className="flex min-h-0 flex-1">
-          <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+          <main
+            className={
+              fullHeightMain
+                ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+                : "min-w-0 flex-1 overflow-y-auto"
+            }
+          >
+            {children}
+          </main>
           {showActivityPanel && <ActivityPanel />}
         </div>
       </div>
