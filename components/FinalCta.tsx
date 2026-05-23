@@ -57,6 +57,7 @@ export default function FinalCta() {
             {footerLinks.map((link) => (
               <a
                 key={link.label}
+                id={link.label === "Login" ? "login" : undefined}
                 href={link.href}
                 className="text-sm text-slate-500 transition-colors duration-300 hover:text-slate-300"
               >

@@ -1,6 +1,6 @@
 export default function ReadingWorkflow() {
   return (
-    <section className="mt-16 md:mt-20">
+    <section id="workflow" className="mt-16 md:mt-20">
       <div className="grid gap-10 md:grid-cols-2 md:gap-16 lg:gap-24">
         <div>
           <h2 className="max-w-lg text-balance text-3xl font-medium tracking-tight text-white md:text-4xl lg:text-[2.75rem] lg:leading-tight">
