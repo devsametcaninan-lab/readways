@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "node scripts/copy-pdf-worker.mjs"
   },
   "dependencies": {
     "next": "^16.2.6",
+    "pdfjs-dist": "^5.7.284",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },

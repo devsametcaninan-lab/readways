@@ -2,9 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createDocumentId,
+  saveDocument,
+  type StoredReaderDocument
+} from "@/lib/document-storage";
 import { formatFileSize } from "@/lib/format";
+import { MAX_PDF_BYTES, MAX_PDF_PAGES } from "@/lib/pdf/constants";
+import { extractTextFromPdfFile, type ExtractProgress } from "@/lib/pdf/extract-pdf-text";
+import { isPdfUserError } from "@/lib/pdf/errors";
 
-type UploadState = "empty" | "selected" | "uploading" | "ready";
+type UploadState = "empty" | "selected" | "extracting" | "ready";
 
 type UploadPdfModalProps = {
   open: boolean;
@@ -15,12 +23,26 @@ function isPdfFile(file: File) {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
+function progressPercent(progress: ExtractProgress): number {
+  if (progress.phase === "loading") return 8;
+  if (progress.totalPages === 0) return 0;
+  return Math.round((progress.currentPage / progress.totalPages) * 100);
+}
+
+function progressLabel(progress: ExtractProgress): string {
+  if (progress.phase === "loading") return "Opening PDF…";
+  return `Extracting page ${progress.currentPage} of ${progress.totalPages}…`;
+}
+
 export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<UploadState>("empty");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
+  const [extractStatus, setExtractStatus] = useState("Extracting text from your PDF…");
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [pageCount, setPageCount] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +50,9 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setState("empty");
     setFile(null);
     setProgress(0);
+    setExtractStatus("Extracting text from your PDF…");
+    setDocumentId(null);
+    setPageCount(null);
     setIsDragging(false);
     setError(null);
     if (inputRef.current) inputRef.current.value = "";
@@ -40,42 +65,29 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && state !== "uploading") onClose();
+      if (e.key === "Escape" && state !== "extracting") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose, state]);
-
-  useEffect(() => {
-    if (state !== "uploading") return;
-
-    const interval = window.setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) return 100;
-        const step = prev < 70 ? 8 + Math.random() * 10 : 4 + Math.random() * 6;
-        return Math.min(100, Math.round(prev + step));
-      });
-    }, 220);
-
-    return () => window.clearInterval(interval);
-  }, [state]);
-
-  useEffect(() => {
-    if (state === "uploading" && progress >= 100) {
-      const timeout = window.setTimeout(() => setState("ready"), 350);
-      return () => window.clearTimeout(timeout);
-    }
-  }, [state, progress]);
 
   const handleFile = (next: File) => {
     if (!isPdfFile(next)) {
       setError("Only PDF files are supported.");
       return;
     }
+    if (next.size > MAX_PDF_BYTES) {
+      setError("This PDF exceeds the 10 MB limit. Please upload a smaller file.");
+      setFile(null);
+      setState("empty");
+      return;
+    }
     setError(null);
     setFile(next);
     setState("selected");
     setProgress(0);
+    setDocumentId(null);
+    setPageCount(null);
   };
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,18 +102,57 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     if (dropped) handleFile(dropped);
   };
 
-  const startUpload = () => {
+  const startExtraction = async () => {
     if (!file) return;
-    setState("uploading");
+
+    setState("extracting");
     setProgress(0);
+    setExtractStatus("Extracting text from your PDF…");
+    setError(null);
+
+    try {
+      const result = await extractTextFromPdfFile(file, (extractProgress) => {
+        setProgress(progressPercent(extractProgress));
+        setExtractStatus(progressLabel(extractProgress));
+      });
+
+      const id = createDocumentId();
+      const stored: StoredReaderDocument = {
+        id,
+        title: file.name,
+        source: "Uploaded PDF",
+        pageCount: result.pageCount,
+        progress: 0,
+        paragraphs: result.paragraphs,
+        createdAt: new Date().toISOString()
+      };
+
+      saveDocument(stored);
+      setDocumentId(id);
+      setPageCount(result.pageCount);
+      setProgress(100);
+      setState("ready");
+    } catch (err) {
+      setState("selected");
+      if (isPdfUserError(err)) {
+        setError(err.message);
+      } else if (err instanceof Error && /browser storage/i.test(err.message)) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong while extracting text. Please try another PDF.");
+      }
+    }
   };
 
   const handleOpenReader = () => {
+    if (!documentId) return;
     onClose();
-    router.push("/reader/demo");
+    router.push(`/reader/${documentId}`);
   };
 
   if (!open) return null;
+
+  const isBusy = state === "extracting";
 
   return (
     <div
@@ -114,8 +165,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         type="button"
         aria-label="Close"
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={state === "uploading" ? undefined : onClose}
-        disabled={state === "uploading"}
+        onClick={isBusy ? undefined : onClose}
+        disabled={isBusy}
       />
 
       <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/[0.12] bg-[#12141d] p-6 shadow-[0_32px_80px_rgba(0,0,0,0.6)] md:p-8">
@@ -125,10 +176,10 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               Upload PDF
             </h2>
             <p className="mt-1.5 text-sm text-zinc-400">
-              Add a document to your library and open it in the reader.
+              Text-based PDFs only · up to 10 MB · {MAX_PDF_PAGES} pages
             </p>
           </div>
-          {state !== "uploading" && (
+          {!isBusy && (
             <button
               type="button"
               onClick={onClose}
@@ -148,7 +199,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
             </div>
             <p className="mt-4 text-base font-medium text-white">Ready to read</p>
             <p className="mt-2 text-sm text-zinc-400">
-              {file?.name} is in your library. Parsing is simulated for now.
+              {file?.name}
+              {pageCount != null ? ` · ${pageCount} page${pageCount === 1 ? "" : "s"} extracted` : ""}
             </p>
             <button
               type="button"
@@ -163,19 +215,19 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
             <div
               onDragEnter={(e) => {
                 e.preventDefault();
-                if (state !== "uploading") setIsDragging(true);
+                if (!isBusy) setIsDragging(true);
               }}
               onDragLeave={(e) => {
                 e.preventDefault();
                 setIsDragging(false);
               }}
               onDragOver={(e) => e.preventDefault()}
-              onDrop={state === "uploading" ? undefined : onDrop}
+              onDrop={isBusy ? undefined : onDrop}
               className={`mt-6 rounded-xl border border-dashed px-6 py-10 text-center transition ${
                 isDragging
                   ? "border-accent/40 bg-accent/[0.06] shadow-[0_0_32px_rgba(124,140,255,0.12)]"
                   : "border-white/[0.16] bg-[#0e1016] hover:border-white/[0.2]"
-              } ${state === "uploading" ? "pointer-events-none opacity-80" : ""}`}
+              } ${isBusy ? "pointer-events-none opacity-80" : ""}`}
             >
               <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.03]">
                 <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -185,8 +237,10 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               <p className="mt-4 text-sm text-zinc-300">
                 {state === "empty" ? "Drag and drop your PDF here" : "Drop a different PDF to replace"}
               </p>
-              <p className="mt-1 text-[12px] text-zinc-500">PDF files only · Max 25 MB (mock limit)</p>
-              {state !== "uploading" && (
+              <p className="mt-1 text-[12px] text-zinc-500">
+                PDF files only · Max 10 MB · Up to {MAX_PDF_PAGES} pages
+              </p>
+              {!isBusy && (
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
@@ -201,7 +255,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                 accept="application/pdf,.pdf"
                 className="hidden"
                 onChange={onInputChange}
-                disabled={state === "uploading"}
+                disabled={isBusy}
               />
             </div>
 
@@ -214,10 +268,11 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               </div>
             )}
 
-            {state === "uploading" && (
+            {state === "extracting" && (
               <div className="mt-5">
+                <p className="mb-2 text-sm text-zinc-300">{extractStatus}</p>
                 <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
-                  <span>Uploading…</span>
+                  <span>Extracting text from your PDF…</span>
                   <span>{progress}%</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.1]">
@@ -232,16 +287,16 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
             {state === "selected" && (
               <button
                 type="button"
-                onClick={startUpload}
+                onClick={startExtraction}
                 className="mt-6 w-full rounded-lg border border-accent/30 bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#6D7EFF]"
               >
-                Start upload
+                Extract and prepare
               </button>
             )}
 
             {state === "empty" && (
               <p className="mt-4 text-center text-[12px] text-zinc-600">
-                Your file stays on this device until backend upload is added.
+                Text is extracted in your browser and stored locally on this device.
               </p>
             )}
           </>

@@ -1,5 +1,5 @@
 import ReaderView from "@/components/reader/ReaderView";
 
 export default function ReaderDemoPage() {
-  return <ReaderView />;
+  return <ReaderView variant="mock" />;
 }

@@ -3,12 +3,18 @@
 import { vocabularyById, type VocabularyEntry } from "@/lib/reader-mock-data";
 
 type VocabularyPanelProps = {
+  mode?: "mock" | "uploaded";
   selectedId: string | null;
   savedIds: Set<string>;
   onSave: (id: string) => void;
 };
 
-export default function VocabularyPanel({ selectedId, savedIds, onSave }: VocabularyPanelProps) {
+export default function VocabularyPanel({
+  mode = "mock",
+  selectedId,
+  savedIds,
+  onSave
+}: VocabularyPanelProps) {
   const entry: VocabularyEntry | null = selectedId ? vocabularyById[selectedId] ?? null : null;
   const isSaved = selectedId ? savedIds.has(selectedId) : false;
 
@@ -21,10 +27,13 @@ export default function VocabularyPanel({ selectedId, savedIds, onSave }: Vocabu
       <div className="flex-1 overflow-y-auto p-5 md:p-6">
         {!entry ? (
           <div className="rounded-xl border border-white/[0.1] bg-[#12141d] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <p className="text-base font-medium text-zinc-100">Select a word</p>
+            <p className="text-base font-medium text-zinc-100">
+              {mode === "uploaded" ? "Vocabulary from your PDF" : "Select a word"}
+            </p>
             <p className="mt-3 text-[15px] leading-relaxed text-zinc-400">
-              Click any highlighted word in the article to see its meaning in context, review the
-              original sentence, and save it as a flashcard.
+              {mode === "uploaded"
+                ? "Your extracted text is shown on the left. Interactive word highlights are available in the demo reader for now."
+                : "Click any highlighted word in the article to see its meaning in context, review the original sentence, and save it as a flashcard."}
             </p>
           </div>
         ) : (
