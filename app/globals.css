@@ -37,3 +37,25 @@ body {
     transform: translateY(-10px) translateX(4px);
   }
 }
+
+@keyframes ctaGlow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translate(-50%, -48%) scale(1.04);
+  }
+}
+
+@keyframes ctaGlowAlt {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}

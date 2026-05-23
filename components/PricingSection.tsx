@@ -34,7 +34,7 @@ const plans = [
 
 export default function PricingSection() {
   return (
-    <section className="mt-16 text-center md:mt-20">
+    <section id="pricing" className="mt-16 text-center md:mt-20">
       <div className="mx-auto max-w-2xl">
         <h2 className="text-balance text-3xl font-medium tracking-tight text-white md:text-4xl">
           Simple pricing for focused readers.

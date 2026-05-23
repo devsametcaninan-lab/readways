@@ -5,6 +5,7 @@ import ReadingWorkflow from "@/components/ReadingWorkflow";
 import KnowledgeOrbit from "@/components/KnowledgeOrbit";
 import PricingSection from "@/components/PricingSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import FinalCta from "@/components/FinalCta";
 import ProductMockup from "@/components/ProductMockup";
 
 export default function Home() {
@@ -37,6 +38,8 @@ export default function Home() {
       <PricingSection />
 
       <TestimonialsSection />
+
+      <FinalCta />
       </main>
     </>
   );

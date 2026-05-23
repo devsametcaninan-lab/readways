@@ -80,7 +80,7 @@ const features = [
 
 export default function FeatureShowcase() {
   return (
-    <section className="mt-24 md:mt-32">
+    <section id="features" className="mt-24 md:mt-32">
       <div className="max-w-3xl">
         <h2 className="text-balance text-3xl font-medium tracking-tight text-white md:text-4xl">
           Built for deep reading, not passive memorization.
