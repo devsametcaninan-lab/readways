@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const plans = [
   {
     name: "Free",
@@ -89,8 +91,8 @@ export default function PricingSection() {
                 ))}
               </ul>
 
-              <button
-                type="button"
+              <Link
+                href={plan.name === "Pro" ? "/signup?plan=pro" : "/signup?plan=free"}
                 className={`mt-10 w-full rounded-full px-6 py-3 text-sm font-medium transition-all duration-300 md:duration-500 ${
                   plan.highlighted
                     ? "border border-accent/30 bg-accent text-white shadow-premium hover:bg-[#6D7EFF]"
@@ -98,7 +100,7 @@ export default function PricingSection() {
                 }`}
               >
                 {plan.cta}
-              </button>
+              </Link>
             </article>
           ))}
         </div>

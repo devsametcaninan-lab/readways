@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const navLinks = [
   { label: "Product", href: "#workflow" },
   { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
-  { label: "Login", href: "#login" }
+  { label: "Login", href: "/login" }
 ];
 
 export default function Navbar() {
@@ -51,21 +52,21 @@ export default function Navbar() {
           <ul className="flex items-center gap-9">
             {navLinks.map((link) => (
               <li key={link.label}>
-                <a
+                <Link
                   href={link.href}
                   className="text-[13px] text-slate-400 transition-colors duration-300 hover:text-white"
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
-          <a
-            href="#start"
+          <Link
+            href="/signup"
             className="rounded-full border border-accent/30 bg-accent px-4 py-2 text-xs font-medium text-white shadow-premium transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-[#6D7EFF] hover:shadow-[0_12px_40px_rgba(124,140,255,0.22)]"
           >
             Get started
-          </a>
+          </Link>
         </div>
 
         <button
@@ -102,23 +103,23 @@ export default function Navbar() {
           <ul className="flex flex-col gap-1">
             {navLinks.map((link) => (
               <li key={link.label}>
-                <a
+                <Link
                   href={link.href}
                   className="block rounded-lg px-3 py-2.5 text-sm text-slate-400 transition-colors duration-300 hover:bg-white/[0.04] hover:text-white"
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
-          <a
-            href="#start"
+          <Link
+            href="/signup"
             className="mt-5 flex w-full items-center justify-center rounded-full border border-accent/30 bg-accent px-4 py-2.5 text-[13px] font-medium text-white shadow-premium transition-all duration-300 hover:bg-[#6D7EFF] hover:shadow-[0_12px_40px_rgba(124,140,255,0.2)]"
             onClick={() => setMobileOpen(false)}
           >
             Get started
-          </a>
+          </Link>
         </div>
       </div>
     </header>

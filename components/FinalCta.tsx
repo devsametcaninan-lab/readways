@@ -1,7 +1,9 @@
+import Link from "next/link";
+
 const footerLinks = [
   { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
-  { label: "Login", href: "#login" }
+  { label: "Login", href: "/login" }
 ];
 
 export default function FinalCta() {
@@ -31,12 +33,12 @@ export default function FinalCta() {
           <p className="mx-auto mt-6 max-w-lg text-lg leading-relaxed text-slate-400 md:mt-8 md:text-xl">
             Turn every PDF, article, and essay into a personalized language learning experience.
           </p>
-          <a
-            href="#start"
+          <Link
+            href="/signup"
             className="mt-10 inline-flex rounded-full border border-accent/30 bg-accent px-8 py-3.5 text-sm font-medium text-white shadow-premium transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#6D7EFF] hover:shadow-[0_20px_60px_rgba(124,140,255,0.25)] md:mt-12"
           >
             Start Reading
-          </a>
+          </Link>
           <p className="mt-6 text-sm text-slate-600 md:mt-8">
             No setup friction. Just upload a document and begin reading.
           </p>
@@ -55,14 +57,14 @@ export default function FinalCta() {
 
           <nav className="flex flex-wrap items-center justify-center gap-6 md:gap-8">
             {footerLinks.map((link) => (
-              <a
+              <Link
                 key={link.label}
                 id={link.label === "Login" ? "login" : undefined}
                 href={link.href}
                 className="text-sm text-slate-500 transition-colors duration-300 hover:text-slate-300"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
 

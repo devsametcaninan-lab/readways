@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { appNavItems, isNavActive } from "./nav-config";
 import SidebarNavIcon from "./SidebarNavIcon";
-import { mockUser } from "@/lib/mock-data";
+import SidebarUserMenu from "./SidebarUserMenu";
+import { useAppUser } from "./use-app-user";
 
 export default function AppSidebar({
   mobileOpen,
@@ -15,6 +16,7 @@ export default function AppSidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const appUser = useAppUser();
 
   const nav = (
     <>
@@ -28,7 +30,9 @@ export default function AppSidebar({
             className="h-7 w-auto object-contain"
           />
         </Link>
-        <p className="mt-2 text-[11px] font-medium text-zinc-400">{mockUser.plan}</p>
+        <p className="mt-2 text-[11px] font-medium text-zinc-400">
+          {appUser.loading ? "…" : appUser.planLabel}
+        </p>
       </div>
 
       <nav className="flex-1 space-y-0.5 p-2">
@@ -52,10 +56,7 @@ export default function AppSidebar({
         })}
       </nav>
 
-      <div className="border-t border-white/[0.1] p-3">
-        <p className="text-[11px] font-medium text-zinc-300">Signed in as</p>
-        <p className="mt-1 text-[13px] text-zinc-500">{mockUser.name}</p>
-      </div>
+      <SidebarUserMenu user={appUser} />
     </>
   );
 

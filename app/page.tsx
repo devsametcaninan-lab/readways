@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import Link from "next/link";
 import ContentMarquee from "@/components/ContentMarquee";
 import FeatureShowcase from "@/components/FeatureShowcase";
 import ReadingWorkflow from "@/components/ReadingWorkflow";
@@ -20,9 +21,12 @@ export default function Home() {
         <p className="mt-8 max-w-xl text-lg leading-relaxed text-slate-400 md:mt-10 md:text-xl">
           Upload PDFs, learn words in context, and build vocabulary while you read.
         </p>
-        <button className="mt-10 rounded-full border border-accent/30 bg-accent px-7 py-3 text-sm font-medium text-white shadow-premium transition hover:-translate-y-0.5 hover:bg-[#6D7EFF] md:mt-12">
+        <Link
+          href="/signup"
+          className="mt-10 rounded-full border border-accent/30 bg-accent px-7 py-3 text-sm font-medium text-white shadow-premium transition hover:-translate-y-0.5 hover:bg-[#6D7EFF] md:mt-12"
+        >
           Start Reading
-        </button>
+        </Link>
       </section>
 
       <ProductMockup />
