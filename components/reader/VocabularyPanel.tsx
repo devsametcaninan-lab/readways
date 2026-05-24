@@ -15,7 +15,7 @@ export default function VocabularyPanel({
   savedKeys,
   onSave,
   emptyTitle = "Select a word",
-  emptyDescription = "Click any highlighted word in the article to see its meaning in context, review the original sentence, and save it as a flashcard."
+  emptyDescription = "Select any word from your document to understand it in context."
 }: VocabularyPanelProps) {
   const isSaved = selection ? savedKeys.has(selection.saveKey) : false;
 

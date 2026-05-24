@@ -37,6 +37,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/library/:path*",
+    "/reader",
     "/reader/:path*",
     "/saved-words/:path*",
     "/flashcards/:path*",

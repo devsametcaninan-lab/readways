@@ -8,7 +8,7 @@ export type AppNavItem = {
 
 export const appNavItems: AppNavItem[] = [
   { label: "Library", href: "/library", icon: "library" },
-  { label: "Reader", href: "/reader/demo", icon: "reader" },
+  { label: "Reader", href: "/reader", icon: "reader" },
   { label: "Saved Words", href: "/saved-words", icon: "saved" },
   { label: "Flashcards", href: "/flashcards", icon: "flashcards" },
   { label: "Progress", href: "/dashboard", icon: "progress" },
@@ -19,8 +19,8 @@ export function isNavActive(pathname: string, href: string) {
   if (href === "/dashboard") {
     return pathname === "/dashboard";
   }
-  if (href === "/reader/demo") {
-    return pathname.startsWith("/reader");
+  if (href === "/reader") {
+    return pathname === "/reader" || pathname.startsWith("/reader/");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

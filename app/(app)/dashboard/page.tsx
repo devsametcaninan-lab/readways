@@ -1,14 +1,9 @@
 import Link from "next/link";
 import AppCard from "@/components/app/AppCard";
 import { appText } from "@/components/app/app-typography";
+import DashboardRecentDocuments from "@/components/dashboard/DashboardRecentDocuments";
 import UploadPdfButton from "@/components/upload/UploadPdfButton";
-import {
-  flashcardsDue,
-  mockUser,
-  readingProgressStats,
-  recentDocuments,
-  savedWords
-} from "@/lib/mock-data";
+import { flashcardsDue, mockUser, readingProgressStats, savedWords } from "@/lib/mock-data";
 
 export default function DashboardPage() {
   return (
@@ -46,34 +41,7 @@ export default function DashboardPage() {
             View library
           </Link>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {recentDocuments.map((doc) => (
-            <AppCard key={doc.id} className="p-4">
-              <p className={`truncate ${appText.title}`}>{doc.title}</p>
-              <p className={`mt-1.5 ${appText.metaSmall}`}>
-                {doc.source} · Updated {doc.updatedAt}
-              </p>
-              <div className="mt-4">
-                <div className={`mb-1.5 flex justify-between ${appText.metaSmall}`}>
-                  <span>Progress</span>
-                  <span>{doc.progress}%</span>
-                </div>
-                <div className="h-1 overflow-hidden rounded-full bg-white/[0.1]">
-                  <div
-                    className="h-full rounded-full bg-accent/70"
-                    style={{ width: `${doc.progress}%` }}
-                  />
-                </div>
-              </div>
-              <Link
-                href="/reader/demo"
-                className="mt-4 inline-block text-[12px] text-accentSoft transition-colors hover:text-white"
-              >
-                Continue reading →
-              </Link>
-            </AppCard>
-          ))}
-        </div>
+        <DashboardRecentDocuments />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">

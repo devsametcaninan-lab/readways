@@ -1,9 +1,23 @@
-import StoredReaderPage from "@/components/reader/StoredReaderPage";
+import ReaderDocumentMissing from "@/components/reader/ReaderDocumentMissing";
+import ReaderDocumentUnavailable from "@/components/reader/ReaderDocumentUnavailable";
+import ReaderView from "@/components/reader/ReaderView";
+import { getReaderDocumentForUser } from "@/lib/documents/server";
 
-export default function ReaderDocumentPage({
+export default async function ReaderDocumentPage({
   params
 }: {
   params: Promise<{ documentId: string }>;
 }) {
-  return <StoredReaderPage params={params} />;
+  const { documentId } = await params;
+  const result = await getReaderDocumentForUser(documentId);
+
+  if (result.kind === "not_found") {
+    return <ReaderDocumentMissing documentId={documentId} />;
+  }
+
+  if (result.kind === "unavailable") {
+    return <ReaderDocumentUnavailable documentId={documentId} status={result.status} />;
+  }
+
+  return <ReaderView document={result.document} />;
 }

@@ -2,11 +2,11 @@
 
 import { appText } from "@/components/app/app-typography";
 import UploadPdfButton from "@/components/upload/UploadPdfButton";
-import { libraryDocuments } from "@/lib/mock-data";
+import { useUserDocuments } from "@/lib/documents/use-user-documents";
 import DocumentCard from "./DocumentCard";
 
 export default function LibraryView() {
-  const hasDocuments = libraryDocuments.length > 0;
+  const { documents, loading, error } = useUserDocuments();
 
   return (
     <div className="p-6 md:p-8 lg:p-10">
@@ -18,11 +18,24 @@ export default function LibraryView() {
         <UploadPdfButton />
       </div>
 
-      {hasDocuments ? (
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-[220px] animate-pulse rounded-xl border border-white/[0.12] bg-[#12141d]"
+            />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-8 text-center">
+          <p className="text-sm text-red-300">{error}</p>
+        </div>
+      ) : documents.length > 0 ? (
         <>
           <p className={`mb-4 ${appText.label}`}>Recent documents</p>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {libraryDocuments.map((doc) => (
+            {documents.map((doc) => (
               <DocumentCard key={doc.id} document={doc} />
             ))}
           </div>

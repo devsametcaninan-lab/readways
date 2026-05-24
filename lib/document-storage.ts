@@ -1,10 +1,7 @@
-export type StoredReaderDocument = {
-  id: string;
-  title: string;
-  source: string;
-  pageCount: number;
-  progress: number;
-  paragraphs: string[];
+import type { ReaderDocument } from "@/lib/documents/types";
+
+/** @deprecated Use ReaderDocument from lib/documents/types — localStorage MVP only */
+export type StoredReaderDocument = ReaderDocument & {
   createdAt: string;
 };
 

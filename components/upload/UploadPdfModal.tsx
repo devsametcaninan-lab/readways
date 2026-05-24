@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  createDocumentId,
-  saveDocument,
-  type StoredReaderDocument
-} from "@/lib/document-storage";
+  createProcessingDocument,
+  markDocumentFailed,
+  markDocumentReady
+} from "@/lib/documents/client";
+import { notifyDocumentsUpdated } from "@/lib/documents/events";
 import { formatFileSize } from "@/lib/format";
 import { MAX_PDF_BYTES, MAX_PDF_PAGES } from "@/lib/pdf/constants";
 import { extractTextFromPdfFile, type ExtractProgress } from "@/lib/pdf/extract-pdf-text";
@@ -110,33 +111,36 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setExtractStatus("Extracting text from your PDF…");
     setError(null);
 
+    let pendingDocumentId: string | null = null;
+
     try {
+      pendingDocumentId = await createProcessingDocument(file);
+      setDocumentId(pendingDocumentId);
+
       const result = await extractTextFromPdfFile(file, (extractProgress) => {
         setProgress(progressPercent(extractProgress));
         setExtractStatus(progressLabel(extractProgress));
       });
 
-      const id = createDocumentId();
-      const stored: StoredReaderDocument = {
-        id,
-        title: file.name,
-        source: "Uploaded PDF",
+      await markDocumentReady(pendingDocumentId, {
         pageCount: result.pageCount,
-        progress: 0,
-        paragraphs: result.paragraphs,
-        createdAt: new Date().toISOString()
-      };
+        paragraphs: result.paragraphs
+      });
 
-      saveDocument(stored);
-      setDocumentId(id);
+      notifyDocumentsUpdated();
       setPageCount(result.pageCount);
       setProgress(100);
       setState("ready");
     } catch (err) {
+      if (pendingDocumentId) {
+        await markDocumentFailed(pendingDocumentId).catch(() => undefined);
+        notifyDocumentsUpdated();
+      }
+
       setState("selected");
       if (isPdfUserError(err)) {
         setError(err.message);
-      } else if (err instanceof Error && /browser storage/i.test(err.message)) {
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("Something went wrong while extracting text. Please try another PDF.");
@@ -296,7 +300,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
             {state === "empty" && (
               <p className="mt-4 text-center text-[12px] text-zinc-600">
-                Text is extracted in your browser and stored locally on this device.
+                Text is extracted in your browser and saved to your ReadWays library.
               </p>
             )}
           </>

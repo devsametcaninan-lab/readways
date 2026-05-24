@@ -1,5 +1,5 @@
 import { savedWordsCatalog } from "@/lib/saved-words-mock-data";
-import { vocabularyById, type VocabularyEntry } from "@/lib/reader-mock-data";
+import { knownVocabularyByWord, type VocabularyEntry } from "./known-vocabulary";
 import type { PanelVocabularySelection } from "./types";
 import { cleanDisplayWord } from "./text-tokens";
 
@@ -9,7 +9,7 @@ function registerKnown(entry: VocabularyEntry) {
   KNOWN_WORDS.set(entry.word.toLowerCase(), entry);
 }
 
-for (const entry of Object.values(vocabularyById)) {
+for (const entry of Object.values(knownVocabularyByWord)) {
   registerKnown(entry);
 }
 
@@ -26,26 +26,6 @@ for (const item of savedWordsCatalog) {
     contextMeaning: item.meaning,
     sentence: item.contextSentence
   });
-}
-
-export function panelEntryFromMockId(
-  id: string,
-  sourceTitle: string
-): PanelVocabularySelection | null {
-  const entry = vocabularyById[id];
-  if (!entry) return null;
-
-  return {
-    saveKey: entry.id,
-    highlightKey: entry.id,
-    word: entry.word,
-    partOfSpeech: entry.partOfSpeech,
-    pronunciation: entry.pronunciation,
-    definition: entry.definition,
-    contextMeaning: entry.contextMeaning,
-    sentence: entry.sentence,
-    sourceTitle
-  };
 }
 
 export function buildPanelEntry(params: {
