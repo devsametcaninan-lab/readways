@@ -1,13 +1,12 @@
 "use client";
 
-import { buildPanelEntry } from "@/lib/reader/vocabulary-lookup";
+import type { WordClickPayload } from "@/lib/reader/explain-word-client";
 import {
   extractSentence,
   highlightKeyForWord,
   tokenizeParagraph,
   type WordToken
 } from "@/lib/reader/text-tokens";
-import type { PanelVocabularySelection } from "@/lib/reader/types";
 import { readerParagraphClass } from "./reader-typography";
 import { wordHighlightClass } from "./word-highlight";
 
@@ -15,30 +14,26 @@ type SelectableParagraphProps = {
   paragraph: string;
   paragraphIndex: number;
   activeHighlightKey: string | null;
-  sourceTitle: string;
-  onSelect: (selection: PanelVocabularySelection, highlightKey: string) => void;
+  onWordClick: (payload: WordClickPayload) => void;
 };
 
 export default function SelectableParagraph({
   paragraph,
   paragraphIndex,
   activeHighlightKey,
-  sourceTitle,
-  onSelect
+  onWordClick
 }: SelectableParagraphProps) {
   const tokens = tokenizeParagraph(paragraph);
 
   const handleWordClick = (token: WordToken) => {
     const sentence = extractSentence(paragraph, token.start);
     const highlightKey = highlightKeyForWord(paragraphIndex, token.wordIndex);
-    const selection = buildPanelEntry({
+    onWordClick({
       rawWord: token.value,
       normalizedWord: token.normalized,
       sentence,
-      sourceTitle,
       highlightKey
     });
-    onSelect(selection, highlightKey);
   };
 
   return (

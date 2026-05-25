@@ -1,3 +1,5 @@
+export type PanelVocabularyStatus = "loading" | "ready" | "error";
+
 export type PanelVocabularySelection = {
   saveKey: string;
   highlightKey: string;
@@ -8,4 +10,7 @@ export type PanelVocabularySelection = {
   contextMeaning: string;
   sentence: string;
   sourceTitle: string;
+  status: PanelVocabularyStatus;
+  explanationSource?: "cache" | "mock";
+  errorMessage?: string;
 };
