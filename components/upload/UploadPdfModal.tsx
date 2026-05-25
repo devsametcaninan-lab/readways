@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useToast } from "@/components/feedback/ToastProvider";
+import Spinner from "@/components/feedback/Spinner";
 import {
   createProcessingDocument,
   markDocumentFailed,
@@ -37,7 +39,9 @@ function progressLabel(progress: ExtractProgress): string {
 
 export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const router = useRouter();
+  const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
+  const successToastShownRef = useRef(false);
   const [state, setState] = useState<UploadState>("empty");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
@@ -57,11 +61,19 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setIsDragging(false);
     setError(null);
     if (inputRef.current) inputRef.current.value = "";
+    successToastShownRef.current = false;
   }, []);
 
   useEffect(() => {
     if (!open) reset();
   }, [open, reset]);
+
+  useEffect(() => {
+    if (open && state === "ready" && !successToastShownRef.current) {
+      successToastShownRef.current = true;
+      toast.success("PDF uploaded successfully");
+    }
+  }, [open, state, toast]);
 
   useEffect(() => {
     if (!open) return;
@@ -75,10 +87,12 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const handleFile = (next: File) => {
     if (!isPdfFile(next)) {
       setError("Only PDF files are supported.");
+      toast.error("Only PDF files are supported.");
       return;
     }
     if (next.size > MAX_PDF_BYTES) {
       setError("This PDF exceeds the 10 MB limit. Please upload a smaller file.");
+      toast.error("This PDF exceeds the 10 MB limit.");
       setFile(null);
       setState("empty");
       return;
@@ -140,10 +154,13 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       setState("selected");
       if (isPdfUserError(err)) {
         setError(err.message);
+        toast.error(err.message);
       } else if (err instanceof Error) {
         setError(err.message);
+        toast.error(err.message);
       } else {
         setError("Something went wrong while extracting text. Please try another PDF.");
+        toast.error("Could not extract PDF text.");
       }
     }
   };
@@ -274,7 +291,10 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
             {state === "extracting" && (
               <div className="mt-5">
-                <p className="mb-2 text-sm text-zinc-300">{extractStatus}</p>
+                <p className="mb-2 flex items-center gap-2 text-sm text-zinc-300">
+                  <Spinner />
+                  {extractStatus}
+                </p>
                 <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
                   <span>Extracting text from your PDF…</span>
                   <span>{progress}%</span>
@@ -292,7 +312,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               <button
                 type="button"
                 onClick={startExtraction}
-                className="mt-6 w-full rounded-lg border border-accent/30 bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#6D7EFF]"
+                disabled={isBusy}
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#6D7EFF] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Extract and prepare
               </button>

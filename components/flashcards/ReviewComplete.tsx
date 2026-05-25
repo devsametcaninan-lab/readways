@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SuccessCheck from "@/components/feedback/SuccessCheck";
 
 type ReviewCompleteProps = {
   reviewedCount: number;
@@ -8,7 +9,10 @@ type ReviewCompleteProps = {
 export default function ReviewComplete({ reviewedCount, onReviewAgain }: ReviewCompleteProps) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center rounded-2xl border border-white/[0.12] bg-[#12141d] px-8 py-12 text-center shadow-[0_12px_48px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)]">
-      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">Session</p>
+      <div className="flex h-11 w-11 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/[0.08]">
+        <SuccessCheck className="h-5 w-5" />
+      </div>
+      <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">Session</p>
       <h2 className="mt-3 text-2xl font-medium tracking-tight text-white md:text-3xl">
         Review complete
       </h2>

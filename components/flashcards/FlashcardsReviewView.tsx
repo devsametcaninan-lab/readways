@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { appText } from "@/components/app/app-typography";
+import { useToast } from "@/components/feedback/ToastProvider";
 import { submitFlashcardReview } from "@/lib/flashcards/client";
 import type { FlashcardReviewItem, SessionStats as SessionStatsData } from "@/lib/flashcards/types";
 import type { ReviewRating } from "@/lib/supabase/schema";
@@ -21,6 +22,7 @@ export default function FlashcardsReviewView({
   initialStats
 }: FlashcardsReviewViewProps) {
   const router = useRouter();
+  const toast = useToast();
   const total = initialDeck.length;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewedCount, setReviewedCount] = useState(0);
@@ -60,14 +62,16 @@ export default function FlashcardsReviewView({
 
       if (nextReviewed >= total) {
         setIsComplete(true);
+        toast.success("Review completed");
         return;
       }
 
       setCurrentIndex((index) => index + 1);
     } catch (error) {
-      setReviewError(
-        error instanceof Error ? error.message : "Could not save review."
-      );
+      const message =
+        error instanceof Error ? error.message : "Could not save review.";
+      setReviewError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

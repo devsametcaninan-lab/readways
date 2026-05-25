@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useToast } from "@/components/feedback/ToastProvider";
 import { appText } from "@/components/app/app-typography";
+import { explainErrorToastMessage } from "@/lib/feedback/messages";
 import type { ReaderDocument } from "@/lib/documents/types";
 import {
   explainWordPayloadToPanelFields,
@@ -64,6 +66,7 @@ function isAbortError(error: unknown): boolean {
 }
 
 export default function ReaderView({ document }: ReaderViewProps) {
+  const toast = useToast();
   const articleRef = useRef<HTMLElement>(null);
   const [selection, setSelection] = useState<PanelVocabularySelection | null>(null);
   const [activeHighlightKey, setActiveHighlightKey] = useState<string | null>(null);
@@ -118,7 +121,17 @@ export default function ReaderView({ document }: ReaderViewProps) {
                 result.status === "already_saved" ? "already_saved" : "saved"
             };
           });
+
+          if (result.status === "already_saved") {
+            toast.info("Already saved");
+          } else {
+            toast.success("Saved to flashcards");
+          }
         } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Could not save word.";
+          toast.error(message);
+
           setSelection((prev) => {
             if (!prev || prev.highlightKey !== current.highlightKey) {
               return prev;
@@ -126,11 +139,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
 
             return {
               ...prev,
-              saveState: "idle",
-              errorMessage:
-                error instanceof Error
-                  ? error.message
-                  : "Could not save word."
+              saveState: "idle"
             };
           });
         } finally {
@@ -140,7 +149,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
 
       return { ...current, saveState: "saving" };
     });
-  }, []);
+  }, [toast]);
 
   const pageLabel = `${document.pageCount} page${document.pageCount === 1 ? "" : "s"}`;
 
@@ -196,6 +205,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
             saveState: "idle",
             explanationSource: fields.explanationSource
           });
+
+          if (fields.explanationSource === "ai") {
+            toast.success("Explanation ready", 3200);
+          }
         } catch (error) {
           if (isAbortError(error) || controller.signal.aborted) {
             return;
@@ -209,6 +222,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
             error instanceof Error
               ? error.message
               : "Could not load word explanation.";
+
+          toast.error(explainErrorToastMessage(message));
 
           setSelection((prev) => {
             if (!prev || prev.highlightKey !== click.highlightKey) {
@@ -228,7 +243,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
         }
       })();
     },
-    [document.id, document.title]
+    [document.id, document.title, toast]
   );
 
   const handleWordClick = useCallback(

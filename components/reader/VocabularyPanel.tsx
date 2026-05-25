@@ -1,6 +1,8 @@
 "use client";
 
 import type { PanelVocabularySelection } from "@/lib/reader/types";
+import Spinner from "@/components/feedback/Spinner";
+import SuccessCheck from "@/components/feedback/SuccessCheck";
 import {
   ExplanationTextSkeleton,
   PronunciationSkeleton
@@ -163,7 +165,7 @@ export default function VocabularyPanel({
               disabled={!canSave}
               title={saveTitle}
               onClick={onSave}
-              className={`mt-7 w-full rounded-md border py-3 text-sm font-medium transition-all duration-200 ${
+              className={`mt-7 flex w-full items-center justify-center gap-2 rounded-md border py-3 text-sm font-medium transition-all duration-200 ${
                 selection.saveState === "saved" || selection.saveState === "already_saved"
                   ? "cursor-default border-white/[0.12] bg-white/[0.06] text-zinc-400"
                   : canSave
@@ -171,6 +173,10 @@ export default function VocabularyPanel({
                     : "cursor-default border-white/[0.08] bg-white/[0.03] text-zinc-500"
               }`}
             >
+              {selection.saveState === "saving" ? <Spinner /> : null}
+              {selection.saveState === "saved" || selection.saveState === "already_saved" ? (
+                <SuccessCheck />
+              ) : null}
               {saveButtonLabel(selection)}
             </button>
           </>
