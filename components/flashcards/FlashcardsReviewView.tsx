@@ -1,8 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { appText } from "@/components/app/app-typography";
+import { submitFlashcardReview } from "@/lib/flashcards/client";
 import type { FlashcardReviewItem, SessionStats as SessionStatsData } from "@/lib/flashcards/types";
+import type { ReviewRating } from "@/lib/supabase/schema";
 import FlipCard from "./FlipCard";
 import RatingButtons from "./RatingButtons";
 import ReviewComplete from "./ReviewComplete";
@@ -17,11 +20,14 @@ export default function FlashcardsReviewView({
   initialDeck,
   initialStats
 }: FlashcardsReviewViewProps) {
+  const router = useRouter();
   const total = initialDeck.length;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewedCount, setReviewedCount] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const currentCard = initialDeck[currentIndex];
 
@@ -30,19 +36,41 @@ export default function FlashcardsReviewView({
     setReviewedCount(0);
     setIsFlipped(false);
     setIsComplete(false);
-  }, []);
+    setReviewError(null);
+    router.refresh();
+  }, [router]);
 
-  const handleRate = () => {
-    const nextReviewed = reviewedCount + 1;
-    setReviewedCount(nextReviewed);
-    setIsFlipped(false);
-
-    if (nextReviewed >= total) {
-      setIsComplete(true);
+  const handleRate = async (rating: ReviewRating) => {
+    if (!currentCard || isSubmitting) {
       return;
     }
 
-    setCurrentIndex((i) => i + 1);
+    setIsSubmitting(true);
+    setReviewError(null);
+
+    try {
+      await submitFlashcardReview({
+        flashcardId: currentCard.id,
+        rating
+      });
+
+      const nextReviewed = reviewedCount + 1;
+      setReviewedCount(nextReviewed);
+      setIsFlipped(false);
+
+      if (nextReviewed >= total) {
+        setIsComplete(true);
+        return;
+      }
+
+      setCurrentIndex((index) => index + 1);
+    } catch (error) {
+      setReviewError(
+        error instanceof Error ? error.message : "Could not save review."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -85,7 +113,7 @@ export default function FlashcardsReviewView({
               key={currentCard.id}
               card={currentCard}
               isFlipped={isFlipped}
-              onFlip={() => setIsFlipped((f) => !f)}
+              onFlip={() => setIsFlipped((flipped) => !flipped)}
             />
 
             <div
@@ -94,12 +122,15 @@ export default function FlashcardsReviewView({
                   ? "translate-y-0 opacity-100"
                   : "pointer-events-none translate-y-2 opacity-0"
               }`}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
             >
               <p className="mb-4 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
                 How well did you recall it?
               </p>
-              <RatingButtons onRate={handleRate} />
+              <RatingButtons onRate={handleRate} disabled={isSubmitting} />
+              {reviewError ? (
+                <p className="mt-4 text-center text-sm text-red-300/90">{reviewError}</p>
+              ) : null}
             </div>
 
             {!isFlipped && (
