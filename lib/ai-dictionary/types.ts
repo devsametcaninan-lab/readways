@@ -14,6 +14,12 @@ export type ValidatedExplainWordRequest = {
 
 export type ExplainWordSource = "cache" | "mock";
 
+export type ExplainWordUsage = {
+  used: number;
+  limit: number;
+  remaining: number;
+};
+
 export type ExplainWordPayload = {
   source: ExplainWordSource;
   word: string;
@@ -22,8 +28,10 @@ export type ExplainWordPayload = {
   contextual_meaning: string;
   sentence: string;
   language: string;
+  usage?: ExplainWordUsage;
 };
 
 export type ApiErrorBody = {
   error: string;
+  usage?: ExplainWordUsage;
 };
