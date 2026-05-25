@@ -43,6 +43,7 @@ export function cachedExplanationToPayload(
 ): ExplainWordPayload {
   return {
     source: "cache",
+    wordExplanationId: row.id,
     word: row.word,
     pronunciation: row.pronunciation ?? "—",
     definition: row.definition ?? "—",

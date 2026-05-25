@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import StatusBadge from "./StatusBadge";
-import type { SavedWordItem } from "@/lib/saved-words-mock-data";
+import type { SavedWordItem } from "@/lib/saved-words/types";
 
 type WordDetailModalProps = {
   word: SavedWordItem | null;

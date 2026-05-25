@@ -8,8 +8,7 @@ import {
 
 type VocabularyPanelProps = {
   selection: PanelVocabularySelection | null;
-  savedKeys: Set<string>;
-  onSave: (saveKey: string) => void;
+  onSave: () => void;
   emptyTitle?: string;
   emptyDescription?: string;
 };
@@ -18,20 +17,47 @@ function sourceLabel(source: "cache" | "ai"): string {
   return source === "cache" ? "Cached explanation" : "AI explanation";
 }
 
+function saveButtonLabel(selection: PanelVocabularySelection): string {
+  if (selection.status === "loading") {
+    return "Explanation loading…";
+  }
+
+  switch (selection.saveState) {
+    case "saving":
+      return "Saving…";
+    case "saved":
+      return "Saved";
+    case "already_saved":
+      return "Already saved";
+    default:
+      return "Save as flashcard";
+  }
+}
+
 const EXPLANATION_TEXT_MIN_HEIGHT = "min-h-[4.25rem]";
 
 export default function VocabularyPanel({
   selection,
-  savedKeys,
   onSave,
   emptyTitle = "Select a word",
   emptyDescription = "Select any word from your document to understand it in context."
 }: VocabularyPanelProps) {
-  const isSaved = selection ? savedKeys.has(selection.saveKey) : false;
   const isLoading = selection?.status === "loading";
   const isError = selection?.status === "error";
   const isReady = selection?.status === "ready";
-  const canSave = isReady && !isSaved;
+  const isSaving = selection?.saveState === "saving";
+  const canSave =
+    isReady &&
+    Boolean(selection?.wordExplanationId) &&
+    selection.saveState === "idle";
+
+  const saveTitle = isLoading
+    ? "Explanation loading…"
+    : isSaving
+      ? "Saving…"
+      : !selection?.wordExplanationId && isReady
+        ? "Explanation unavailable"
+        : undefined;
 
   return (
     <aside className="flex w-full shrink-0 flex-col border-t border-white/[0.1] bg-[#0e0f14] lg:w-[320px] lg:border-l lg:border-t-0">
@@ -135,21 +161,17 @@ export default function VocabularyPanel({
             <button
               type="button"
               disabled={!canSave}
-              title={isLoading ? "Explanation loading…" : undefined}
-              onClick={() => onSave(selection.saveKey)}
+              title={saveTitle}
+              onClick={onSave}
               className={`mt-7 w-full rounded-md border py-3 text-sm font-medium transition-all duration-200 ${
-                isSaved
+                selection.saveState === "saved" || selection.saveState === "already_saved"
                   ? "cursor-default border-white/[0.12] bg-white/[0.06] text-zinc-400"
                   : canSave
                     ? "border-accent/25 bg-accent/90 text-white hover:bg-[#6D7EFF]"
                     : "cursor-default border-white/[0.08] bg-white/[0.03] text-zinc-500"
               }`}
             >
-              {isSaved
-                ? "Saved"
-                : isLoading
-                  ? "Explanation loading…"
-                  : "Save as flashcard"}
+              {saveButtonLabel(selection)}
             </button>
           </>
         )}

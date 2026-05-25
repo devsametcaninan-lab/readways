@@ -1,8 +1,13 @@
 export type PanelVocabularyStatus = "loading" | "ready" | "error";
 
+export type PanelSaveState = "idle" | "saving" | "saved" | "already_saved";
+
 export type PanelVocabularySelection = {
   saveKey: string;
   highlightKey: string;
+  documentId: string;
+  wordExplanationId?: string;
+  normalizedWord: string;
   word: string;
   partOfSpeech: string;
   pronunciation: string;
@@ -11,6 +16,7 @@ export type PanelVocabularySelection = {
   sentence: string;
   sourceTitle: string;
   status: PanelVocabularyStatus;
+  saveState: PanelSaveState;
   explanationSource?: "cache" | "ai";
   errorMessage?: string;
 };

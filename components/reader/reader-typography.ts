@@ -11,4 +11,4 @@ export const readerArticleClass =
 
 /** Applied to each paragraph — body copy rhythm */
 export const readerParagraphClass =
-  "text-pretty text-[1.0625rem] font-normal leading-[1.78] tracking-[0.004em] text-[#c4c6d0]";
+  "select-text text-pretty text-[1.0625rem] font-normal leading-[1.78] tracking-[0.004em] text-[#c4c6d0]";

@@ -2,11 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
-  savedWordsCatalog,
   statusLabels,
   type SavedWordItem,
   type WordStatus
-} from "@/lib/saved-words-mock-data";
+} from "@/lib/saved-words/types";
 import StatusBadge from "./StatusBadge";
 import WordDetailModal from "./WordDetailModal";
 
@@ -19,7 +18,11 @@ const filters: { value: FilterValue; label: string }[] = [
   { value: "mastered", label: statusLabels.mastered }
 ];
 
-export default function SavedWordsView() {
+type SavedWordsViewProps = {
+  initialWords: SavedWordItem[];
+};
+
+export default function SavedWordsView({ initialWords }: SavedWordsViewProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterValue>("all");
   const [selectedWord, setSelectedWord] = useState<SavedWordItem | null>(null);
@@ -27,7 +30,7 @@ export default function SavedWordsView() {
 
   const filteredWords = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return savedWordsCatalog.filter((item) => {
+    return initialWords.filter((item) => {
       const matchesFilter = filter === "all" || item.status === filter;
       const matchesSearch =
         !query ||
@@ -36,7 +39,7 @@ export default function SavedWordsView() {
         item.source.toLowerCase().includes(query);
       return matchesFilter && matchesSearch;
     });
-  }, [search, filter]);
+  }, [initialWords, search, filter]);
 
   const handleReviewAgain = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

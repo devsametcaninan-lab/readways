@@ -6,11 +6,13 @@ export function aiExplanationToPayload(params: {
   sentence: string;
   language: string;
   displayWord: string;
+  wordExplanationId: string;
 }): ExplainWordPayload {
-  const { ai, sentence, language, displayWord } = params;
+  const { ai, sentence, language, displayWord, wordExplanationId } = params;
 
   return {
     source: "ai",
+    wordExplanationId,
     word: displayWord || ai.word,
     pronunciation: ai.pronunciation,
     definition: ai.definition,

@@ -15,20 +15,28 @@ export type SaveWordExplanationParams = {
 
 export async function insertWordExplanation(
   params: SaveWordExplanationParams
-): Promise<boolean> {
+): Promise<string | null> {
   const { supabase, ...row } = params;
 
-  const { error } = await supabase.from("word_explanations").insert({
-    user_id: row.userId,
-    document_id: row.documentId,
-    word: row.word,
-    sentence: row.sentence,
-    sentence_hash: row.sentenceHash,
-    definition: row.definition,
-    contextual_meaning: row.contextual_meaning,
-    pronunciation: row.pronunciation,
-    language: row.language
-  });
+  const { data, error } = await supabase
+    .from("word_explanations")
+    .insert({
+      user_id: row.userId,
+      document_id: row.documentId,
+      word: row.word,
+      sentence: row.sentence,
+      sentence_hash: row.sentenceHash,
+      definition: row.definition,
+      contextual_meaning: row.contextual_meaning,
+      pronunciation: row.pronunciation,
+      language: row.language
+    })
+    .select("id")
+    .single();
 
-  return !error;
+  if (error || !data) {
+    return null;
+  }
+
+  return data.id;
 }

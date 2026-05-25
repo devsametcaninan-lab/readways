@@ -1,11 +1,17 @@
 import type { ApiErrorBody, ExplainWordPayload } from "@/lib/ai-dictionary/types";
 
-export type WordClickPayload = {
+export type ExplainClickKind = "word" | "phrase";
+
+export type ExplainClickPayload = {
   rawWord: string;
   normalizedWord: string;
   sentence: string;
   highlightKey: string;
+  kind: ExplainClickKind;
 };
+
+/** @deprecated Use ExplainClickPayload */
+export type WordClickPayload = ExplainClickPayload;
 
 export function explainWordRequestKey(
   documentId: string,
@@ -44,6 +50,7 @@ export async function fetchExplainWord(params: {
 }
 
 export function explainWordPayloadToPanelFields(payload: ExplainWordPayload): {
+  wordExplanationId: string;
   word: string;
   pronunciation: string;
   definition: string;
@@ -52,6 +59,7 @@ export function explainWordPayloadToPanelFields(payload: ExplainWordPayload): {
   explanationSource: ExplainWordPayload["source"];
 } {
   return {
+    wordExplanationId: payload.wordExplanationId,
     word: payload.word,
     pronunciation: payload.pronunciation,
     definition: payload.definition,

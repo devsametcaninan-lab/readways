@@ -6,16 +6,26 @@ import type { ReaderDocument } from "@/lib/documents/types";
 import {
   explainWordPayloadToPanelFields,
   fetchExplainWord,
-  type WordClickPayload
+  type ExplainClickPayload
 } from "@/lib/reader/explain-word-client";
+import {
+  cleanPhraseText,
+  clearBrowserSelection,
+  highlightKeyForPhrase,
+  normalizePhrase,
+  type PhraseHighlightRange
+} from "@/lib/reader/phrase-selection";
 import { cleanDisplayWord } from "@/lib/reader/text-tokens";
 import type { PanelVocabularySelection } from "@/lib/reader/types";
+import { fetchSaveWord } from "@/lib/save-word/client";
+import PhraseExplainButton from "./PhraseExplainButton";
 import {
   readerArticleClass,
   readerColumnClass,
   readerTitleClass
 } from "./reader-typography";
 import SelectableParagraph from "./SelectableParagraph";
+import { usePhraseSelection } from "./usePhraseSelection";
 import VocabularyPanel from "./VocabularyPanel";
 
 type ReaderViewProps = {
@@ -23,22 +33,29 @@ type ReaderViewProps = {
 };
 
 function buildInstantSelection(
-  click: WordClickPayload,
+  click: ExplainClickPayload,
+  documentId: string,
   sourceTitle: string
 ): PanelVocabularySelection {
-  const displayWord = cleanDisplayWord(click.rawWord);
+  const displayLabel =
+    click.kind === "phrase"
+      ? cleanPhraseText(click.rawWord)
+      : cleanDisplayWord(click.rawWord);
 
   return {
     saveKey: `${click.highlightKey}:${click.normalizedWord}`,
     highlightKey: click.highlightKey,
-    word: displayWord,
-    partOfSpeech: "word",
+    documentId,
+    normalizedWord: click.normalizedWord,
+    word: displayLabel,
+    partOfSpeech: click.kind === "phrase" ? "phrase" : "word",
     pronunciation: "",
     definition: "",
     contextMeaning: "",
     sentence: click.sentence,
     sourceTitle,
-    status: "loading"
+    status: "loading",
+    saveState: "idle"
   };
 }
 
@@ -47,28 +64,96 @@ function isAbortError(error: unknown): boolean {
 }
 
 export default function ReaderView({ document }: ReaderViewProps) {
+  const articleRef = useRef<HTMLElement>(null);
   const [selection, setSelection] = useState<PanelVocabularySelection | null>(null);
   const [activeHighlightKey, setActiveHighlightKey] = useState<string | null>(null);
-  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
-
+  const [activePhraseRange, setActivePhraseRange] = useState<PhraseHighlightRange | null>(
+    null
+  );
   const selectedHighlightKeyRef = useRef<string | null>(null);
   const fetchAbortRef = useRef<AbortController | null>(null);
+  const saveInFlightRef = useRef(false);
 
-  const handleSave = useCallback((saveKey: string) => {
-    setSavedKeys((prev) => new Set(prev).add(saveKey));
+  const { pendingPhrase, clearPending } = usePhraseSelection({
+    articleRef,
+    paragraphs: document.paragraphs,
+    enabled: true
+  });
+
+  const handleSave = useCallback(async () => {
+    if (saveInFlightRef.current) {
+      return;
+    }
+
+    setSelection((current) => {
+      if (
+        !current ||
+        current.status !== "ready" ||
+        !current.wordExplanationId ||
+        current.saveState === "saving" ||
+        current.saveState === "saved" ||
+        current.saveState === "already_saved"
+      ) {
+        return current;
+      }
+
+      saveInFlightRef.current = true;
+
+      void (async () => {
+        try {
+          const result = await fetchSaveWord({
+            documentId: current.documentId,
+            wordExplanationId: current.wordExplanationId!,
+            word: current.word
+          });
+
+          setSelection((prev) => {
+            if (!prev || prev.highlightKey !== current.highlightKey) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              saveState:
+                result.status === "already_saved" ? "already_saved" : "saved"
+            };
+          });
+        } catch (error) {
+          setSelection((prev) => {
+            if (!prev || prev.highlightKey !== current.highlightKey) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              saveState: "idle",
+              errorMessage:
+                error instanceof Error
+                  ? error.message
+                  : "Could not save word."
+            };
+          });
+        } finally {
+          saveInFlightRef.current = false;
+        }
+      })();
+
+      return { ...current, saveState: "saving" };
+    });
   }, []);
 
   const pageLabel = `${document.pageCount} page${document.pageCount === 1 ? "" : "s"}`;
 
-  const handleWordClick = useCallback(
-    (click: WordClickPayload) => {
+  const requestExplanation = useCallback(
+    (click: ExplainClickPayload, phraseRange: PhraseHighlightRange | null) => {
       fetchAbortRef.current?.abort();
       const controller = new AbortController();
       fetchAbortRef.current = controller;
 
       selectedHighlightKeyRef.current = click.highlightKey;
       setActiveHighlightKey(click.highlightKey);
-      setSelection(buildInstantSelection(click, document.title));
+      setActivePhraseRange(phraseRange);
+      setSelection(buildInstantSelection(click, document.id, document.title));
 
       void (async () => {
         try {
@@ -89,18 +174,26 @@ export default function ReaderView({ document }: ReaderViewProps) {
           }
 
           const fields = explainWordPayloadToPanelFields(payload);
+          const displayLabel =
+            click.kind === "phrase"
+              ? cleanPhraseText(fields.word) || cleanPhraseText(click.rawWord)
+              : cleanDisplayWord(fields.word) || cleanDisplayWord(click.rawWord);
 
           setSelection({
             saveKey: `${click.highlightKey}:${click.normalizedWord}`,
             highlightKey: click.highlightKey,
-            word: cleanDisplayWord(fields.word) || cleanDisplayWord(click.rawWord),
-            partOfSpeech: "word",
+            documentId: document.id,
+            wordExplanationId: fields.wordExplanationId,
+            normalizedWord: click.normalizedWord,
+            word: displayLabel,
+            partOfSpeech: click.kind === "phrase" ? "phrase" : "word",
             pronunciation: fields.pronunciation,
             definition: fields.definition,
             contextMeaning: fields.contextMeaning,
             sentence: fields.sentence,
             sourceTitle: document.title,
             status: "ready",
+            saveState: "idle",
             explanationSource: fields.explanationSource
           });
         } catch (error) {
@@ -138,6 +231,46 @@ export default function ReaderView({ document }: ReaderViewProps) {
     [document.id, document.title]
   );
 
+  const handleWordClick = useCallback(
+    (click: ExplainClickPayload) => {
+      clearPending();
+      clearBrowserSelection();
+      requestExplanation(click, null);
+    },
+    [clearPending, requestExplanation]
+  );
+
+  const handleExplainPhrase = useCallback(() => {
+    if (!pendingPhrase) {
+      return;
+    }
+
+    const normalized = normalizePhrase(pendingPhrase.phrase);
+    const highlightKey = highlightKeyForPhrase(
+      pendingPhrase.paragraphIndex,
+      pendingPhrase.start,
+      pendingPhrase.end
+    );
+
+    clearPending();
+    clearBrowserSelection();
+
+    requestExplanation(
+      {
+        rawWord: pendingPhrase.phrase,
+        normalizedWord: normalized,
+        sentence: pendingPhrase.sentence,
+        highlightKey,
+        kind: "phrase"
+      },
+      {
+        paragraphIndex: pendingPhrase.paragraphIndex,
+        start: pendingPhrase.start,
+        end: pendingPhrase.end
+      }
+    );
+  }, [pendingPhrase, clearPending, requestExplanation]);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
@@ -154,22 +287,29 @@ export default function ReaderView({ document }: ReaderViewProps) {
         <div className={readerColumnClass}>
           <h1 className={readerTitleClass}>{document.title}</h1>
 
-          <article className={readerArticleClass}>
+          <article ref={articleRef} className={readerArticleClass}>
             {document.paragraphs.map((paragraph, index) => (
               <SelectableParagraph
                 key={index}
                 paragraph={paragraph}
                 paragraphIndex={index}
                 activeHighlightKey={activeHighlightKey}
+                activePhraseRange={activePhraseRange}
                 onWordClick={handleWordClick}
               />
             ))}
           </article>
+
+          {pendingPhrase ? (
+            <PhraseExplainButton
+              rect={pendingPhrase.rect}
+              onExplain={handleExplainPhrase}
+            />
+          ) : null}
         </div>
 
         <VocabularyPanel
           selection={selection}
-          savedKeys={savedKeys}
           onSave={handleSave}
           emptyDescription="Select any word from your document to understand it in context."
         />

@@ -1,5 +1,5 @@
 import { appText } from "@/components/app/app-typography";
-import type { SessionStats as SessionStatsType } from "@/lib/flashcards-mock-data";
+import type { SessionStats as SessionStatsType } from "@/lib/flashcards/types";
 
 type SessionStatsProps = {
   stats: SessionStatsType;

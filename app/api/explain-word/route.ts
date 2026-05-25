@@ -121,7 +121,7 @@ export async function POST(request: Request) {
 
     const displayWord = cleanDisplayWord(aiResult.data.word) || cleanDisplayWord(word);
 
-    const saved = await insertWordExplanation({
+    const wordExplanationId = await insertWordExplanation({
       supabase,
       userId: user.id,
       documentId,
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
       language
     });
 
-    if (!saved) {
+    if (!wordExplanationId) {
       return jsonError(500, "Could not save explanation. Please try again.");
     }
 
@@ -153,7 +153,8 @@ export async function POST(request: Request) {
         ai: aiResult.data,
         sentence,
         language,
-        displayWord
+        displayWord,
+        wordExplanationId
       }),
       usage: usageAfter
     });

@@ -22,6 +22,7 @@ export type ExplainWordUsage = {
 
 export type ExplainWordPayload = {
   source: ExplainWordSource;
+  wordExplanationId: string;
   word: string;
   pronunciation: string;
   definition: string;

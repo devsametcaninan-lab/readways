@@ -1,6 +1,6 @@
 "use client";
 
-import type { FlashcardReviewItem } from "@/lib/flashcards-mock-data";
+import type { FlashcardReviewItem } from "@/lib/flashcards/types";
 
 type FlipCardProps = {
   card: FlashcardReviewItem;

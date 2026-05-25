@@ -1,4 +1,4 @@
-import { statusLabels, type WordStatus } from "@/lib/saved-words-mock-data";
+import { statusLabels, type WordStatus } from "@/lib/saved-words/types";
 
 const styles: Record<WordStatus, string> = {
   learning: "border-accent/30 bg-accent/10 text-accentSoft",

@@ -10,6 +10,8 @@ export type WordToken = {
 export type NonWordToken = {
   type: "whitespace" | "punctuation";
   value: string;
+  start: number;
+  end: number;
 };
 
 export type ParagraphToken = WordToken | NonWordToken;
@@ -39,7 +41,7 @@ export function tokenizeParagraph(text: string): ParagraphToken[] {
     const end = start + value.length;
 
     if (/^\s+$/.test(value)) {
-      tokens.push({ type: "whitespace", value });
+      tokens.push({ type: "whitespace", value, start, end });
       continue;
     }
 
@@ -58,7 +60,7 @@ export function tokenizeParagraph(text: string): ParagraphToken[] {
       continue;
     }
 
-    tokens.push({ type: "punctuation", value });
+    tokens.push({ type: "punctuation", value, start, end });
   }
 
   return tokens;
