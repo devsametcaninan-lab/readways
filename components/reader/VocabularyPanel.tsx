@@ -1,6 +1,10 @@
 "use client";
 
 import type { PanelVocabularySelection } from "@/lib/reader/types";
+import {
+  ExplanationTextSkeleton,
+  PronunciationSkeleton
+} from "./ExplanationSkeleton";
 
 type VocabularyPanelProps = {
   selection: PanelVocabularySelection | null;
@@ -10,9 +14,11 @@ type VocabularyPanelProps = {
   emptyDescription?: string;
 };
 
-function sourceLabel(source: "cache" | "mock"): string {
-  return source === "cache" ? "Cached explanation" : "Preview explanation";
+function sourceLabel(source: "cache" | "ai"): string {
+  return source === "cache" ? "Cached explanation" : "AI explanation";
 }
+
+const EXPLANATION_TEXT_MIN_HEIGHT = "min-h-[4.25rem]";
 
 export default function VocabularyPanel({
   selection,
@@ -42,20 +48,39 @@ export default function VocabularyPanel({
         ) : (
           <>
             <h3 className="text-2xl font-medium text-white">{selection.word}</h3>
-            <p className="mt-2 text-sm text-zinc-400">
-              {selection.partOfSpeech}
+            <p className="mt-2 flex min-h-[1.25rem] flex-wrap items-center gap-x-1.5 text-sm text-zinc-400">
+              <span>{selection.partOfSpeech}</span>
               {isLoading ? (
-                <span className="text-zinc-500"> · Loading explanation…</span>
+                <>
+                  <span aria-hidden="true">·</span>
+                  <PronunciationSkeleton />
+                </>
               ) : isReady && selection.pronunciation ? (
-                <> · {selection.pronunciation}</>
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>{selection.pronunciation}</span>
+                </>
               ) : null}
             </p>
 
-            {isReady && selection.explanationSource ? (
-              <p className="mt-1.5 text-[11px] uppercase tracking-[0.08em] text-zinc-600">
-                {sourceLabel(selection.explanationSource)}
-              </p>
-            ) : null}
+            <div className="mt-6 space-y-5">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
+                  Original sentence
+                </p>
+                <p className="mt-2.5 text-[15px] italic leading-relaxed text-zinc-400">
+                  &ldquo;{selection.sentence}&rdquo;
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
+                  Source
+                </p>
+                <p className="mt-2.5 text-[15px] leading-relaxed text-zinc-400">
+                  {selection.sourceTitle}
+                </p>
+              </div>
+            </div>
 
             {isError ? (
               <div className="mt-6 rounded-lg border border-red-500/20 bg-red-500/[0.06] px-4 py-3.5">
@@ -65,53 +90,52 @@ export default function VocabularyPanel({
                 </p>
               </div>
             ) : (
-              <div className={`mt-7 space-y-6 ${isLoading ? "animate-pulse" : ""}`}>
+              <div
+                className="mt-6 space-y-6"
+                aria-busy={isLoading}
+                aria-live="polite"
+              >
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
                     Definition
                   </p>
-                  <p className="mt-2.5 text-[15px] leading-relaxed text-zinc-300">
+                  <div className={`mt-2.5 ${EXPLANATION_TEXT_MIN_HEIGHT}`}>
                     {isLoading ? (
-                      <span className="text-zinc-600">Loading…</span>
+                      <ExplanationTextSkeleton lines={3} />
                     ) : (
-                      selection.definition
+                      <p className="text-[15px] leading-relaxed text-zinc-300">
+                        {selection.definition}
+                      </p>
                     )}
-                  </p>
+                  </div>
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
                     In this sentence
                   </p>
-                  <p className="mt-2.5 text-[15px] leading-relaxed text-zinc-300">
+                  <div className={`mt-2.5 ${EXPLANATION_TEXT_MIN_HEIGHT}`}>
                     {isLoading ? (
-                      <span className="text-zinc-600">Loading…</span>
+                      <ExplanationTextSkeleton lines={3} />
                     ) : (
-                      selection.contextMeaning
+                      <p className="text-[15px] leading-relaxed text-zinc-300">
+                        {selection.contextMeaning}
+                      </p>
                     )}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                    Original sentence
-                  </p>
-                  <p className="mt-2.5 text-[15px] italic leading-relaxed text-zinc-400">
-                    &ldquo;{selection.sentence}&rdquo;
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                    Source
-                  </p>
-                  <p className="mt-2.5 text-[15px] leading-relaxed text-zinc-400">
-                    {selection.sourceTitle}
-                  </p>
+                  </div>
                 </div>
               </div>
             )}
 
+            {isReady && selection.explanationSource ? (
+              <p className="mt-5 text-[11px] uppercase tracking-[0.08em] text-zinc-600">
+                {sourceLabel(selection.explanationSource)}
+              </p>
+            ) : null}
+
             <button
               type="button"
               disabled={!canSave}
+              title={isLoading ? "Explanation loading…" : undefined}
               onClick={() => onSave(selection.saveKey)}
               className={`mt-7 w-full rounded-md border py-3 text-sm font-medium transition-all duration-200 ${
                 isSaved
@@ -121,7 +145,11 @@ export default function VocabularyPanel({
                     : "cursor-default border-white/[0.08] bg-white/[0.03] text-zinc-500"
               }`}
             >
-              {isSaved ? "Saved" : "Save as flashcard"}
+              {isSaved
+                ? "Saved"
+                : isLoading
+                  ? "Explanation loading…"
+                  : "Save as flashcard"}
             </button>
           </>
         )}

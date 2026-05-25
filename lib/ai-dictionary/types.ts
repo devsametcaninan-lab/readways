@@ -12,7 +12,7 @@ export type ValidatedExplainWordRequest = {
   language: string;
 };
 
-export type ExplainWordSource = "cache" | "mock";
+export type ExplainWordSource = "cache" | "ai";
 
 export type ExplainWordUsage = {
   used: number;

@@ -11,6 +11,6 @@ export type PanelVocabularySelection = {
   sentence: string;
   sourceTitle: string;
   status: PanelVocabularyStatus;
-  explanationSource?: "cache" | "mock";
+  explanationSource?: "cache" | "ai";
   errorMessage?: string;
 };

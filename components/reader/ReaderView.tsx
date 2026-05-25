@@ -5,7 +5,6 @@ import { appText } from "@/components/app/app-typography";
 import type { ReaderDocument } from "@/lib/documents/types";
 import {
   explainWordPayloadToPanelFields,
-  explainWordRequestKey,
   fetchExplainWord,
   type WordClickPayload
 } from "@/lib/reader/explain-word-client";
@@ -23,7 +22,7 @@ type ReaderViewProps = {
   document: ReaderDocument;
 };
 
-function buildLoadingSelection(
+function buildInstantSelection(
   click: WordClickPayload,
   sourceTitle: string
 ): PanelVocabularySelection {
@@ -43,13 +42,17 @@ function buildLoadingSelection(
   };
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 export default function ReaderView({ document }: ReaderViewProps) {
   const [selection, setSelection] = useState<PanelVocabularySelection | null>(null);
   const [activeHighlightKey, setActiveHighlightKey] = useState<string | null>(null);
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
 
-  const pendingRequestsRef = useRef(new Set<string>());
   const selectedHighlightKeyRef = useRef<string | null>(null);
+  const fetchAbortRef = useRef<AbortController | null>(null);
 
   const handleSave = useCallback((saveKey: string) => {
     setSavedKeys((prev) => new Set(prev).add(saveKey));
@@ -58,74 +61,79 @@ export default function ReaderView({ document }: ReaderViewProps) {
   const pageLabel = `${document.pageCount} page${document.pageCount === 1 ? "" : "s"}`;
 
   const handleWordClick = useCallback(
-    async (click: WordClickPayload) => {
-      const requestKey = explainWordRequestKey(
-        document.id,
-        click.normalizedWord,
-        click.sentence
-      );
+    (click: WordClickPayload) => {
+      fetchAbortRef.current?.abort();
+      const controller = new AbortController();
+      fetchAbortRef.current = controller;
 
       selectedHighlightKeyRef.current = click.highlightKey;
       setActiveHighlightKey(click.highlightKey);
-      setSelection(buildLoadingSelection(click, document.title));
+      setSelection(buildInstantSelection(click, document.title));
 
-      if (pendingRequestsRef.current.has(requestKey)) {
-        return;
-      }
+      void (async () => {
+        try {
+          const payload = await fetchExplainWord({
+            word: click.rawWord,
+            sentence: click.sentence,
+            documentId: document.id,
+            language: "en",
+            signal: controller.signal
+          });
 
-      pendingRequestsRef.current.add(requestKey);
-
-      try {
-        const payload = await fetchExplainWord({
-          word: click.rawWord,
-          sentence: click.sentence,
-          documentId: document.id,
-          language: "en"
-        });
-
-        if (selectedHighlightKeyRef.current !== click.highlightKey) {
-          return;
-        }
-
-        const fields = explainWordPayloadToPanelFields(payload);
-
-        setSelection({
-          saveKey: `${click.highlightKey}:${click.normalizedWord}`,
-          highlightKey: click.highlightKey,
-          word: cleanDisplayWord(fields.word) || cleanDisplayWord(click.rawWord),
-          partOfSpeech: "word",
-          pronunciation: fields.pronunciation,
-          definition: fields.definition,
-          contextMeaning: fields.contextMeaning,
-          sentence: fields.sentence,
-          sourceTitle: document.title,
-          status: "ready",
-          explanationSource: fields.explanationSource
-        });
-      } catch (error) {
-        if (selectedHighlightKeyRef.current !== click.highlightKey) {
-          return;
-        }
-
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Could not load word explanation.";
-
-        setSelection((prev) => {
-          if (!prev || prev.highlightKey !== click.highlightKey) {
-            return prev;
+          if (controller.signal.aborted) {
+            return;
           }
 
-          return {
-            ...prev,
-            status: "error",
-            errorMessage: message
-          };
-        });
-      } finally {
-        pendingRequestsRef.current.delete(requestKey);
-      }
+          if (selectedHighlightKeyRef.current !== click.highlightKey) {
+            return;
+          }
+
+          const fields = explainWordPayloadToPanelFields(payload);
+
+          setSelection({
+            saveKey: `${click.highlightKey}:${click.normalizedWord}`,
+            highlightKey: click.highlightKey,
+            word: cleanDisplayWord(fields.word) || cleanDisplayWord(click.rawWord),
+            partOfSpeech: "word",
+            pronunciation: fields.pronunciation,
+            definition: fields.definition,
+            contextMeaning: fields.contextMeaning,
+            sentence: fields.sentence,
+            sourceTitle: document.title,
+            status: "ready",
+            explanationSource: fields.explanationSource
+          });
+        } catch (error) {
+          if (isAbortError(error) || controller.signal.aborted) {
+            return;
+          }
+
+          if (selectedHighlightKeyRef.current !== click.highlightKey) {
+            return;
+          }
+
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Could not load word explanation.";
+
+          setSelection((prev) => {
+            if (!prev || prev.highlightKey !== click.highlightKey) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              status: "error",
+              errorMessage: message
+            };
+          });
+        } finally {
+          if (fetchAbortRef.current === controller) {
+            fetchAbortRef.current = null;
+          }
+        }
+      })();
     },
     [document.id, document.title]
   );

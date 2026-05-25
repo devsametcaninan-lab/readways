@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
+import { aiExplanationToPayload } from "@/lib/ai-dictionary/ai-payload";
 import {
   cachedExplanationToPayload,
   findCachedWordExplanation
 } from "@/lib/ai-dictionary/cache";
 import { documentBelongsToUser } from "@/lib/ai-dictionary/document-ownership";
 import { jsonError, jsonExplainWord, jsonRateLimited } from "@/lib/ai-dictionary/http";
-import { buildMockExplanation } from "@/lib/ai-dictionary/mock";
+import { generateExplanationWithOpenAI } from "@/lib/ai-dictionary/openai";
 import { normalizeWord } from "@/lib/ai-dictionary/normalize-word";
+import { insertWordExplanation } from "@/lib/ai-dictionary/save-explanation";
 import { createSentenceHash } from "@/lib/ai-dictionary/sentence-hash";
 import {
   checkExplanationAllowance,
@@ -15,6 +17,7 @@ import {
   incrementExplanationUsage
 } from "@/lib/ai-dictionary/usage";
 import { validateExplainWordRequest } from "@/lib/ai-dictionary/validate";
+import { cleanDisplayWord } from "@/lib/reader/text-tokens";
 
 export async function POST(request: Request) {
   try {
@@ -92,11 +95,48 @@ export async function POST(request: Request) {
       return jsonRateLimited(allowance.message, allowance.usage);
     }
 
-    const mock = buildMockExplanation({
-      word: normalizedWord,
+    const aiResult = await generateExplanationWithOpenAI({
+      word,
       sentence,
       language
     });
+
+    if (!aiResult.ok) {
+      if (aiResult.reason === "not_configured") {
+        return jsonError(
+          503,
+          "Word explanations are temporarily unavailable. Please try again later."
+        );
+      }
+
+      if (aiResult.reason === "invalid_response") {
+        return jsonError(
+          502,
+          "Could not understand the explanation response. Please try again."
+        );
+      }
+
+      return jsonError(502, "Could not generate explanation. Please try again.");
+    }
+
+    const displayWord = cleanDisplayWord(aiResult.data.word) || cleanDisplayWord(word);
+
+    const saved = await insertWordExplanation({
+      supabase,
+      userId: user.id,
+      documentId,
+      word: normalizedWord,
+      sentence,
+      sentenceHash,
+      definition: aiResult.data.definition,
+      contextual_meaning: aiResult.data.contextual_meaning,
+      pronunciation: aiResult.data.pronunciation,
+      language
+    });
+
+    if (!saved) {
+      return jsonError(500, "Could not save explanation. Please try again.");
+    }
 
     const usageAfter = await incrementExplanationUsage({
       supabase,
@@ -109,7 +149,12 @@ export async function POST(request: Request) {
     }
 
     return jsonExplainWord({
-      ...mock,
+      ...aiExplanationToPayload({
+        ai: aiResult.data,
+        sentence,
+        language,
+        displayWord
+      }),
       usage: usageAfter
     });
   } catch {
