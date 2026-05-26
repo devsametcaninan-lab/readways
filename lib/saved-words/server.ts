@@ -1,14 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
+import { formatSavedDate } from "./format";
 import {
+  isPhraseWord,
   reviewProgressForStatus,
   type SavedWordItem
 } from "./types";
+
+type FlashcardEmbed = {
+  id: string;
+  difficulty: number | null;
+};
 
 type SavedWordRow = {
   id: string;
   word: string;
   status: SavedWordItem["status"];
   created_at: string;
+  document_id: string | null;
   word_explanations: {
     pronunciation: string | null;
     definition: string | null;
@@ -19,7 +27,53 @@ type SavedWordRow = {
     title: string;
     file_name: string;
   } | null;
+  flashcards: FlashcardEmbed | FlashcardEmbed[] | null;
 };
+
+function pickFlashcard(
+  embed: FlashcardEmbed | FlashcardEmbed[] | null
+): FlashcardEmbed | null {
+  if (!embed) {
+    return null;
+  }
+
+  if (Array.isArray(embed)) {
+    return embed[0] ?? null;
+  }
+
+  return embed;
+}
+
+function mapSavedWordRow(row: SavedWordRow): SavedWordItem {
+  const explanation = row.word_explanations;
+  const document = row.documents;
+  const flashcard = pickFlashcard(row.flashcards);
+
+  const definition = explanation?.definition?.trim() ?? "";
+  const contextualMeaning = explanation?.contextual_meaning?.trim() ?? "";
+  const meaning = contextualMeaning || definition || "No definition available.";
+  const pronunciation = explanation?.pronunciation?.trim() || null;
+  const source = document?.title ?? document?.file_name ?? "Unknown document";
+
+  return {
+    id: row.id,
+    word: row.word,
+    pronunciation,
+    partOfSpeech: isPhraseWord(row.word) ? "phrase" : "word",
+    definition: definition || meaning,
+    contextualMeaning: contextualMeaning || definition,
+    meaning,
+    source,
+    documentId: row.document_id,
+    status: row.status,
+    savedAt: formatSavedDate(row.created_at),
+    savedAtIso: row.created_at,
+    reviewProgress: reviewProgressForStatus(row.status),
+    contextSentence: explanation?.sentence ?? "",
+    flashcardId: flashcard?.id ?? null,
+    difficulty: flashcard?.difficulty ?? null
+  };
+}
 
 export async function getSavedWordsForUser(): Promise<SavedWordItem[]> {
   const supabase = await createClient();
@@ -40,6 +94,7 @@ export async function getSavedWordsForUser(): Promise<SavedWordItem[]> {
       word,
       status,
       created_at,
+      document_id,
       word_explanations (
         pronunciation,
         definition,
@@ -49,6 +104,10 @@ export async function getSavedWordsForUser(): Promise<SavedWordItem[]> {
       documents (
         title,
         file_name
+      ),
+      flashcards (
+        id,
+        difficulty
       )
     `
     )
@@ -59,29 +118,5 @@ export async function getSavedWordsForUser(): Promise<SavedWordItem[]> {
     return [];
   }
 
-  return (data as SavedWordRow[]).map((row) => {
-    const explanation = row.word_explanations;
-    const document = row.documents;
-    const meaning =
-      explanation?.contextual_meaning ??
-      explanation?.definition ??
-      "No definition available.";
-
-    return {
-      id: row.id,
-      word: row.word,
-      pronunciation: explanation?.pronunciation ?? "—",
-      partOfSpeech: "word",
-      meaning,
-      source: document?.title ?? document?.file_name ?? "Unknown document",
-      status: row.status,
-      savedAt: new Date(row.created_at).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      }),
-      reviewProgress: reviewProgressForStatus(row.status),
-      contextSentence: explanation?.sentence ?? ""
-    };
-  });
+  return (data as SavedWordRow[]).map(mapSavedWordRow);
 }
