@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { appText } from "@/components/app/app-typography";
 import { explainErrorToastMessage, isRateLimitMessage } from "@/lib/feedback/messages";
@@ -14,11 +14,17 @@ import {
   type ExplainPanelFields
 } from "@/lib/reader/explain-word-client";
 import {
+  hasActiveTextSelectionIn,
+  isReaderProtectedTarget
+} from "@/lib/reader/reader-interaction";
+import {
   cleanPhraseText,
   clearBrowserSelection,
   highlightKeyForPhrase,
   normalizePhrase,
-  type PhraseHighlightRange
+  resolvePhraseSelection,
+  type PhraseHighlightRange,
+  type PhraseSelectionResolved
 } from "@/lib/reader/phrase-selection";
 import { cleanDisplayWord } from "@/lib/reader/text-tokens";
 import type { PanelVocabularySelection } from "@/lib/reader/types";
@@ -66,6 +72,7 @@ function isAbortError(error: unknown): boolean {
 export default function ReaderView({ document }: ReaderViewProps) {
   const toast = useToast();
   const articleRef = useRef<HTMLElement>(null);
+  const vocabularyPanelRef = useRef<HTMLElement | null>(null);
   const [selection, setSelection] = useState<PanelVocabularySelection | null>(null);
   const [activeHighlightKey, setActiveHighlightKey] = useState<string | null>(null);
   const [activePhraseRange, setActivePhraseRange] = useState<PhraseHighlightRange | null>(
@@ -76,6 +83,9 @@ export default function ReaderView({ document }: ReaderViewProps) {
   const saveInFlightRef = useRef(false);
   const selectionRef = useRef<PanelVocabularySelection | null>(null);
   const savedWordKeysRef = useRef(new Set<string>());
+  const pendingPhraseRef = useRef<PhraseSelectionResolved | null>(null);
+  const [isLgUp, setIsLgUp] = useState(false);
+  const [mobileVocabPaddingBottomPx, setMobileVocabPaddingBottomPx] = useState(0);
 
   const { paragraphs: preparedParagraphs, isPreparing } = usePreparedParagraphs(
     document.paragraphs
@@ -88,6 +98,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
     paragraphs: document.paragraphs,
     enabled: !isPreparing
   });
+
+  pendingPhraseRef.current = pendingPhrase;
 
   const handleSave = useCallback(async () => {
     if (saveInFlightRef.current) {
@@ -341,6 +353,124 @@ export default function ReaderView({ document }: ReaderViewProps) {
     handleExplainPhraseRef.current();
   }, []);
 
+  const handleCloseVocabulary = useCallback(() => {
+    fetchAbortRef.current?.abort();
+    clearPending();
+    clearBrowserSelection();
+    selectedHighlightKeyRef.current = null;
+    setSelection(null);
+    setActiveHighlightKey(null);
+    setActivePhraseRange(null);
+  }, [clearPending]);
+
+  const handleCloseVocabularyRef = useRef(handleCloseVocabulary);
+  handleCloseVocabularyRef.current = handleCloseVocabulary;
+
+  const clearPendingRefForDismiss = useRef(clearPending);
+  clearPendingRefForDismiss.current = clearPending;
+
+  const handleReaderPointerUp = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.pointerType === "mouse" && event.button !== 0) {
+        return;
+      }
+
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (isReaderProtectedTarget(target)) {
+        return;
+      }
+
+      const article = articleRef.current;
+      if (!article?.contains(target)) {
+        return;
+      }
+
+      // Let phrase selection sync finish before dismissing.
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          const root = articleRef.current;
+          if (!root) {
+            return;
+          }
+
+          if (hasActiveTextSelectionIn(root)) {
+            return;
+          }
+
+          const resolved = resolvePhraseSelection({
+            articleRoot: root,
+            paragraphs: document.paragraphs
+          });
+
+          if (resolved) {
+            return;
+          }
+
+          const hadPhrasePending = pendingPhraseRef.current !== null;
+          const hadVocabulary =
+            selectionRef.current !== null ||
+            selectedHighlightKeyRef.current !== null;
+
+          if (!hadPhrasePending && !hadVocabulary) {
+            return;
+          }
+
+          handleCloseVocabularyRef.current();
+        });
+      });
+    },
+    [document.paragraphs]
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsLgUp(mql.matches);
+    update();
+
+    // Safari fallback (older MediaQueryList API)
+    const withAddEventListener = (mql as unknown as { addEventListener: Function });
+    if (typeof (withAddEventListener as any).addEventListener === "function") {
+      mql.addEventListener("change", update);
+      return () => mql.removeEventListener("change", update);
+    }
+
+    (mql as unknown as { addListener: (cb: () => void) => void; removeListener: (cb: () => void) => void }).addListener(
+      update
+    );
+    return () =>
+      (mql as unknown as {
+        addListener: (cb: () => void) => void;
+        removeListener: (cb: () => void) => void;
+      }).removeListener(update);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (isLgUp || !selection) {
+      setMobileVocabPaddingBottomPx(0);
+      return;
+    }
+
+    const el = vocabularyPanelRef.current;
+    if (!el) {
+      setMobileVocabPaddingBottomPx(0);
+      return;
+    }
+
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      setMobileVocabPaddingBottomPx(Math.ceil(rect.height));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isLgUp, Boolean(selection)]);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
@@ -367,12 +497,17 @@ export default function ReaderView({ document }: ReaderViewProps) {
           pendingPhrase={pendingPhrase}
           onWordClick={stableOnWordClick}
           onExplainPhrase={stableOnExplainPhrase}
+          mobileExtraPaddingBottomPx={mobileVocabPaddingBottomPx}
+          onReaderPointerUp={handleReaderPointerUp}
         />
 
         <VocabularyPanel
           selection={selection}
           onSave={handleSave}
           emptyDescription="Select any word from your document to understand it in context."
+          isMobileOpen={Boolean(selection)}
+          onClose={handleCloseVocabulary}
+          panelRef={vocabularyPanelRef}
         />
       </div>
     </div>

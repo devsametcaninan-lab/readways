@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, type RefObject } from "react";
+import { memo, type PointerEvent, type RefObject } from "react";
 import type { ExplainClickPayload } from "@/lib/reader/explain-word-client";
 import type { PhraseHighlightRange } from "@/lib/reader/phrase-selection";
 import type { PhraseSelectionResolved } from "@/lib/reader/phrase-selection";
@@ -8,6 +8,7 @@ import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
 import PhraseExplainButton from "./PhraseExplainButton";
 import ReaderArticle from "./ReaderArticle";
 import ReaderPreparingOverlay from "./ReaderPreparingOverlay";
+import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
 import { readerColumnClass, readerTitleClass } from "./reader-typography";
 
 export type ReaderDocumentColumnProps = {
@@ -20,6 +21,9 @@ export type ReaderDocumentColumnProps = {
   pendingPhrase: PhraseSelectionResolved | null;
   onWordClick: (payload: ExplainClickPayload) => void;
   onExplainPhrase: () => void;
+  /** Mobile-only: adds extra bottom padding so the vocabulary bottom sheet doesn't cover reading text. */
+  mobileExtraPaddingBottomPx?: number;
+  onReaderPointerUp?: (event: PointerEvent<HTMLDivElement>) => void;
 };
 
 function ReaderDocumentColumn({
@@ -31,10 +35,21 @@ function ReaderDocumentColumn({
   activePhraseRange,
   pendingPhrase,
   onWordClick,
-  onExplainPhrase
+  onExplainPhrase,
+  mobileExtraPaddingBottomPx,
+  onReaderPointerUp
 }: ReaderDocumentColumnProps) {
   return (
-    <div className={readerColumnClass}>
+    <div
+      className={readerColumnClass}
+      {...{ [READER_INTERACTION.column]: "" }}
+      onPointerUp={onReaderPointerUp}
+      style={
+        mobileExtraPaddingBottomPx
+          ? { paddingBottom: mobileExtraPaddingBottomPx }
+          : undefined
+      }
+    >
       <h1 className={readerTitleClass}>{title}</h1>
 
       {isPreparing ? (
@@ -68,6 +83,9 @@ function readerDocumentColumnPropsEqual(
   if (prev.onWordClick !== next.onWordClick) return false;
   if (prev.onExplainPhrase !== next.onExplainPhrase) return false;
   if (prev.articleRef !== next.articleRef) return false;
+  if (prev.mobileExtraPaddingBottomPx !== next.mobileExtraPaddingBottomPx)
+    return false;
+  if (prev.onReaderPointerUp !== next.onReaderPointerUp) return false;
 
   const prevPhrase = prev.pendingPhrase;
   const nextPhrase = next.pendingPhrase;

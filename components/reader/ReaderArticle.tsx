@@ -4,6 +4,7 @@ import { memo, type RefObject } from "react";
 import type { ExplainClickPayload } from "@/lib/reader/explain-word-client";
 import type { PhraseHighlightRange } from "@/lib/reader/phrase-selection";
 import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
+import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
 import { readerArticleClass } from "./reader-typography";
 import SelectableParagraph from "./SelectableParagraph";
 
@@ -23,7 +24,11 @@ function ReaderArticle({
   onWordClick
 }: ReaderArticleProps) {
   return (
-    <article ref={articleRef} className={readerArticleClass}>
+    <article
+      ref={articleRef}
+      className={readerArticleClass}
+      {...{ [READER_INTERACTION.article]: "" }}
+    >
       {paragraphs.map((paragraph) => (
         <SelectableParagraph
           key={paragraph.index}

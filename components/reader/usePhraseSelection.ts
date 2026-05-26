@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import {
   resolvePhraseSelection,
   type PhraseSelectionResolved
@@ -13,6 +13,7 @@ export function usePhraseSelection(params: {
 }) {
   const { articleRef, paragraphs, enabled } = params;
   const [pending, setPending] = useState<PhraseSelectionResolved | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   const clearPending = useCallback(() => {
     setPending(null);
@@ -59,12 +60,25 @@ export function usePhraseSelection(params: {
       return;
     }
 
-    const onSelectionChange = () => {
-      syncFromSelection();
+    const scheduleSync = () => {
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
+
+      rafRef.current = window.requestAnimationFrame(() => {
+        rafRef.current = null;
+        syncFromSelection();
+      });
     };
 
-    const onMouseUp = () => {
-      window.requestAnimationFrame(syncFromSelection);
+    const onSelectionChange = () => {
+      scheduleSync();
+    };
+
+    const onPointerUp = () => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(syncFromSelection);
+      });
     };
 
     const onKeyUp = () => {
@@ -72,13 +86,22 @@ export function usePhraseSelection(params: {
     };
 
     document.addEventListener("selectionchange", onSelectionChange);
-    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("mouseup", onPointerUp);
     document.addEventListener("keyup", onKeyUp);
+    document.addEventListener("touchend", onPointerUp, { passive: true });
+    document.addEventListener("touchcancel", onPointerUp, { passive: true });
 
     return () => {
       document.removeEventListener("selectionchange", onSelectionChange);
-      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("mouseup", onPointerUp);
       document.removeEventListener("keyup", onKeyUp);
+      document.removeEventListener("touchend", onPointerUp);
+      document.removeEventListener("touchcancel", onPointerUp);
+
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
     };
   }, [enabled, syncFromSelection]);
 

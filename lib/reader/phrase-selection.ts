@@ -136,7 +136,14 @@ export function resolvePhraseSelection(params: {
 
   const paragraphText = paragraphs[paragraphIndex] ?? "";
   const sentence = extractSentence(paragraphText, start);
-  const rect = range.getBoundingClientRect();
+  const rawRect = range.getBoundingClientRect();
+  // Rounding reduces selection jitter on mobile (prevents button flicker).
+  const rect = new DOMRect(
+    Math.round(rawRect.left),
+    Math.round(rawRect.top),
+    Math.round(rawRect.width),
+    Math.round(rawRect.height)
+  );
 
   if (rect.width === 0 && rect.height === 0) {
     return null;

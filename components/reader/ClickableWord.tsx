@@ -1,6 +1,7 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { isPointerTap, READER_INTERACTION } from "@/lib/reader/reader-interaction";
 import type { WordToken } from "@/lib/reader/text-tokens";
 import { wordHighlightClass } from "./word-highlight";
 
@@ -11,18 +12,44 @@ type ClickableWordProps = {
   onActivate: (token: WordToken) => void;
 };
 
+function hasNonCollapsedTextSelection(): boolean {
+  const selection = window.getSelection();
+  return Boolean(selection && !selection.isCollapsed && selection.toString().trim());
+}
+
 function ClickableWord({
   token,
   isWordActive,
   isPhraseActive,
   onActivate
 }: ClickableWordProps) {
-  const handleClick = useCallback(() => {
-    onActivate(token);
-  }, [onActivate, token]);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = useCallback((event: PointerEvent<HTMLSpanElement>) => {
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+  }, []);
+
+  const handlePointerUp = useCallback(
+    (event: PointerEvent<HTMLSpanElement>) => {
+      const start = pointerStartRef.current;
+      pointerStartRef.current = null;
+
+      if (!isPointerTap(start, { x: event.clientX, y: event.clientY })) {
+        return;
+      }
+
+      if (hasNonCollapsedTextSelection()) {
+        return;
+      }
+
+      event.stopPropagation();
+      onActivate(token);
+    },
+    [onActivate, token]
+  );
 
   const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
+    (event: KeyboardEvent<HTMLSpanElement>) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         onActivate(token);
@@ -40,7 +67,9 @@ function ClickableWord({
     <span
       role="button"
       tabIndex={0}
-      onClick={handleClick}
+      {...{ [READER_INTERACTION.word]: "" }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       onKeyDown={handleKeyDown}
       className={className}
     >

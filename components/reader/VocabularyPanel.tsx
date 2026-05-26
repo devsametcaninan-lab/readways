@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, type RefObject } from "react";
 import type { PanelVocabularySelection } from "@/lib/reader/types";
 import Spinner from "@/components/feedback/Spinner";
 import SuccessCheck from "@/components/feedback/SuccessCheck";
@@ -9,10 +9,17 @@ import {
   PronunciationSkeleton
 } from "./ExplanationSkeleton";
 import UpgradeCta from "@/components/billing/UpgradeCta";
+import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
 
 type VocabularyPanelProps = {
   selection: PanelVocabularySelection | null;
   onSave: () => void;
+  /** When false on mobile, the panel will be hidden as a bottom-sheet. */
+  isMobileOpen?: boolean;
+  /** Mobile-only close action. */
+  onClose?: () => void;
+  /** Used for mobile layout measurement (safe content padding). */
+  panelRef?: RefObject<HTMLElement | null>;
   emptyTitle?: string;
   emptyDescription?: string;
 };
@@ -43,9 +50,13 @@ const EXPLANATION_TEXT_MIN_HEIGHT = "min-h-[4.25rem]";
 function VocabularyPanel({
   selection,
   onSave,
+  isMobileOpen,
+  onClose,
+  panelRef,
   emptyTitle = "Select a word",
   emptyDescription = "Select any word from your document to understand it in context."
 }: VocabularyPanelProps) {
+  const mobileOpen = isMobileOpen ?? Boolean(selection);
   const isLoading = selection?.status === "loading";
   const isError = selection?.status === "error";
   const isReady = selection?.status === "ready";
@@ -69,12 +80,38 @@ function VocabularyPanel({
     : "empty";
 
   return (
-    <aside className="flex w-full shrink-0 flex-col border-t border-white/[0.1] bg-[#0e0f14] lg:w-[320px] lg:border-l lg:border-t-0">
-      <div className="border-b border-white/[0.1] px-5 py-3.5">
-        <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">Vocabulary</p>
+    <aside
+      ref={panelRef}
+      {...{ [READER_INTERACTION.vocabulary]: "" }}
+      className={[
+        "flex w-full shrink-0 flex-col overflow-hidden border-t border-white/[0.1] bg-[#0e0f14]",
+        "fixed left-0 right-0 bottom-0 z-40 max-h-[70vh] rounded-t-2xl shadow-[0_-18px_60px_rgba(0,0,0,0.6)]",
+        "transition-transform duration-200 ease-out",
+        mobileOpen ? "translate-y-0 pointer-events-auto" : "translate-y-full pointer-events-none",
+        "lg:static lg:translate-y-0 lg:pointer-events-auto lg:max-h-none lg:rounded-none lg:shadow-none lg:flex lg:w-[320px] lg:border-l lg:border-t-0",
+      ].join(" ")}
+    >
+      <div className="lg:hidden px-5 pt-2 pb-1">
+        <div className="mx-auto h-1.5 w-12 rounded-full bg-white/[0.15]" />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 md:p-6">
+      <div className="border-b border-white/[0.1] px-5 py-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">Vocabulary</p>
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.10] bg-white/[0.03] text-zinc-300 transition hover:bg-white/[0.06] lg:hidden"
+              aria-label="Close vocabulary panel"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
         {!selection ? (
           <div className="rounded-xl border border-white/[0.1] bg-[#12141d] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             <p className="text-base font-medium text-zinc-100">{emptyTitle}</p>
@@ -202,7 +239,7 @@ function VocabularyPanel({
               disabled={!canSave}
               title={saveTitle}
               onClick={onSave}
-              className={`mt-7 flex w-full items-center justify-center gap-2 rounded-md border py-3 text-sm font-medium transition-all duration-200 ${
+              className={`mt-7 flex min-h-[44px] w-full select-none items-center justify-center gap-2 rounded-md border py-3 text-sm font-medium active:scale-[0.99] transition-all duration-200 ${
                 selection.saveState === "saved" || selection.saveState === "already_saved"
                   ? "cursor-default border-white/[0.12] bg-white/[0.06] text-zinc-400"
                   : canSave
