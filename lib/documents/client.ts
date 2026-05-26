@@ -129,6 +129,36 @@ export async function listUserDocuments(limit?: number): Promise<DocumentListIte
   return (data as DocumentRecord[]).map(toDocumentListItem);
 }
 
+export type DeleteDocumentResponse = {
+  ok: true;
+  storageWarning?: string;
+};
+
+async function parseApiErrorMessage(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { error?: string };
+    if (body.error) {
+      return body.error;
+    }
+  } catch {
+    // ignore
+  }
+
+  return "Could not delete document. Please try again.";
+}
+
+export async function deleteDocument(documentId: string): Promise<DeleteDocumentResponse> {
+  const response = await fetch(`/api/documents/${documentId}`, {
+    method: "DELETE"
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiErrorMessage(response));
+  }
+
+  return (await response.json()) as DeleteDocumentResponse;
+}
+
 export async function getDocumentStatus(
   documentId: string
 ): Promise<DocumentStatus | null> {

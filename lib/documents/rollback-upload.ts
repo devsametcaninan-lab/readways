@@ -14,7 +14,7 @@ export async function rollbackProcessingDocument(params: {
   const { documentId, storagePath } = params;
 
   if (storagePath) {
-    await removeDocumentFromStorage(supabase, storagePath).catch(() => undefined);
+    await removeDocumentFromStorage(supabase, storagePath);
   }
 
   await supabase.from("documents").delete().eq("id", documentId);

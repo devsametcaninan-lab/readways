@@ -93,13 +93,25 @@ export async function uploadDocumentPdfToStorage(params: {
   return { storagePath, originalFileName };
 }
 
+export type RemoveDocumentFromStorageResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
 export async function removeDocumentFromStorage(
   supabase: SupabaseClient,
   storagePath: string
-): Promise<void> {
+): Promise<RemoveDocumentFromStorageResult> {
   if (!storagePath.trim()) {
-    return;
+    return { ok: true };
   }
 
-  await supabase.storage.from(DOCUMENTS_STORAGE_BUCKET).remove([storagePath]);
+  const { error } = await supabase.storage
+    .from(DOCUMENTS_STORAGE_BUCKET)
+    .remove([storagePath]);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  return { ok: true };
 }

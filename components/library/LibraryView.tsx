@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useMemo, useState } from "react";
 import AppStateCard from "@/components/app/AppStateCard";
 import { appText } from "@/components/app/app-typography";
 import LibraryFirstUpload from "@/components/library/LibraryFirstUpload";
@@ -10,6 +11,18 @@ import DocumentCard from "./DocumentCard";
 
 export default function LibraryView() {
   const { documents, loading, error, reload } = useUserDocuments();
+  const [removedIds, setRemovedIds] = useState<string[]>([]);
+
+  const handleDocumentDeleted = useCallback((documentId: string) => {
+    setRemovedIds((current) =>
+      current.includes(documentId) ? current : [...current, documentId]
+    );
+  }, []);
+
+  const visibleDocuments = useMemo(
+    () => documents.filter((doc) => !removedIds.includes(doc.id)),
+    [documents, removedIds]
+  );
 
   return (
     <div className="p-6 md:p-8 lg:p-10">
@@ -40,12 +53,16 @@ export default function LibraryView() {
           description="Check your connection and try again. Your documents are still safe."
           action={{ label: "Try again", onClick: reload }}
         />
-      ) : documents.length > 0 ? (
+      ) : visibleDocuments.length > 0 ? (
         <>
           <p className={`mb-4 ${appText.label}`}>Recent documents</p>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {documents.map((doc) => (
-              <DocumentCard key={doc.id} document={doc} />
+            {visibleDocuments.map((doc) => (
+              <DocumentCard
+                key={doc.id}
+                document={doc}
+                onDeleted={handleDocumentDeleted}
+              />
             ))}
           </div>
         </>
