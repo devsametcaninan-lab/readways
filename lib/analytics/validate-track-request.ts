@@ -17,6 +17,9 @@ const CLIENT_ALLOWED_EVENTS = new Set<AnalyticsEventName>([
   "document_processing_ready",
   "document_processing_failed",
   "document_needs_ocr",
+  "document_job_created",
+  "document_job_completed",
+  "document_job_failed",
   "review_completed"
 ]);
 

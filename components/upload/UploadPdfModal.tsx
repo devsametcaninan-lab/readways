@@ -21,7 +21,7 @@ import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import type { ExtractProgress } from "@/lib/pdf/extract-pdf-text";
 import { isPdfUserError, PDF_ERROR_MESSAGES } from "@/lib/pdf/errors";
 import { validatePdfFileBasics } from "@/lib/pdf/validate-pdf-file";
-import { processPdfDocumentForDocument } from "@/lib/documents/processing/process-pdf-document";
+import { runPdfExtractionWithJob } from "@/lib/documents/processing/pdf-extraction-with-job";
 
 type UploadState = "empty" | "selected" | "working" | "ready";
 
@@ -186,7 +186,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         }
       });
 
-      const outcome = await processPdfDocumentForDocument({
+      const { outcome } = await runPdfExtractionWithJob({
         file,
         documentId: pendingDocumentId,
         storagePath: stored.storagePath,

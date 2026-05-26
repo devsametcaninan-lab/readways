@@ -103,6 +103,63 @@ export type Database = {
           }
         ];
       };
+      document_jobs: {
+        Row: {
+          id: string;
+          user_id: string;
+          document_id: string;
+          job_type: "pdf_extraction" | "ocr" | "cleanup";
+          status: "pending" | "processing" | "completed" | "failed";
+          attempts: number;
+          error_message: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          document_id: string;
+          job_type: "pdf_extraction" | "ocr" | "cleanup";
+          status?: "pending" | "processing" | "completed" | "failed";
+          attempts?: number;
+          error_message?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          document_id?: string;
+          job_type?: "pdf_extraction" | "ocr" | "cleanup";
+          status?: "pending" | "processing" | "completed" | "failed";
+          attempts?: number;
+          error_message?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_jobs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "document_jobs_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "documents";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       word_explanations: {
         Row: {
           id: string;

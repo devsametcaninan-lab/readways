@@ -11,6 +11,21 @@ export const DOCUMENT_STATUS_VALUES = [
 ] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUS_VALUES)[number];
 
+export const DOCUMENT_JOB_TYPE_VALUES = [
+  "pdf_extraction",
+  "ocr",
+  "cleanup"
+] as const;
+export type DocumentJobType = (typeof DOCUMENT_JOB_TYPE_VALUES)[number];
+
+export const DOCUMENT_JOB_STATUS_VALUES = [
+  "pending",
+  "processing",
+  "completed",
+  "failed"
+] as const;
+export type DocumentJobStatus = (typeof DOCUMENT_JOB_STATUS_VALUES)[number];
+
 export const SAVED_WORD_STATUS_VALUES = ["learning", "reviewing", "mastered"] as const;
 export type SavedWordStatus = (typeof SAVED_WORD_STATUS_VALUES)[number];
 

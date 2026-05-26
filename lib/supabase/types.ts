@@ -1,5 +1,7 @@
 import type { Database } from "./database.types";
 import type {
+  DocumentJobStatus,
+  DocumentJobType,
   DocumentStatus,
   Plan,
   ReviewRating,
@@ -7,7 +9,14 @@ import type {
 } from "./schema";
 
 export type { Database };
-export type { DocumentStatus, Plan, ReviewRating, SavedWordStatus };
+export type {
+  DocumentJobStatus,
+  DocumentJobType,
+  DocumentStatus,
+  Plan,
+  ReviewRating,
+  SavedWordStatus
+};
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
@@ -16,6 +25,10 @@ export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 export type Document = Database["public"]["Tables"]["documents"]["Row"];
 export type DocumentInsert = Database["public"]["Tables"]["documents"]["Insert"];
 export type DocumentUpdate = Database["public"]["Tables"]["documents"]["Update"];
+
+export type DocumentJob = Database["public"]["Tables"]["document_jobs"]["Row"];
+export type DocumentJobInsert = Database["public"]["Tables"]["document_jobs"]["Insert"];
+export type DocumentJobUpdate = Database["public"]["Tables"]["document_jobs"]["Update"];
 
 export type WordExplanation = Database["public"]["Tables"]["word_explanations"]["Row"];
 export type WordExplanationInsert = Database["public"]["Tables"]["word_explanations"]["Insert"];
