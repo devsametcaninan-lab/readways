@@ -1,14 +1,14 @@
 "use client";
 
-import {
-  MAX_PDF_BYTES,
-  MAX_PDF_PAGES,
-  MIN_EXTRACTED_TEXT_LENGTH
-} from "./constants";
-import { PdfUserError } from "./errors";
+import { validatePdfFileBasics, validatePdfFileSignature, validatePdfPageCount } from "./validate-pdf-file";
+import { textItemsToPageText } from "./extract-page-text";
+import { normalizeExtractedPdfText } from "./normalize-extracted";
+import { pdfError, PdfUserError } from "./errors";
+
+export type ExtractPhase = "validating" | "loading" | "extracting" | "cleaning";
 
 export type ExtractProgress = {
-  phase: "loading" | "extracting";
+  phase: ExtractPhase;
   currentPage: number;
   totalPages: number;
 };
@@ -36,70 +36,39 @@ function mapPdfLoadError(error: unknown): PdfUserError {
       ? String((error as { name: string }).name)
       : "";
   const message = error instanceof Error ? error.message : String(error);
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? Number((error as { code: number }).code)
+      : undefined;
 
-  if (name === "PasswordException" || /password/i.test(message)) {
-    return new PdfUserError(
-      "This PDF is encrypted. Please upload an unlocked PDF.",
-      "ENCRYPTED"
-    );
+  if (
+    name === "PasswordException" ||
+    code === 1 ||
+    /password|encrypted|needs password/i.test(message)
+  ) {
+    return pdfError("ENCRYPTED");
   }
 
   if (
     name === "InvalidPDFException" ||
     name === "MissingPDFException" ||
-    /invalid|corrupt|format/i.test(message)
+    name === "UnexpectedResponseException" ||
+    /invalid pdf|illegal character|corrupt|not a pdf|format error/i.test(message)
   ) {
-    return new PdfUserError(
-      "This PDF could not be read. It may be corrupted or not a valid PDF.",
-      "CORRUPTED"
-    );
+    return pdfError("CORRUPTED");
   }
 
-  return new PdfUserError(
-    "Something went wrong while reading your PDF. Please try another file.",
-    "UNKNOWN"
-  );
-}
-
-function textToParagraphs(text: string): string[] {
-  const byBreak = text
-    .split(/\n{2,}/)
-    .map((block) => block.replace(/\s+/g, " ").trim())
-    .filter((block) => block.length > 0);
-
-  if (byBreak.length > 1) return byBreak;
-
-  const normalized = text.replace(/\s+/g, " ").trim();
-  if (!normalized) return [];
-
-  const sentences = normalized.split(/(?<=[.!?])\s+/).filter(Boolean);
-  if (sentences.length <= 3) return [normalized];
-
-  const paragraphs: string[] = [];
-  let chunk = "";
-
-  for (const sentence of sentences) {
-    chunk = chunk ? `${chunk} ${sentence}` : sentence;
-    if (chunk.split(/\s+/).length >= 55) {
-      paragraphs.push(chunk);
-      chunk = "";
-    }
-  }
-
-  if (chunk) paragraphs.push(chunk);
-  return paragraphs.length > 0 ? paragraphs : [normalized];
+  return pdfError("UNKNOWN");
 }
 
 export async function extractTextFromPdfFile(
   file: File,
   onProgress?: (progress: ExtractProgress) => void
 ): Promise<ExtractResult> {
-  if (file.size > MAX_PDF_BYTES) {
-    throw new PdfUserError(
-      "This PDF exceeds the 10 MB limit. Please upload a smaller file.",
-      "TOO_LARGE"
-    );
-  }
+  onProgress?.({ phase: "validating", currentPage: 0, totalPages: 0 });
+
+  validatePdfFileBasics(file);
+  await validatePdfFileSignature(file);
 
   const pdfjs = await getPdfJs();
   const data = new Uint8Array(await file.arrayBuffer());
@@ -108,55 +77,44 @@ export async function extractTextFromPdfFile(
 
   let pdf;
   try {
-    const task = pdfjs.getDocument({ data, useSystemFonts: true });
+    const task = pdfjs.getDocument({
+      data,
+      useSystemFonts: true,
+      stopAtErrors: false
+    });
     pdf = await task.promise;
   } catch (error) {
     throw mapPdfLoadError(error);
   }
 
   const pageCount = pdf.numPages;
-
-  if (pageCount > MAX_PDF_PAGES) {
-    throw new PdfUserError(
-      "This PDF is too long for the current version. Please upload a document up to 30 pages.",
-      "TOO_MANY_PAGES"
-    );
-  }
+  validatePdfPageCount(pageCount);
 
   const pageTexts: string[] = [];
 
   for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
-    onProgress?.({ phase: "extracting", currentPage: pageNumber, totalPages: pageCount });
+    onProgress?.({
+      phase: "extracting",
+      currentPage: pageNumber,
+      totalPages: pageCount
+    });
 
-    const page = await pdf.getPage(pageNumber);
-    const content = await page.getTextContent();
-    const pageText = content.items
-      .map((item) => ("str" in item && typeof item.str === "string" ? item.str : ""))
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    pageTexts.push(pageText);
+    try {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      pageTexts.push(textItemsToPageText(content.items));
+    } catch {
+      pageTexts.push("");
+    }
   }
 
-  const fullText = pageTexts.join("\n\n");
-  const textLength = fullText.replace(/\s/g, "").length;
+  onProgress?.({ phase: "cleaning", currentPage: pageCount, totalPages: pageCount });
 
-  if (textLength < MIN_EXTRACTED_TEXT_LENGTH) {
-    throw new PdfUserError(
-      "This PDF looks like a scanned or image-based document. OCR support is coming soon.",
-      "SCANNED"
-    );
-  }
+  const normalized = normalizeExtractedPdfText(pageTexts, pageCount);
 
-  const paragraphs = textToParagraphs(fullText);
-
-  if (paragraphs.length === 0) {
-    throw new PdfUserError(
-      "This PDF looks like a scanned or image-based document. OCR support is coming soon.",
-      "SCANNED"
-    );
-  }
-
-  return { pageCount, paragraphs, textLength };
+  return {
+    pageCount: normalized.pageCount,
+    paragraphs: normalized.paragraphs,
+    textLength: normalized.textLength
+  };
 }

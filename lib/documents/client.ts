@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { DocumentStatus } from "@/lib/supabase/schema";
 import { toDocumentListItem } from "./mappers";
 import type { DocumentListItem, DocumentRecord } from "./types";
+import { encodeDocumentFailureReason } from "./failure-reason";
+import type { PdfErrorCode } from "@/lib/pdf/errors";
 import { paragraphsToExtractedText } from "./text";
 
 const LIST_COLUMNS =
@@ -67,10 +69,19 @@ export async function markDocumentReady(
   }
 }
 
-export async function markDocumentFailed(documentId: string): Promise<void> {
+export async function markDocumentFailed(
+  documentId: string,
+  errorCode?: PdfErrorCode
+): Promise<void> {
   const supabase = createClient();
 
-  await supabase.from("documents").update({ status: "failed" }).eq("id", documentId);
+  await supabase
+    .from("documents")
+    .update({
+      status: "failed",
+      extracted_text: errorCode ? encodeDocumentFailureReason(errorCode) : null
+    })
+    .eq("id", documentId);
 }
 
 export async function listUserDocuments(limit?: number): Promise<DocumentListItem[]> {

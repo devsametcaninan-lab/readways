@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import type { DocumentStatus } from "@/lib/supabase/schema";
+import { failureMessageForCode, parseDocumentFailureReason } from "./failure-reason";
 import { toReaderDocument } from "./mappers";
 import type { DocumentRecord, ReaderDocument } from "./types";
+import type { PdfErrorCode } from "@/lib/pdf/errors";
 
 const READER_COLUMNS =
   "id, title, file_name, file_size, page_count, extracted_text, status, created_at, updated_at, user_id";
@@ -9,7 +11,7 @@ const READER_COLUMNS =
 export type ReaderDocumentResult =
   | { kind: "found"; document: ReaderDocument }
   | { kind: "not_found" }
-  | { kind: "unavailable"; status: DocumentStatus };
+  | { kind: "unavailable"; status: DocumentStatus; failureCode: PdfErrorCode | null };
 
 export async function getReaderDocumentForUser(
   documentId: string
@@ -41,12 +43,20 @@ export async function getReaderDocumentForUser(
   }
 
   if (row.status !== "ready") {
-    return { kind: "unavailable", status: row.status };
+    return {
+      kind: "unavailable",
+      status: row.status,
+      failureCode: parseDocumentFailureReason(row.extracted_text)
+    };
   }
 
   const document = toReaderDocument(row);
   if (!document) {
-    return { kind: "unavailable", status: "failed" };
+    return {
+      kind: "unavailable",
+      status: "failed",
+      failureCode: parseDocumentFailureReason(row.extracted_text)
+    };
   }
 
   return { kind: "found", document };

@@ -14,8 +14,9 @@ import { formatFileSize } from "@/lib/format";
 import { MAX_PDF_BYTES, MAX_PDF_PAGES } from "@/lib/pdf/constants";
 import { extractTextFromPdfFile, type ExtractProgress } from "@/lib/pdf/extract-pdf-text";
 import { isPdfUserError } from "@/lib/pdf/errors";
+import { validatePdfFileBasics } from "@/lib/pdf/validate-pdf-file";
 
-type UploadState = "empty" | "selected" | "extracting" | "ready";
+type UploadState = "empty" | "selected" | "working" | "ready";
 
 type UploadPdfModalProps = {
   open: boolean;
@@ -27,14 +28,38 @@ function isPdfFile(file: File) {
 }
 
 function progressPercent(progress: ExtractProgress): number {
-  if (progress.phase === "loading") return 8;
-  if (progress.totalPages === 0) return 0;
-  return Math.round((progress.currentPage / progress.totalPages) * 100);
+  switch (progress.phase) {
+    case "validating":
+      return 6;
+    case "loading":
+      return 14;
+    case "extracting":
+      if (progress.totalPages === 0) {
+        return 20;
+      }
+      return 20 + Math.round((progress.currentPage / progress.totalPages) * 68);
+    case "cleaning":
+      return 96;
+    default:
+      return 0;
+  }
 }
 
 function progressLabel(progress: ExtractProgress): string {
-  if (progress.phase === "loading") return "Opening PDF…";
-  return `Extracting page ${progress.currentPage} of ${progress.totalPages}…`;
+  switch (progress.phase) {
+    case "validating":
+      return "Validating PDF…";
+    case "loading":
+      return "Opening PDF…";
+    case "extracting":
+      return progress.totalPages > 0
+        ? `Extracting text · page ${progress.currentPage} of ${progress.totalPages}`
+        : "Extracting text…";
+    case "cleaning":
+      return "Cleaning document…";
+    default:
+      return "Preparing document…";
+  }
 }
 
 export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
@@ -45,7 +70,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const [state, setState] = useState<UploadState>("empty");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
-  const [extractStatus, setExtractStatus] = useState("Extracting text from your PDF…");
+  const [statusLabel, setStatusLabel] = useState("Uploading…");
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -55,7 +80,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setState("empty");
     setFile(null);
     setProgress(0);
-    setExtractStatus("Extracting text from your PDF…");
+    setStatusLabel("Uploading…");
     setDocumentId(null);
     setPageCount(null);
     setIsDragging(false);
@@ -78,7 +103,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && state !== "extracting") onClose();
+      if (e.key === "Escape" && state !== "working") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -86,17 +111,24 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
   const handleFile = (next: File) => {
     if (!isPdfFile(next)) {
-      setError("Only PDF files are supported.");
-      toast.error("Only PDF files are supported.");
+      const message = "Only PDF files are supported.";
+      setError(message);
+      toast.error(message);
       return;
     }
-    if (next.size > MAX_PDF_BYTES) {
-      setError("This PDF exceeds the 10 MB limit. Please upload a smaller file.");
-      toast.error("This PDF exceeds the 10 MB limit.");
-      setFile(null);
-      setState("empty");
-      return;
+
+    try {
+      validatePdfFileBasics(next);
+    } catch (err) {
+      if (isPdfUserError(err)) {
+        setError(err.message);
+        toast.error(err.message);
+        setFile(null);
+        setState("empty");
+        return;
+      }
     }
+
     setError(null);
     setFile(next);
     setState("selected");
@@ -120,9 +152,9 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const startExtraction = async () => {
     if (!file) return;
 
-    setState("extracting");
+    setState("working");
     setProgress(0);
-    setExtractStatus("Extracting text from your PDF…");
+    setStatusLabel("Uploading…");
     setError(null);
 
     let pendingDocumentId: string | null = null;
@@ -130,12 +162,15 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     try {
       pendingDocumentId = await createProcessingDocument(file);
       setDocumentId(pendingDocumentId);
+      setProgress(8);
+      setStatusLabel("Uploading…");
 
       const result = await extractTextFromPdfFile(file, (extractProgress) => {
         setProgress(progressPercent(extractProgress));
-        setExtractStatus(progressLabel(extractProgress));
+        setStatusLabel(progressLabel(extractProgress));
       });
 
+      setStatusLabel("Ready to read");
       await markDocumentReady(pendingDocumentId, {
         pageCount: result.pageCount,
         paragraphs: result.paragraphs
@@ -147,7 +182,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       setState("ready");
     } catch (err) {
       if (pendingDocumentId) {
-        await markDocumentFailed(pendingDocumentId).catch(() => undefined);
+        const errorCode = isPdfUserError(err) ? err.code : undefined;
+        await markDocumentFailed(pendingDocumentId, errorCode).catch(() => undefined);
         notifyDocumentsUpdated();
       }
 
@@ -159,8 +195,9 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         setError(err.message);
         toast.error(err.message);
       } else {
-        setError("Something went wrong while extracting text. Please try another PDF.");
-        toast.error("Could not extract PDF text.");
+        const message = "Could not read this PDF. Please try another file.";
+        setError(message);
+        toast.error(message);
       }
     }
   };
@@ -173,7 +210,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
   if (!open) return null;
 
-  const isBusy = state === "extracting";
+  const isBusy = state === "working";
 
   return (
     <div
@@ -221,7 +258,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
             <p className="mt-4 text-base font-medium text-white">Ready to read</p>
             <p className="mt-2 text-sm text-zinc-400">
               {file?.name}
-              {pageCount != null ? ` · ${pageCount} page${pageCount === 1 ? "" : "s"} extracted` : ""}
+              {pageCount != null ? ` · ${pageCount} page${pageCount === 1 ? "" : "s"} prepared` : ""}
             </p>
             <button
               type="button"
@@ -259,7 +296,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                 {state === "empty" ? "Drag and drop your PDF here" : "Drop a different PDF to replace"}
               </p>
               <p className="mt-1 text-[12px] text-zinc-500">
-                PDF files only · Max 10 MB · Up to {MAX_PDF_PAGES} pages
+                PDF files only · Max {formatFileSize(MAX_PDF_BYTES)} · Up to {MAX_PDF_PAGES} pages
               </p>
               {!isBusy && (
                 <button
@@ -289,14 +326,14 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               </div>
             )}
 
-            {state === "extracting" && (
+            {state === "working" && (
               <div className="mt-5">
                 <p className="mb-2 flex items-center gap-2 text-sm text-zinc-300">
                   <Spinner />
-                  {extractStatus}
+                  {statusLabel}
                 </p>
                 <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
-                  <span>Extracting text from your PDF…</span>
+                  <span>Preparing your document</span>
                   <span>{progress}%</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.1]">

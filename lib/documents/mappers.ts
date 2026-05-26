@@ -1,3 +1,4 @@
+import { failureMessageForCode, parseDocumentFailureReason } from "./failure-reason";
 import { formatRelativeUpdatedAt } from "./format";
 import type { DocumentListItem, DocumentRecord, ReaderDocument } from "./types";
 import { extractedTextToParagraphs } from "./text";
@@ -12,7 +13,11 @@ export function toDocumentListItem(row: DocumentRecord): DocumentListItem {
     updatedAtLabel: formatRelativeUpdatedAt(row.updated_at),
     savedWordsCount: 0,
     status: row.status,
-    pageCount: row.page_count
+    pageCount: row.page_count,
+    failureMessage:
+      row.status === "failed"
+        ? failureMessageForCode(parseDocumentFailureReason(row.extracted_text))
+        : null
   };
 }
 

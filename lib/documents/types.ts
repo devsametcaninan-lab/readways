@@ -23,6 +23,7 @@ export type DocumentListItem = {
   savedWordsCount: number;
   status: DocumentStatus;
   pageCount: number;
+  failureMessage: string | null;
 };
 
 /** Shape consumed by ReaderView for uploaded documents */

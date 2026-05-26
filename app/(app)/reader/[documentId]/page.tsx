@@ -16,7 +16,13 @@ export default async function ReaderDocumentPage({
   }
 
   if (result.kind === "unavailable") {
-    return <ReaderDocumentUnavailable documentId={documentId} status={result.status} />;
+    return (
+      <ReaderDocumentUnavailable
+        documentId={documentId}
+        status={result.status}
+        failureCode={result.failureCode}
+      />
+    );
   }
 
   return <ReaderView document={result.document} />;

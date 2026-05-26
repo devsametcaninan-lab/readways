@@ -45,6 +45,10 @@ export default function DocumentCard({ document: doc }: DocumentCardProps) {
             <span className="text-zinc-600"> · {doc.pageCount} pages</span>
           ) : null}
         </p>
+
+        {doc.status === "failed" && doc.failureMessage ? (
+          <p className="mt-3 text-[12px] leading-relaxed text-zinc-500">{doc.failureMessage}</p>
+        ) : null}
       </div>
 
       <span
