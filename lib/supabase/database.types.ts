@@ -59,7 +59,7 @@ export type Database = {
           storage_path: string | null;
           original_file_name: string | null;
           language: string;
-          status: "processing" | "ready" | "failed";
+          status: "processing" | "ready" | "failed" | "needs_ocr";
           created_at: string;
           updated_at: string;
         };
@@ -74,7 +74,7 @@ export type Database = {
           storage_path?: string | null;
           original_file_name?: string | null;
           language?: string;
-          status?: "processing" | "ready" | "failed";
+          status?: "processing" | "ready" | "failed" | "needs_ocr";
           created_at?: string;
           updated_at?: string;
         };
@@ -89,7 +89,7 @@ export type Database = {
           storage_path?: string | null;
           original_file_name?: string | null;
           language?: string;
-          status?: "processing" | "ready" | "failed";
+          status?: "processing" | "ready" | "failed" | "needs_ocr";
           created_at?: string;
           updated_at?: string;
         };

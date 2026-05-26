@@ -31,7 +31,7 @@ export const PDF_ERROR_MESSAGES: Record<PdfErrorCode, string> = {
   TOO_MUCH_TEXT:
     "This PDF is too large to prepare in the browser. Try a shorter document.",
   SCANNED:
-    "This PDF looks like a scanned or image-based document. OCR support is coming soon.",
+    "This PDF looks scanned. OCR support is coming soon.",
   NO_TEXT: "No readable text found in this PDF. Try a text-based document.",
   ENCRYPTED:
     "This PDF is password-protected. Please upload an unlocked copy.",

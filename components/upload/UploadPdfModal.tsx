@@ -7,7 +7,7 @@ import Spinner from "@/components/feedback/Spinner";
 import {
   createProcessingDocument,
   markDocumentFailed,
-  markDocumentReady
+  markDocumentNeedsOcr
 } from "@/lib/documents/client";
 import { rollbackProcessingDocument } from "@/lib/documents/rollback-upload";
 import {
@@ -18,9 +18,10 @@ import { notifyDocumentsUpdated } from "@/lib/documents/events";
 import { formatFileSize } from "@/lib/format";
 import { MAX_PDF_BYTES, MAX_PDF_PAGES } from "@/lib/pdf/constants";
 import { trackAnalyticsEventClient } from "@/lib/analytics/client";
-import { extractTextFromPdfFile, type ExtractProgress } from "@/lib/pdf/extract-pdf-text";
-import { isPdfUserError } from "@/lib/pdf/errors";
+import type { ExtractProgress } from "@/lib/pdf/extract-pdf-text";
+import { isPdfUserError, PDF_ERROR_MESSAGES } from "@/lib/pdf/errors";
 import { validatePdfFileBasics } from "@/lib/pdf/validate-pdf-file";
+import { processPdfDocumentForDocument } from "@/lib/documents/processing/process-pdf-document";
 
 type UploadState = "empty" | "selected" | "working" | "ready";
 
@@ -185,33 +186,90 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         }
       });
 
-      const result = await extractTextFromPdfFile(file, (extractProgress) => {
-        setProgress(12 + Math.round(progressPercent(extractProgress) * 0.86));
-        setStatusLabel(progressLabel(extractProgress));
-      });
-
-      setStatusLabel("Ready to read");
-      await markDocumentReady(pendingDocumentId, {
-        pageCount: result.pageCount,
-        paragraphs: result.paragraphs,
-        language: result.language,
+      const outcome = await processPdfDocumentForDocument({
+        file,
+        documentId: pendingDocumentId,
         storagePath: stored.storagePath,
-        originalFileName: stored.originalFileName
+        originalFileName: stored.originalFileName,
+        onProgress: (extractProgress) => {
+          setProgress(
+            12 + Math.round(progressPercent(extractProgress) * 0.86)
+          );
+          setStatusLabel(progressLabel(extractProgress));
+        }
       });
 
       notifyDocumentsUpdated();
-      setPageCount(result.pageCount);
+
+      if (outcome.kind === "ready") {
+        setStatusLabel("Ready to read");
+        setPageCount(outcome.pageCount);
+        setProgress(100);
+        setState("ready");
+
+        trackAnalyticsEventClient({
+          eventName: "pdf_uploaded",
+          metadata: {
+            documentId: pendingDocumentId,
+            pageCount: outcome.pageCount,
+            language: outcome.language,
+            textLength: outcome.textLength,
+            stored: true
+          }
+        });
+
+        trackAnalyticsEventClient({
+          eventName: "document_processing_ready",
+          metadata: {
+            documentId: pendingDocumentId,
+            pageCount: outcome.pageCount,
+            language: outcome.language
+          }
+        });
+
+        return;
+      }
+
+      if (outcome.kind === "needs_ocr") {
+        const message = PDF_ERROR_MESSAGES.SCANNED;
+        setState("selected");
+        setProgress(100);
+        setStatusLabel("Needs OCR");
+        setError(message);
+        toast.error(message);
+
+        trackAnalyticsEventClient({
+          eventName: "document_needs_ocr",
+          metadata: {
+            documentId: pendingDocumentId,
+            errorCode: outcome.errorCode
+          }
+        });
+
+        return;
+      }
+
+      const message = PDF_ERROR_MESSAGES[outcome.errorCode];
+      setState("selected");
       setProgress(100);
-      setState("ready");
+      setStatusLabel("Failed to parse");
+      setError(message);
+      toast.error(message);
 
       trackAnalyticsEventClient({
-        eventName: "pdf_uploaded",
+        eventName: "document_processing_failed",
         metadata: {
           documentId: pendingDocumentId,
-          pageCount: result.pageCount,
-          language: result.language,
-          textLength: result.textLength,
-          stored: true
+          errorCode: outcome.errorCode
+        }
+      });
+
+      trackAnalyticsEventClient({
+        eventName: "pdf_parse_failed",
+        metadata: {
+          documentId: pendingDocumentId,
+          errorCode: outcome.errorCode,
+          hadStorage: true
         }
       });
     } catch (err) {
@@ -241,7 +299,33 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
       if (pendingDocumentId) {
         const errorCode = isPdfUserError(err) ? err.code : undefined;
-        await markDocumentFailed(pendingDocumentId, errorCode).catch(() => undefined);
+
+        if (errorCode === "SCANNED" || errorCode === "NO_TEXT") {
+          await markDocumentNeedsOcr(pendingDocumentId, "SCANNED").catch(
+            () => undefined
+          );
+
+          trackAnalyticsEventClient({
+            eventName: "document_needs_ocr",
+            metadata: {
+              documentId: pendingDocumentId,
+              errorCode: errorCode ?? "SCANNED"
+            }
+          });
+        } else {
+          await markDocumentFailed(pendingDocumentId, errorCode).catch(
+            () => undefined
+          );
+
+          trackAnalyticsEventClient({
+            eventName: "document_processing_failed",
+            metadata: {
+              documentId: pendingDocumentId,
+              errorCode: errorCode ?? "UNKNOWN"
+            }
+          });
+        }
+
         notifyDocumentsUpdated();
 
         trackAnalyticsEventClient({
@@ -256,8 +340,12 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
       setState("selected");
       if (isPdfUserError(err)) {
-        setError(err.message);
-        toast.error(err.message);
+        const message =
+          err.code === "SCANNED" || err.code === "NO_TEXT"
+            ? PDF_ERROR_MESSAGES.SCANNED
+            : err.message;
+        setError(message);
+        toast.error(message);
       } else if (err instanceof Error) {
         setError(err.message);
         toast.error(err.message);

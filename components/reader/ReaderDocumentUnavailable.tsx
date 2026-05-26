@@ -14,6 +14,10 @@ const statusCopy: Record<DocumentStatus, { title: string; body: string }> = {
     title: "Document is processing",
     body: "Your PDF is still being prepared. Return to the library and try again in a moment."
   },
+  needs_ocr: {
+    title: "OCR required",
+    body: "This PDF looks scanned. OCR support is coming soon."
+  },
   ready: {
     title: "Document unavailable",
     body: "This document is not ready to open in the reader yet."

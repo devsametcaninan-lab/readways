@@ -4,6 +4,7 @@ import Link from "next/link";
 import AppCard from "@/components/app/AppCard";
 import { appText } from "@/components/app/app-typography";
 import { useUserDocuments } from "@/lib/documents/use-user-documents";
+import type { DocumentListItem } from "@/lib/documents/types";
 
 export default function DashboardRecentDocuments() {
   const { documents, loading, error } = useUserDocuments(3);
@@ -40,6 +41,13 @@ export default function DashboardRecentDocuments() {
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       {documents.map((doc) => {
+        const statusLabel: Record<DocumentListItem["status"], string> = {
+          processing: "Processing",
+          ready: "Ready",
+          needs_ocr: "Needs OCR",
+          failed: "Failed"
+        };
+
         const canRead = doc.status === "ready";
         const href = canRead ? `/reader/${doc.id}` : "/library";
 
@@ -48,7 +56,7 @@ export default function DashboardRecentDocuments() {
             <p className={`truncate ${appText.title}`}>{doc.title}</p>
             <p className={`mt-1.5 ${appText.metaSmall}`}>
               PDF · Updated {doc.updatedAtLabel}
-              {doc.status !== "ready" ? ` · ${doc.status}` : ""}
+              {doc.status !== "ready" ? ` · ${statusLabel[doc.status]}` : ""}
             </p>
             <div className="mt-4">
               <div className={`mb-1.5 flex justify-between ${appText.metaSmall}`}>

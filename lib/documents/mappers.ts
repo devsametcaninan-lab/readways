@@ -16,7 +16,7 @@ export function toDocumentListItem(row: DocumentRecord): DocumentListItem {
     status: row.status,
     pageCount: row.page_count,
     failureMessage:
-      row.status === "failed"
+      row.status === "failed" || row.status === "needs_ocr"
         ? failureMessageForCode(parseDocumentFailureReason(row.extracted_text))
         : null
   };

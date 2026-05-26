@@ -5,6 +5,9 @@ const CLIENT_TRACKABLE_EVENTS = new Set<AnalyticsEventName>([
   "pdf_parse_failed",
   "pdf_storage_uploaded",
   "pdf_storage_failed",
+  "document_processing_ready",
+  "document_processing_failed",
+  "document_needs_ocr",
   "review_completed"
 ]);
 

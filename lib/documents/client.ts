@@ -96,6 +96,18 @@ export async function markDocumentFailed(
     .eq("id", documentId);
 }
 
+export async function markDocumentNeedsOcr(
+  documentId: string,
+  errorCode: PdfErrorCode = "SCANNED"
+): Promise<void> {
+  const supabase = createClient();
+
+  await supabase.from("documents").update({
+    status: "needs_ocr",
+    extracted_text: encodeDocumentFailureReason(errorCode)
+  }).eq("id", documentId);
+}
+
 export async function listUserDocuments(limit?: number): Promise<DocumentListItem[]> {
   const supabase = createClient();
 

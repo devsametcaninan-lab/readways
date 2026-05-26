@@ -10,6 +10,7 @@ type DocumentCardProps = {
 const statusLabel: Record<DocumentListItem["status"], string> = {
   processing: "Processing",
   ready: "Ready",
+  needs_ocr: "Needs OCR",
   failed: "Failed"
 };
 
@@ -46,8 +47,10 @@ export default function DocumentCard({ document: doc }: DocumentCardProps) {
           ) : null}
         </p>
 
-        {doc.status === "failed" && doc.failureMessage ? (
-          <p className="mt-3 text-[12px] leading-relaxed text-zinc-500">{doc.failureMessage}</p>
+        {doc.failureMessage ? (
+          <p className="mt-3 text-[12px] leading-relaxed text-zinc-500">
+            {doc.failureMessage}
+          </p>
         ) : null}
       </div>
 

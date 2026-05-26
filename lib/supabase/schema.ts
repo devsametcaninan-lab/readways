@@ -3,7 +3,12 @@
 export const PLAN_VALUES = ["free", "pro"] as const;
 export type Plan = (typeof PLAN_VALUES)[number];
 
-export const DOCUMENT_STATUS_VALUES = ["processing", "ready", "failed"] as const;
+export const DOCUMENT_STATUS_VALUES = [
+  "processing",
+  "ready",
+  "failed",
+  "needs_ocr"
+] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUS_VALUES)[number];
 
 export const SAVED_WORD_STATUS_VALUES = ["learning", "reviewing", "mastered"] as const;
