@@ -57,10 +57,13 @@ export default function AuthCard({ mode, plan }: AuthCardProps) {
       ) : null}
 
       {!envReady ? (
-        <p className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          Missing Supabase environment variables. Set `NEXT_PUBLIC_SUPABASE_URL` and
-          `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-        </p>
+        <div className="mt-6 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3.5 text-left">
+          <p className="text-sm font-medium text-amber-100/90">Sign-in isn&apos;t configured yet</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-amber-200/80">
+            Authentication needs to be set up on this environment before you can continue with
+            Google.
+          </p>
+        </div>
       ) : null}
 
       <button

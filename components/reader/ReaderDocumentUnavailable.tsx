@@ -1,53 +1,67 @@
-import Link from "next/link";
+import AppStateCard, { AppStatePage } from "@/components/app/AppStateCard";
 import type { DocumentStatus } from "@/lib/supabase/schema";
 import { failureMessageForCode } from "@/lib/documents/failure-reason";
 import type { PdfErrorCode } from "@/lib/pdf/errors";
 
 type ReaderDocumentUnavailableProps = {
-  documentId: string;
   status: DocumentStatus;
   failureCode?: PdfErrorCode | null;
 };
 
-const statusCopy: Record<DocumentStatus, { title: string; body: string }> = {
+type StatusPresentation = {
+  variant: "default" | "error" | "warning" | "info";
+  icon: "processing" | "ocr" | "document";
+  title: string;
+  body: string;
+};
+
+const statusCopy: Record<DocumentStatus, StatusPresentation> = {
   processing: {
-    title: "Document is processing",
-    body: "Your PDF is still being prepared. Return to the library and try again in a moment."
+    variant: "info",
+    icon: "processing",
+    title: "Still preparing your PDF",
+    body: "We're extracting text so you can read and tap words for explanations. Check back in a moment from your library."
   },
   needs_ocr: {
-    title: "OCR required",
-    body: "This PDF looks scanned. OCR support is coming soon."
+    variant: "warning",
+    icon: "ocr",
+    title: "This PDF looks scanned",
+    body: "OCR support is coming soon. For now, try uploading a text-based PDF with selectable text."
   },
   ready: {
-    title: "Document unavailable",
-    body: "This document is not ready to open in the reader yet."
+    variant: "warning",
+    icon: "document",
+    title: "Not ready to open yet",
+    body: "This document isn't available in the reader right now. Return to your library to see its status."
   },
   failed: {
-    title: "Document could not be processed",
-    body: "Text extraction failed for this PDF. Try uploading a text-based PDF again."
+    variant: "error",
+    icon: "document",
+    title: "Couldn't prepare this PDF",
+    body: "Text extraction didn't succeed. Try a different file, or upload a PDF with selectable text."
   }
 };
 
 export default function ReaderDocumentUnavailable({
-  documentId,
   status,
   failureCode = null
 }: ReaderDocumentUnavailableProps) {
   const copy = statusCopy[status];
   const failureMessage = failureMessageForCode(failureCode);
-  const body = status === "failed" && failureMessage ? failureMessage : copy.body;
+  const description =
+    status === "failed" && failureMessage ? failureMessage : copy.body;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-16 text-center">
-      <p className="text-base font-medium text-zinc-200">{copy.title}</p>
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-400">{body}</p>
-      <p className="mt-3 font-mono text-[11px] text-zinc-600">{documentId}</p>
-      <Link
-        href="/library"
-        className="mt-8 rounded-lg border border-accent/30 bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#6D7EFF]"
-      >
-        Back to Library
-      </Link>
-    </div>
+    <AppStatePage>
+      <div className="w-full max-w-md">
+        <AppStateCard
+          variant={copy.variant}
+          icon={copy.icon}
+          title={copy.title}
+          description={description}
+          action={{ label: "Back to Library", href: "/library" }}
+        />
+      </div>
+    </AppStatePage>
   );
 }

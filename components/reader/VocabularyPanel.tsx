@@ -8,6 +8,8 @@ import {
   ExplanationTextSkeleton,
   PronunciationSkeleton
 } from "./ExplanationSkeleton";
+import AppStateCard from "@/components/app/AppStateCard";
+import AppStateInline from "@/components/app/AppStateInline";
 import UpgradeCta from "@/components/billing/UpgradeCta";
 import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
 
@@ -113,10 +115,13 @@ function VocabularyPanel({
 
       <div className="flex-1 overflow-y-auto p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
         {!selection ? (
-          <div className="rounded-xl border border-white/[0.1] bg-[#12141d] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <p className="text-base font-medium text-zinc-100">{emptyTitle}</p>
-            <p className="mt-3 text-[15px] leading-relaxed text-zinc-400">{emptyDescription}</p>
-          </div>
+          <AppStateCard
+            compact
+            icon="ai"
+            title={emptyTitle}
+            description={emptyDescription}
+            className="shadow-none"
+          />
         ) : (
           <>
             <h3 className="text-2xl font-medium text-white">{selection.word}</h3>
@@ -161,25 +166,18 @@ function VocabularyPanel({
             </div>
 
             {isError ? (
-              <div
-                className={`mt-6 rounded-lg border px-4 py-3.5 ${
-                  selection.paywall
-                    ? "border-accent/20 bg-accent/[0.06]"
-                    : "border-red-500/20 bg-red-500/[0.06]"
-                }`}
-              >
-                <p
-                  className={`text-sm font-medium ${
-                    selection.paywall ? "text-[#c5cdff]" : "text-red-200/90"
-                  }`}
-                >
-                  {selection.paywall?.title ?? "Could not load explanation"}
-                </p>
-                <p className="mt-2 text-[14px] leading-relaxed text-zinc-400">
-                  {selection.paywall?.message ??
+              <div className="mt-6">
+                <AppStateInline
+                  variant={selection.paywall ? "info" : "error"}
+                  title={
+                    selection.paywall?.title ?? "Explanation unavailable"
+                  }
+                  description={
+                    selection.paywall?.message ??
                     selection.errorMessage ??
-                    "Something went wrong. Try selecting the word again."}
-                </p>
+                    "Try selecting the word or phrase again."
+                  }
+                />
                 {selection.paywall ? (
                   <div className="mt-4">
                     <UpgradeCta source="reader_vocabulary_panel" className="w-full" />

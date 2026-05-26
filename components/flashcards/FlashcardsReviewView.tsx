@@ -8,6 +8,7 @@ import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import { submitFlashcardReview } from "@/lib/flashcards/client";
 import type { FlashcardReviewItem, SessionStats as SessionStatsData } from "@/lib/flashcards/types";
 import type { ReviewRating } from "@/lib/supabase/schema";
+import AppStateCard from "@/components/app/AppStateCard";
 import FlipCard from "./FlipCard";
 import RatingButtons from "./RatingButtons";
 import ReviewComplete from "./ReviewComplete";
@@ -110,12 +111,13 @@ export default function FlashcardsReviewView({
       </div>
 
       {total === 0 ? (
-        <div className="rounded-2xl border border-white/[0.12] bg-[#12141d] px-6 py-16 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <p className="text-base font-medium text-zinc-200">No flashcards due right now.</p>
-          <p className="mt-2 text-sm text-zinc-400">
-            Save words from the reader to build your review deck.
-          </p>
-        </div>
+        <AppStateCard
+          icon="flashcards"
+          title="No cards due today"
+          description="You're all caught up. Saved words will appear here when they're ready to review."
+          action={{ label: "Saved words", href: "/saved-words" }}
+          secondaryAction={{ label: "Go to Library", href: "/library", variant: "secondary" }}
+        />
       ) : isComplete ? (
         <ReviewComplete reviewedCount={reviewedCount} onReviewAgain={resetSession} />
       ) : (
@@ -155,7 +157,9 @@ export default function FlashcardsReviewView({
                 <p className="mt-4 text-center text-[13px] text-zinc-400">{scheduleFeedback}</p>
               ) : null}
               {reviewError ? (
-                <p className="mt-4 text-center text-sm text-red-300/90">{reviewError}</p>
+                <p className="mt-4 text-center text-sm leading-relaxed text-red-300/90">
+                  Couldn&apos;t save your rating. {reviewError}
+                </p>
               ) : null}
             </div>
 

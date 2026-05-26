@@ -103,7 +103,13 @@ export default function SavedWordsView({ initialWords }: SavedWordsViewProps) {
       {!hasVault ? (
         <SavedWordsEmptyState variant="vault" />
       ) : !hasVisibleResults ? (
-        <SavedWordsEmptyState variant="no-results" />
+        <SavedWordsEmptyState
+          variant="no-results"
+          onClearFilters={() => {
+            setSearch("");
+            setFilter("all");
+          }}
+        />
       ) : (
         <div className="space-y-10">
           {groupedWords.map((group) => (

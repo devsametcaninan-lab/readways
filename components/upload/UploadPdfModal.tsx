@@ -19,11 +19,17 @@ import { formatFileSize } from "@/lib/format";
 import { MAX_PDF_BYTES, MAX_PDF_PAGES } from "@/lib/pdf/constants";
 import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import type { ExtractProgress } from "@/lib/pdf/extract-pdf-text";
-import { isPdfUserError, PDF_ERROR_MESSAGES } from "@/lib/pdf/errors";
+import { isPdfUserError } from "@/lib/pdf/errors";
 import { validatePdfFileBasics } from "@/lib/pdf/validate-pdf-file";
 import { runPdfExtractionWithJob } from "@/lib/documents/processing/pdf-extraction-with-job";
+import AppStateInline from "@/components/app/AppStateInline";
 import UpgradeCta from "@/components/billing/UpgradeCta";
 import { assertPdfUploadAllowed, BillingLimitError } from "@/lib/billing/client";
+import {
+  feedbackForPdfErrorCode,
+  feedbackForStorageFailure,
+  type UploadFeedback
+} from "@/lib/app/upload-feedback";
 
 type UploadState = "empty" | "selected" | "working" | "ready";
 
@@ -83,8 +89,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [paywallTitle, setPaywallTitle] = useState<string | null>(null);
+  const [uploadFeedback, setUploadFeedback] = useState<UploadFeedback | null>(null);
 
   const reset = useCallback(() => {
     setState("empty");
@@ -94,8 +99,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setDocumentId(null);
     setPageCount(null);
     setIsDragging(false);
-    setError(null);
-    setPaywallTitle(null);
+    setUploadFeedback(null);
     if (inputRef.current) inputRef.current.value = "";
     successToastShownRef.current = false;
   }, []);
@@ -123,7 +127,11 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const handleFile = (next: File) => {
     if (!isPdfFile(next)) {
       const message = "Only PDF files are supported.";
-      setError(message);
+      setUploadFeedback({
+        variant: "warning",
+        title: "PDF files only",
+        description: message
+      });
       toast.error(message);
       return;
     }
@@ -132,15 +140,16 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       validatePdfFileBasics(next);
     } catch (err) {
       if (isPdfUserError(err)) {
-        setError(err.message);
-        toast.error(err.message);
+        const feedback = feedbackForPdfErrorCode(err.code);
+        setUploadFeedback(feedback);
+        toast.error(feedback.title);
         setFile(null);
         setState("empty");
         return;
       }
     }
 
-    setError(null);
+    setUploadFeedback(null);
     setFile(next);
     setState("selected");
     setProgress(0);
@@ -166,8 +175,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setState("working");
     setProgress(0);
     setStatusLabel("Uploading…");
-    setError(null);
-    setPaywallTitle(null);
+    setUploadFeedback(null);
 
     let pendingDocumentId: string | null = null;
     let storagePath: string | null = null;
@@ -178,8 +186,12 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       } catch (limitErr) {
         if (limitErr instanceof BillingLimitError) {
           setState("selected");
-          setPaywallTitle(limitErr.title);
-          setError(limitErr.message);
+          setUploadFeedback({
+            variant: "info",
+            title: limitErr.title,
+            description: limitErr.message,
+            showUpgradeCta: true
+          });
           toast.error(limitErr.title);
 
           trackAnalyticsEventClient({
@@ -265,12 +277,12 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       }
 
       if (outcome.kind === "needs_ocr") {
-        const message = PDF_ERROR_MESSAGES.SCANNED;
+        const feedback = feedbackForPdfErrorCode("SCANNED");
         setState("selected");
         setProgress(100);
         setStatusLabel("Needs OCR");
-        setError(message);
-        toast.error(message);
+        setUploadFeedback(feedback);
+        toast.error(feedback.title);
 
         trackAnalyticsEventClient({
           eventName: "document_needs_ocr",
@@ -283,12 +295,12 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         return;
       }
 
-      const message = PDF_ERROR_MESSAGES[outcome.errorCode];
+      const feedback = feedbackForPdfErrorCode(outcome.errorCode);
       setState("selected");
       setProgress(100);
       setStatusLabel("Failed to parse");
-      setError(message);
-      toast.error(message);
+      setUploadFeedback(feedback);
+      toast.error(feedback.title);
 
       trackAnalyticsEventClient({
         eventName: "document_processing_failed",
@@ -326,8 +338,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         notifyDocumentsUpdated();
         setDocumentId(null);
         setState("selected");
-        setError(err.message);
-        toast.error(err.message);
+        setUploadFeedback(feedbackForStorageFailure(err.message));
+        toast.error("Upload didn't finish");
         return;
       }
 
@@ -374,19 +386,23 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
       setState("selected");
       if (isPdfUserError(err)) {
-        const message =
-          err.code === "SCANNED" || err.code === "NO_TEXT"
-            ? PDF_ERROR_MESSAGES.SCANNED
-            : err.message;
-        setError(message);
-        toast.error(message);
+        const feedback = feedbackForPdfErrorCode(err.code);
+        setUploadFeedback(feedback);
+        toast.error(feedback.title);
       } else if (err instanceof Error) {
-        setError(err.message);
-        toast.error(err.message);
+        setUploadFeedback({
+          variant: "error",
+          title: "Couldn't prepare this PDF",
+          description: err.message
+        });
+        toast.error("Couldn't prepare this PDF");
       } else {
-        const message = "Could not read this PDF. Please try another file.";
-        setError(message);
-        toast.error(message);
+        setUploadFeedback({
+          variant: "error",
+          title: "Couldn't prepare this PDF",
+          description: "Try another file, or upload a PDF with selectable text."
+        });
+        toast.error("Couldn't prepare this PDF");
       }
     }
   };
@@ -507,23 +523,14 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               />
             </div>
 
-            {error ? (
-              <div
-                className={`mt-3 rounded-lg border px-4 py-3 ${
-                  paywallTitle
-                    ? "border-accent/20 bg-accent/[0.06]"
-                    : "border-red-500/20 bg-red-500/[0.06]"
-                }`}
-              >
-                {paywallTitle ? (
-                  <p className="text-sm font-medium text-[#c5cdff]">{paywallTitle}</p>
-                ) : null}
-                <p
-                  className={`text-sm ${paywallTitle ? "mt-2 text-zinc-400" : "text-red-400/90"}`}
-                >
-                  {error}
-                </p>
-                {paywallTitle ? (
+            {uploadFeedback ? (
+              <div className="mt-3">
+                <AppStateInline
+                  variant={uploadFeedback.variant}
+                  title={uploadFeedback.title}
+                  description={uploadFeedback.description}
+                />
+                {uploadFeedback.showUpgradeCta ? (
                   <div className="mt-3">
                     <UpgradeCta source="upload_pdf_modal" className="w-full" />
                   </div>

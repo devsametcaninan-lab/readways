@@ -12,13 +12,12 @@ export default async function ReaderDocumentPage({
   const result = await getReaderDocumentForUser(documentId);
 
   if (result.kind === "not_found") {
-    return <ReaderDocumentMissing documentId={documentId} />;
+    return <ReaderDocumentMissing />;
   }
 
   if (result.kind === "unavailable") {
     return (
       <ReaderDocumentUnavailable
-        documentId={documentId}
         status={result.status}
         failureCode={result.failureCode}
       />

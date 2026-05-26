@@ -1,12 +1,13 @@
 "use client";
 
+import AppStateCard from "@/components/app/AppStateCard";
 import { appText } from "@/components/app/app-typography";
 import UploadPdfButton from "@/components/upload/UploadPdfButton";
 import { useUserDocuments } from "@/lib/documents/use-user-documents";
 import DocumentCard from "./DocumentCard";
 
 export default function LibraryView() {
-  const { documents, loading, error } = useUserDocuments();
+  const { documents, loading, error, reload } = useUserDocuments();
 
   return (
     <div className="p-6 md:p-8 lg:p-10">
@@ -28,9 +29,13 @@ export default function LibraryView() {
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-8 text-center">
-          <p className="text-sm text-red-300">{error}</p>
-        </div>
+        <AppStateCard
+          variant="error"
+          icon="library"
+          title="Couldn't load your library"
+          description="Check your connection and try again. Your documents are still safe."
+          action={{ label: "Try again", onClick: reload }}
+        />
       ) : documents.length > 0 ? (
         <>
           <p className={`mb-4 ${appText.label}`}>Recent documents</p>
@@ -41,15 +46,15 @@ export default function LibraryView() {
           </div>
         </>
       ) : (
-        <div className="rounded-2xl border border-white/[0.12] bg-[#12141d] px-6 py-16 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <p className="text-base font-medium text-zinc-200">No documents yet</p>
-          <p className="mt-2 text-sm text-zinc-400">
-            Upload a PDF to start reading and saving vocabulary from your texts.
-          </p>
+        <AppStateCard
+          icon="upload"
+          title="No documents yet"
+          description="Upload your first PDF to start building vocabulary while you read."
+        >
           <div className="mt-6 flex justify-center">
-            <UploadPdfButton className="rounded-full border border-accent/30 bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#6D7EFF]" />
+            <UploadPdfButton />
           </div>
-        </div>
+        </AppStateCard>
       )}
     </div>
   );

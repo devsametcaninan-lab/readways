@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import AppCard from "@/components/app/AppCard";
+import AppStateCard from "@/components/app/AppStateCard";
 import { appText } from "@/components/app/app-typography";
 import { useUserDocuments } from "@/lib/documents/use-user-documents";
 import type { DocumentListItem } from "@/lib/documents/types";
 
 export default function DashboardRecentDocuments() {
-  const { documents, loading, error } = useUserDocuments(3);
+  const { documents, loading, error, reload } = useUserDocuments(3);
 
   if (loading) {
     return (
@@ -24,17 +25,26 @@ export default function DashboardRecentDocuments() {
 
   if (error) {
     return (
-      <AppCard className="p-4">
-        <p className="text-sm text-red-400/90">{error}</p>
-      </AppCard>
+      <AppStateCard
+        compact
+        variant="error"
+        icon="library"
+        title="Couldn't load recent documents"
+        description="Check your connection and try again."
+        action={{ label: "Try again", onClick: reload }}
+      />
     );
   }
 
   if (documents.length === 0) {
     return (
-      <AppCard className="p-4">
-        <p className="text-sm text-zinc-400">No documents yet. Upload a PDF to get started.</p>
-      </AppCard>
+      <AppStateCard
+        compact
+        icon="upload"
+        title="No documents yet"
+        description="Upload a PDF to start reading and saving vocabulary."
+        action={{ label: "Open Library", href: "/library" }}
+      />
     );
   }
 
