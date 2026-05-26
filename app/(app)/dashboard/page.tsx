@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AppCard from "@/components/app/AppCard";
+import WelcomeOnboarding from "@/components/onboarding/WelcomeOnboarding";
 import { appText } from "@/components/app/app-typography";
 import DashboardRecentDocuments from "@/components/dashboard/DashboardRecentDocuments";
 import UploadPdfButton from "@/components/upload/UploadPdfButton";
@@ -20,6 +21,8 @@ export default function DashboardPage() {
         </div>
         <UploadPdfButton />
       </div>
+
+      <WelcomeOnboarding />
 
       <section className="mb-8">
         <h2 className={`mb-4 ${appText.label}`}>Reading progress</h2>

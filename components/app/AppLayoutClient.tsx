@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import OnboardingProvider from "@/lib/onboarding/OnboardingProvider";
 import { UploadPdfProvider } from "@/components/upload/UploadPdfContext";
 import AppShell from "./AppShell";
 
@@ -10,10 +11,12 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
   const isReader = pathname.startsWith("/reader");
 
   return (
-    <UploadPdfProvider>
-      <AppShell showActivityPanel={showActivityPanel} fullHeightMain={isReader}>
-        {children}
-      </AppShell>
-    </UploadPdfProvider>
+    <OnboardingProvider>
+      <UploadPdfProvider>
+        <AppShell showActivityPanel={showActivityPanel} fullHeightMain={isReader}>
+          {children}
+        </AppShell>
+      </UploadPdfProvider>
+    </OnboardingProvider>
   );
 }

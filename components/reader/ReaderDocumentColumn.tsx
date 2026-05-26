@@ -5,6 +5,7 @@ import type { ExplainClickPayload } from "@/lib/reader/explain-word-client";
 import type { PhraseHighlightRange } from "@/lib/reader/phrase-selection";
 import type { PhraseSelectionResolved } from "@/lib/reader/phrase-selection";
 import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
+import ReaderOnboardingHints from "@/components/onboarding/ReaderOnboardingHints";
 import PhraseExplainButton from "./PhraseExplainButton";
 import ReaderArticle from "./ReaderArticle";
 import ReaderPreparingOverlay from "./ReaderPreparingOverlay";
@@ -41,7 +42,7 @@ function ReaderDocumentColumn({
 }: ReaderDocumentColumnProps) {
   return (
     <div
-      className={readerColumnClass}
+      className={`relative ${readerColumnClass}`}
       {...{ [READER_INTERACTION.column]: "" }}
       onPointerUp={onReaderPointerUp}
       style={
@@ -67,6 +68,8 @@ function ReaderDocumentColumn({
       {pendingPhrase ? (
         <PhraseExplainButton rect={pendingPhrase.rect} onExplain={onExplainPhrase} />
       ) : null}
+
+      {!isPreparing ? <ReaderOnboardingHints /> : null}
     </div>
   );
 }

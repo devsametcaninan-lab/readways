@@ -24,6 +24,7 @@ export type Database = {
           trial_ends_at: string | null;
           billing_provider: "iyzico" | "stripe" | null;
           billing_customer_id: string | null;
+          onboarding: Json;
           created_at: string;
         };
         Insert: {
@@ -37,6 +38,7 @@ export type Database = {
           trial_ends_at?: string | null;
           billing_provider?: "iyzico" | "stripe" | null;
           billing_customer_id?: string | null;
+          onboarding?: Json;
           created_at?: string;
         };
         Update: {
@@ -50,6 +52,7 @@ export type Database = {
           trial_ends_at?: string | null;
           billing_provider?: "iyzico" | "stripe" | null;
           billing_customer_id?: string | null;
+          onboarding?: Json;
           created_at?: string;
         };
         Relationships: [

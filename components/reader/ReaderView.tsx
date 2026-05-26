@@ -32,6 +32,7 @@ import { fetchSaveWord } from "@/lib/save-word/client";
 import ReaderDocumentColumn from "./ReaderDocumentColumn";
 import { usePhraseSelection } from "./usePhraseSelection";
 import { usePreparedParagraphs } from "./usePreparedParagraphs";
+import { useOnboardingOptional } from "@/lib/onboarding/OnboardingProvider";
 import VocabularyPanel from "./VocabularyPanel";
 
 type ReaderViewProps = {
@@ -71,6 +72,7 @@ function isAbortError(error: unknown): boolean {
 
 export default function ReaderView({ document }: ReaderViewProps) {
   const toast = useToast();
+  const onboarding = useOnboardingOptional();
   const articleRef = useRef<HTMLElement>(null);
   const vocabularyPanelRef = useRef<HTMLElement | null>(null);
   const [selection, setSelection] = useState<PanelVocabularySelection | null>(null);
@@ -211,6 +213,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
 
   const requestExplanation = useCallback(
     (click: ExplainClickPayload, phraseRange: PhraseHighlightRange | null) => {
+      if (onboarding?.shouldShow("reader")) {
+        void onboarding.dismiss("reader");
+      }
+
       fetchAbortRef.current?.abort();
       const controller = new AbortController();
       fetchAbortRef.current = controller;
@@ -300,7 +306,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
         }
       })();
     },
-    [applyPanelFields, document.id, document.language, document.title, toast]
+    [applyPanelFields, document.id, document.language, document.title, onboarding, toast]
   );
 
   const requestExplanationRef = useRef(requestExplanation);

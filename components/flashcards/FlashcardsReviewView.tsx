@@ -5,10 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 import { appText } from "@/components/app/app-typography";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { trackAnalyticsEventClient } from "@/lib/analytics/client";
+import { useOnboardingOptional } from "@/lib/onboarding/OnboardingProvider";
 import { submitFlashcardReview } from "@/lib/flashcards/client";
 import type { FlashcardReviewItem, SessionStats as SessionStatsData } from "@/lib/flashcards/types";
 import type { ReviewRating } from "@/lib/supabase/schema";
 import AppStateCard from "@/components/app/AppStateCard";
+import FlashcardOnboardingHint from "@/components/onboarding/FlashcardOnboardingHint";
 import FlipCard from "./FlipCard";
 import RatingButtons from "./RatingButtons";
 import ReviewComplete from "./ReviewComplete";
@@ -25,6 +27,7 @@ export default function FlashcardsReviewView({
 }: FlashcardsReviewViewProps) {
   const router = useRouter();
   const toast = useToast();
+  const onboarding = useOnboardingOptional();
   const total = initialDeck.length;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewedCount, setReviewedCount] = useState(0);
@@ -59,6 +62,10 @@ export default function FlashcardsReviewView({
     setIsSubmitting(true);
     setReviewError(null);
     setScheduleFeedback(null);
+
+    if (onboarding?.shouldShow("flashcards")) {
+      void onboarding.dismiss("flashcards");
+    }
 
     try {
       const result = await submitFlashcardReview({
@@ -149,6 +156,7 @@ export default function FlashcardsReviewView({
               }`}
               onClick={(event) => event.stopPropagation()}
             >
+              <FlashcardOnboardingHint />
               <p className="mb-4 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
                 How well did you recall it?
               </p>
