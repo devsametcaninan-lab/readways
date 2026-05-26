@@ -1,7 +1,23 @@
 /** Database enum values — keep in sync with SQL check constraints */
 
-export const PLAN_VALUES = ["free", "pro"] as const;
+export const PLAN_VALUES = [
+  "free",
+  "pro_monthly",
+  "pro_yearly",
+  "admin"
+] as const;
 export type Plan = (typeof PLAN_VALUES)[number];
+
+export const SUBSCRIPTION_STATUS_VALUES = [
+  "active",
+  "trialing",
+  "past_due",
+  "cancelled"
+] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUS_VALUES)[number];
+
+export const BILLING_PROVIDER_VALUES = ["iyzico", "stripe"] as const;
+export type BillingProvider = (typeof BILLING_PROVIDER_VALUES)[number];
 
 export const DOCUMENT_STATUS_VALUES = [
   "processing",

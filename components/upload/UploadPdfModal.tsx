@@ -22,6 +22,8 @@ import type { ExtractProgress } from "@/lib/pdf/extract-pdf-text";
 import { isPdfUserError, PDF_ERROR_MESSAGES } from "@/lib/pdf/errors";
 import { validatePdfFileBasics } from "@/lib/pdf/validate-pdf-file";
 import { runPdfExtractionWithJob } from "@/lib/documents/processing/pdf-extraction-with-job";
+import UpgradeCta from "@/components/billing/UpgradeCta";
+import { assertPdfUploadAllowed, BillingLimitError } from "@/lib/billing/client";
 
 type UploadState = "empty" | "selected" | "working" | "ready";
 
@@ -82,6 +84,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paywallTitle, setPaywallTitle] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setState("empty");
@@ -92,6 +95,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setPageCount(null);
     setIsDragging(false);
     setError(null);
+    setPaywallTitle(null);
     if (inputRef.current) inputRef.current.value = "";
     successToastShownRef.current = false;
   }, []);
@@ -163,11 +167,41 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setProgress(0);
     setStatusLabel("Uploading…");
     setError(null);
+    setPaywallTitle(null);
 
     let pendingDocumentId: string | null = null;
     let storagePath: string | null = null;
 
     try {
+      try {
+        await assertPdfUploadAllowed();
+      } catch (limitErr) {
+        if (limitErr instanceof BillingLimitError) {
+          setState("selected");
+          setPaywallTitle(limitErr.title);
+          setError(limitErr.message);
+          toast.error(limitErr.title);
+
+          trackAnalyticsEventClient({
+            eventName: "limit_reached",
+            metadata: {
+              feature: "pdf_upload",
+              used: limitErr.usage?.used,
+              limit: limitErr.usage?.limit
+            }
+          });
+
+          trackAnalyticsEventClient({
+            eventName: "paywall_shown",
+            metadata: { source: "upload_pdf_modal", feature: "pdf_upload" }
+          });
+
+          return;
+        }
+
+        throw limitErr;
+      }
+
       pendingDocumentId = await createProcessingDocument(file);
       setDocumentId(pendingDocumentId);
       setProgress(6);
@@ -473,7 +507,29 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               />
             </div>
 
-            {error && <p className="mt-3 text-sm text-red-400/90">{error}</p>}
+            {error ? (
+              <div
+                className={`mt-3 rounded-lg border px-4 py-3 ${
+                  paywallTitle
+                    ? "border-accent/20 bg-accent/[0.06]"
+                    : "border-red-500/20 bg-red-500/[0.06]"
+                }`}
+              >
+                {paywallTitle ? (
+                  <p className="text-sm font-medium text-[#c5cdff]">{paywallTitle}</p>
+                ) : null}
+                <p
+                  className={`text-sm ${paywallTitle ? "mt-2 text-zinc-400" : "text-red-400/90"}`}
+                >
+                  {error}
+                </p>
+                {paywallTitle ? (
+                  <div className="mt-3">
+                    <UpgradeCta source="upload_pdf_modal" className="w-full" />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             {file && (
               <div className="mt-4 rounded-xl border border-white/[0.12] bg-[#0e1016] px-4 py-3.5">

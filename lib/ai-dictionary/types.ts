@@ -36,7 +36,11 @@ export type ExplainWordPayload = {
   usage?: ExplainWordUsage;
 };
 
+export type ApiErrorCode = "limit_reached" | "paywall";
+
 export type ApiErrorBody = {
   error: string;
+  code?: ApiErrorCode;
+  title?: string;
   usage?: ExplainWordUsage;
 };

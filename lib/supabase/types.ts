@@ -1,21 +1,25 @@
 import type { Database } from "./database.types";
 import type {
+  BillingProvider,
   DocumentJobStatus,
   DocumentJobType,
   DocumentStatus,
   Plan,
   ReviewRating,
-  SavedWordStatus
+  SavedWordStatus,
+  SubscriptionStatus
 } from "./schema";
 
 export type { Database };
 export type {
+  BillingProvider,
   DocumentJobStatus,
   DocumentJobType,
   DocumentStatus,
   Plan,
   ReviewRating,
-  SavedWordStatus
+  SavedWordStatus,
+  SubscriptionStatus
 };
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];

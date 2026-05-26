@@ -8,6 +8,7 @@ import {
   ExplanationTextSkeleton,
   PronunciationSkeleton
 } from "./ExplanationSkeleton";
+import UpgradeCta from "@/components/billing/UpgradeCta";
 
 type VocabularyPanelProps = {
   selection: PanelVocabularySelection | null;
@@ -123,11 +124,30 @@ function VocabularyPanel({
             </div>
 
             {isError ? (
-              <div className="mt-6 rounded-lg border border-red-500/20 bg-red-500/[0.06] px-4 py-3.5">
-                <p className="text-sm font-medium text-red-200/90">Could not load explanation</p>
-                <p className="mt-2 text-[14px] leading-relaxed text-zinc-400">
-                  {selection.errorMessage ?? "Something went wrong. Try selecting the word again."}
+              <div
+                className={`mt-6 rounded-lg border px-4 py-3.5 ${
+                  selection.paywall
+                    ? "border-accent/20 bg-accent/[0.06]"
+                    : "border-red-500/20 bg-red-500/[0.06]"
+                }`}
+              >
+                <p
+                  className={`text-sm font-medium ${
+                    selection.paywall ? "text-[#c5cdff]" : "text-red-200/90"
+                  }`}
+                >
+                  {selection.paywall?.title ?? "Could not load explanation"}
                 </p>
+                <p className="mt-2 text-[14px] leading-relaxed text-zinc-400">
+                  {selection.paywall?.message ??
+                    selection.errorMessage ??
+                    "Something went wrong. Try selecting the word again."}
+                </p>
+                {selection.paywall ? (
+                  <div className="mt-4">
+                    <UpgradeCta source="reader_vocabulary_panel" className="w-full" />
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div

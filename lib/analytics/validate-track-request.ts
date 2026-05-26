@@ -20,6 +20,9 @@ const CLIENT_ALLOWED_EVENTS = new Set<AnalyticsEventName>([
   "document_job_created",
   "document_job_completed",
   "document_job_failed",
+  "paywall_shown",
+  "upgrade_cta_clicked",
+  "limit_reached",
   "review_completed"
 ]);
 

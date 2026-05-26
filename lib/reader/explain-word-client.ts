@@ -3,6 +3,7 @@ import {
   type DocumentLanguage
 } from "@/lib/language/document-language";
 import type { ApiErrorBody, ExplainWordPayload } from "@/lib/ai-dictionary/types";
+import { parseExplainLimitPaywall } from "./explain-limit";
 
 export type ExplainClickKind = "word" | "phrase";
 
@@ -49,6 +50,16 @@ export async function fetchExplainWord(params: {
 
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
+    const paywall = parseExplainLimitPaywall(body);
+
+    if (paywall) {
+      const err = new Error(paywall.message) as Error & {
+        paywall?: typeof paywall;
+      };
+      err.paywall = paywall;
+      throw err;
+    }
+
     throw new Error(body?.error ?? "Could not load word explanation.");
   }
 

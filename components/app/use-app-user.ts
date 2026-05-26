@@ -22,7 +22,8 @@ const fallback: AppUserDisplay = {
 };
 
 function formatPlanLabel(plan: string | null | undefined): string {
-  if (plan === "pro") return "Pro";
+  if (plan === "admin") return "Admin";
+  if (plan === "pro_monthly" || plan === "pro_yearly" || plan === "pro") return "Pro";
   if (plan === "free") return "Personal Reader";
   return mockUser.plan;
 }

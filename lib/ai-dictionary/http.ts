@@ -7,9 +7,18 @@ export function jsonError(status: number, message: string): NextResponse<ApiErro
 
 export function jsonRateLimited(
   message: string,
-  usage: ExplainWordUsage
+  usage: ExplainWordUsage,
+  options?: { title?: string }
 ): NextResponse<ApiErrorBody> {
-  return NextResponse.json({ error: message, usage }, { status: 429 });
+  return NextResponse.json(
+    {
+      error: message,
+      code: "limit_reached",
+      title: options?.title,
+      usage
+    },
+    { status: 429 }
+  );
 }
 
 export function jsonExplainWord(payload: ExplainWordPayload): NextResponse<ExplainWordPayload> {

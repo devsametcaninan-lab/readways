@@ -3,7 +3,8 @@
 import { useCallback, useRef, useState } from "react";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { appText } from "@/components/app/app-typography";
-import { explainErrorToastMessage } from "@/lib/feedback/messages";
+import { explainErrorToastMessage, isRateLimitMessage } from "@/lib/feedback/messages";
+import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import type { ReaderDocument } from "@/lib/documents/types";
 import { documentLanguageLabel } from "@/lib/language/document-language";
 import {
@@ -241,10 +242,23 @@ export default function ReaderView({ document }: ReaderViewProps) {
             return;
           }
 
+          const paywall =
+            error instanceof Error && "paywall" in error
+              ? (error as Error & { paywall?: { title: string; message: string } })
+                  .paywall
+              : undefined;
+
           const message =
             error instanceof Error
               ? error.message
               : "Could not load word explanation.";
+
+          if (paywall || isRateLimitMessage(message)) {
+            trackAnalyticsEventClient({
+              eventName: "paywall_shown",
+              metadata: { source: "reader_vocabulary", feature: "ai_explanation" }
+            });
+          }
 
           toast.error(explainErrorToastMessage(message));
 
@@ -256,7 +270,15 @@ export default function ReaderView({ document }: ReaderViewProps) {
             return {
               ...prev,
               status: "error",
-              errorMessage: message
+              errorMessage: message,
+              paywall: paywall
+                ? { title: paywall.title, message: paywall.message }
+                : isRateLimitMessage(message)
+                  ? {
+                      title: "Daily AI limit reached",
+                      message: "Upgrade to continue reading without limits."
+                    }
+                  : undefined
             };
           });
         } finally {

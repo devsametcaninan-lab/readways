@@ -1,145 +1,100 @@
-import { dailyExplanationLimitMessage, getDailyExplanationLimit } from "./plan-limits";
 import type { ExplainWordUsage } from "./types";
+import {
+  buildLimitSnapshot,
+  getUserPlanLimits
+} from "@/lib/billing/limits";
+import {
+  checkAiExplanationAllowance,
+  getTodayAiUsageCount,
+  incrementAiExplanationUsage
+} from "@/lib/billing/usage";
+import { getUserSubscription } from "@/lib/billing/subscription";
+import { normalizePlan } from "@/lib/billing/plans";
 import type { Plan } from "@/lib/supabase/schema";
 import type { SupabaseClient } from "@/lib/supabase/types";
 
-export function getTodayUtcDateString(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+export { getTodayUtcDateString } from "@/lib/billing/usage";
 
 export function buildUsageSnapshot(used: number, limit: number): ExplainWordUsage {
+  const snapshot = buildLimitSnapshot(used, limit);
+
   return {
-    used,
-    limit,
-    remaining: Math.max(0, limit - used)
+    used: snapshot.used,
+    limit: snapshot.limit,
+    remaining: snapshot.remaining
   };
 }
 
+/** @deprecated Prefer getUserSubscription from @/lib/billing */
 export async function getUserPlan(
   supabase: SupabaseClient,
   userId: string
 ): Promise<Plan> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("plan")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error || !data) {
-    return "free";
-  }
-
-  return data.plan === "pro" ? "pro" : "free";
+  const subscription = await getUserSubscription(supabase, userId);
+  return subscription.plan;
 }
 
-export async function getTodayUsageCount(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<number> {
-  const today = getTodayUtcDateString();
+export { getTodayAiUsageCount as getTodayUsageCount };
 
-  const { data, error } = await supabase
-    .from("usage_limits")
-    .select("ai_explanations_used")
-    .eq("user_id", userId)
-    .eq("date", today)
-    .maybeSingle();
-
-  if (error || !data) {
-    return 0;
-  }
-
-  return data.ai_explanations_used;
-}
-
-export async function ensureTodayUsageRow(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<void> {
-  const today = getTodayUtcDateString();
-
-  const { data: existing } = await supabase
-    .from("usage_limits")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("date", today)
-    .maybeSingle();
-
-  if (existing) {
-    return;
-  }
-
-  await supabase.from("usage_limits").insert({
-    user_id: userId,
-    date: today,
-    ai_explanations_used: 0,
-    pdf_uploads_used: 0
-  });
-}
+export { ensureTodayUsageRow } from "@/lib/billing/usage";
 
 export type ExplanationAllowanceResult =
   | { allowed: true; usage: ExplainWordUsage; plan: Plan }
-  | { allowed: false; usage: ExplainWordUsage; plan: Plan; message: string };
+  | { allowed: false; usage: ExplainWordUsage; plan: Plan; message: string; title: string };
 
 export async function checkExplanationAllowance(params: {
   supabase: SupabaseClient;
   userId: string;
-  plan: Plan;
+  plan?: Plan;
 }): Promise<ExplanationAllowanceResult> {
-  const { supabase, userId, plan } = params;
-  const limit = getDailyExplanationLimit(plan);
+  const allowance = await checkAiExplanationAllowance({
+    supabase: params.supabase,
+    userId: params.userId
+  });
 
-  await ensureTodayUsageRow(supabase, userId);
+  const plan = params.plan ?? allowance.subscription.plan;
+  const usage = buildUsageSnapshot(allowance.usage.used, allowance.usage.limit);
 
-  const used = await getTodayUsageCount(supabase, userId);
-  const usage = buildUsageSnapshot(used, limit);
-
-  if (used >= limit) {
-    return {
-      allowed: false,
-      usage,
-      plan,
-      message: dailyExplanationLimitMessage(plan, limit)
-    };
+  if (allowance.allowed) {
+    return { allowed: true, usage, plan };
   }
 
-  return { allowed: true, usage, plan };
+  return {
+    allowed: false,
+    usage,
+    plan,
+    title: allowance.title,
+    message: allowance.message
+  };
 }
 
 export async function getExplanationUsageSnapshot(params: {
   supabase: SupabaseClient;
   userId: string;
-  plan: Plan;
+  plan?: Plan;
 }): Promise<ExplainWordUsage> {
-  const { supabase, userId, plan } = params;
-  const limit = getDailyExplanationLimit(plan);
-  const used = await getTodayUsageCount(supabase, userId);
+  const subscription = await getUserSubscription(params.supabase, params.userId);
+  const plan = params.plan ?? subscription.plan;
+  const tier = subscription.tier;
+  const limit = getUserPlanLimits(tier).dailyAiExplanations;
+  const used = await getTodayAiUsageCount(params.supabase, params.userId);
+
   return buildUsageSnapshot(used, limit);
 }
 
 export async function incrementExplanationUsage(params: {
   supabase: SupabaseClient;
   userId: string;
-  plan: Plan;
+  plan?: Plan;
 }): Promise<ExplainWordUsage | null> {
-  const { supabase, userId, plan } = params;
-  const today = getTodayUtcDateString();
-  const limit = getDailyExplanationLimit(plan);
+  const snapshot = await incrementAiExplanationUsage({
+    supabase: params.supabase,
+    userId: params.userId
+  });
 
-  await ensureTodayUsageRow(supabase, userId);
-
-  const usedBefore = await getTodayUsageCount(supabase, userId);
-  const nextUsed = usedBefore + 1;
-
-  const { error } = await supabase
-    .from("usage_limits")
-    .update({ ai_explanations_used: nextUsed })
-    .eq("user_id", userId)
-    .eq("date", today);
-
-  if (error) {
+  if (!snapshot) {
     return null;
   }
 
-  return buildUsageSnapshot(nextUsed, limit);
+  return buildUsageSnapshot(snapshot.used, snapshot.limit);
 }

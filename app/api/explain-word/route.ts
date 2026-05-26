@@ -122,6 +122,20 @@ export async function POST(request: Request) {
       trackEvent({
         supabase,
         userId: user.id,
+        eventName: "limit_reached",
+        metadata: {
+          feature: "ai_explanation",
+          documentId,
+          language,
+          plan,
+          used: allowance.usage.used,
+          limit: allowance.usage.limit
+        }
+      });
+
+      trackEvent({
+        supabase,
+        userId: user.id,
         eventName: "ai_limit_reached",
         metadata: {
           documentId,
@@ -132,7 +146,9 @@ export async function POST(request: Request) {
         }
       });
 
-      return jsonRateLimited(allowance.message, allowance.usage);
+      return jsonRateLimited(allowance.message, allowance.usage, {
+        title: allowance.title
+      });
     }
 
     const aiResult = await generateExplanationWithOpenAI({

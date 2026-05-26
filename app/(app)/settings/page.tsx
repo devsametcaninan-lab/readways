@@ -37,6 +37,20 @@ export default function SettingsPage() {
           </div>
         </AppCard>
 
+        <div id="upgrade">
+          <AppCard>
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+              Upgrade
+            </p>
+            <p className="mt-3 text-sm text-slate-400">
+              Paid plans are coming soon. Pro will include higher AI and PDF limits.
+            </p>
+            <p className="mt-2 text-xs text-slate-500">
+              Free: 20 AI explanations/day · 3 PDFs/month. Pro: 300/day · 100/month.
+            </p>
+          </AppCard>
+        </div>
+
         <AppCard>
           <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
             Appearance

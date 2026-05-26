@@ -18,7 +18,12 @@ export type Database = {
           email: string;
           full_name: string | null;
           avatar_url: string | null;
-          plan: "free" | "pro";
+          plan: "free" | "pro_monthly" | "pro_yearly" | "admin";
+          subscription_status: "active" | "trialing" | "past_due" | "cancelled";
+          current_period_end: string | null;
+          trial_ends_at: string | null;
+          billing_provider: "iyzico" | "stripe" | null;
+          billing_customer_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -26,7 +31,12 @@ export type Database = {
           email: string;
           full_name?: string | null;
           avatar_url?: string | null;
-          plan?: "free" | "pro";
+          plan?: "free" | "pro_monthly" | "pro_yearly" | "admin";
+          subscription_status?: "active" | "trialing" | "past_due" | "cancelled";
+          current_period_end?: string | null;
+          trial_ends_at?: string | null;
+          billing_provider?: "iyzico" | "stripe" | null;
+          billing_customer_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -34,7 +44,12 @@ export type Database = {
           email?: string;
           full_name?: string | null;
           avatar_url?: string | null;
-          plan?: "free" | "pro";
+          plan?: "free" | "pro_monthly" | "pro_yearly" | "admin";
+          subscription_status?: "active" | "trialing" | "past_due" | "cancelled";
+          current_period_end?: string | null;
+          trial_ends_at?: string | null;
+          billing_provider?: "iyzico" | "stripe" | null;
+          billing_customer_id?: string | null;
           created_at?: string;
         };
         Relationships: [

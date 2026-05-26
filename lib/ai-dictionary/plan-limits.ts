@@ -1,18 +1,18 @@
+import { getUserPlanLimits } from "@/lib/billing/limits";
+import { effectivePlanTier } from "@/lib/billing/subscription";
 import type { Plan } from "@/lib/supabase/schema";
+import { normalizePlan } from "@/lib/billing/plans";
 
-export const DAILY_EXPLANATION_LIMITS: Record<Plan, number> = {
-  free: 20,
-  pro: 300
-};
-
+/** @deprecated Use getUserPlanLimits from @/lib/billing */
 export function getDailyExplanationLimit(plan: Plan): number {
-  return DAILY_EXPLANATION_LIMITS[plan];
+  const tier = effectivePlanTier({
+    plan: normalizePlan(plan),
+    subscriptionStatus: "active"
+  });
+
+  return getUserPlanLimits(tier).dailyAiExplanations;
 }
 
-export function dailyExplanationLimitMessage(plan: Plan, limit: number): string {
-  if (plan === "pro") {
-    return `You've reached your daily limit of ${limit} explanations.`;
-  }
-
-  return `You've reached your daily limit of ${limit} explanations. Upgrade to Pro for more.`;
+export function dailyExplanationLimitMessage(_plan: Plan, limit: number): string {
+  return `You've reached your daily limit of ${limit} AI explanations. Upgrade to continue reading without limits.`;
 }
