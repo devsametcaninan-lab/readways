@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { appText } from "@/components/app/app-typography";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { submitFlashcardReview } from "@/lib/flashcards/client";
@@ -30,8 +30,14 @@ export default function FlashcardsReviewView({
   const [isComplete, setIsComplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [scheduleFeedback, setScheduleFeedback] = useState<string | null>(null);
 
   const currentCard = initialDeck[currentIndex];
+
+  useEffect(() => {
+    setScheduleFeedback(null);
+    setReviewError(null);
+  }, [currentIndex]);
 
   const resetSession = useCallback(() => {
     setCurrentIndex(0);
@@ -39,6 +45,7 @@ export default function FlashcardsReviewView({
     setIsFlipped(false);
     setIsComplete(false);
     setReviewError(null);
+    setScheduleFeedback(null);
     router.refresh();
   }, [router]);
 
@@ -49,12 +56,16 @@ export default function FlashcardsReviewView({
 
     setIsSubmitting(true);
     setReviewError(null);
+    setScheduleFeedback(null);
 
     try {
-      await submitFlashcardReview({
+      const result = await submitFlashcardReview({
         flashcardId: currentCard.id,
         rating
       });
+
+      setScheduleFeedback(result.feedbackMessage);
+      toast.info(result.feedbackMessage);
 
       const nextReviewed = reviewedCount + 1;
       setReviewedCount(nextReviewed);
@@ -132,6 +143,9 @@ export default function FlashcardsReviewView({
                 How well did you recall it?
               </p>
               <RatingButtons onRate={handleRate} disabled={isSubmitting} />
+              {scheduleFeedback && !reviewError ? (
+                <p className="mt-4 text-center text-[13px] text-zinc-400">{scheduleFeedback}</p>
+              ) : null}
               {reviewError ? (
                 <p className="mt-4 text-center text-sm text-red-300/90">{reviewError}</p>
               ) : null}

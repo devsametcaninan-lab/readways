@@ -8,4 +8,6 @@ export type ReviewFlashcardRequestBody = {
 
 export type ReviewFlashcardResponse = {
   flashcard: Flashcard;
+  feedbackMessage: string;
+  intervalDays: number;
 };

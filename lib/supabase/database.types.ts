@@ -212,6 +212,10 @@ export type Database = {
           back: string;
           difficulty: number | null;
           next_review_at: string | null;
+          review_count: number;
+          ease_factor: number;
+          last_reviewed_at: string | null;
+          interval_days: number;
           created_at: string;
         };
         Insert: {
@@ -222,6 +226,10 @@ export type Database = {
           back: string;
           difficulty?: number | null;
           next_review_at?: string | null;
+          review_count?: number;
+          ease_factor?: number;
+          last_reviewed_at?: string | null;
+          interval_days?: number;
           created_at?: string;
         };
         Update: {
@@ -232,6 +240,10 @@ export type Database = {
           back?: string;
           difficulty?: number | null;
           next_review_at?: string | null;
+          review_count?: number;
+          ease_factor?: number;
+          last_reviewed_at?: string | null;
+          interval_days?: number;
           created_at?: string;
         };
         Relationships: [

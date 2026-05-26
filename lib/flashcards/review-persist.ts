@@ -1,13 +1,19 @@
 import type { ReviewRating } from "@/lib/supabase/schema";
 import type { Flashcard } from "@/lib/supabase/types";
 import type { SupabaseClient } from "@/lib/supabase/types";
-import { scheduleReviewFromRating } from "./review-schedule";
+import {
+  normalizeFlashcardReviewState,
+  scheduleReviewFromRating
+} from "./review-schedule";
 import type { ReviewFlashcardResponse } from "./review-types";
 
 type FlashcardOwnershipRow = {
   id: string;
   user_id: string;
   saved_word_id: string;
+  review_count: number | null;
+  ease_factor: number | null;
+  interval_days: number | null;
 };
 
 export type PersistFlashcardReviewResult =
@@ -24,7 +30,9 @@ export async function persistFlashcardReview(params: {
 
   const { data: flashcard, error: fetchError } = await supabase
     .from("flashcards")
-    .select("id, user_id, saved_word_id")
+    .select(
+      "id, user_id, saved_word_id, review_count, ease_factor, interval_days"
+    )
     .eq("id", flashcardId)
     .maybeSingle();
 
@@ -38,7 +46,10 @@ export async function persistFlashcardReview(params: {
     return { ok: false, reason: "not_found" };
   }
 
-  const schedule = scheduleReviewFromRating(rating);
+  const schedule = scheduleReviewFromRating(
+    rating,
+    normalizeFlashcardReviewState(row)
+  );
 
   const { error: logError } = await supabase.from("review_logs").insert({
     user_id: userId,
@@ -54,7 +65,11 @@ export async function persistFlashcardReview(params: {
     .from("flashcards")
     .update({
       next_review_at: schedule.nextReviewAt,
-      difficulty: schedule.flashcardDifficulty
+      difficulty: schedule.flashcardDifficulty,
+      review_count: schedule.reviewCount,
+      ease_factor: schedule.easeFactor,
+      interval_days: schedule.intervalDays,
+      last_reviewed_at: schedule.lastReviewedAt
     })
     .eq("id", flashcardId)
     .eq("user_id", userId)
@@ -78,7 +93,9 @@ export async function persistFlashcardReview(params: {
   return {
     ok: true,
     response: {
-      flashcard: updatedFlashcard as Flashcard
+      flashcard: updatedFlashcard as Flashcard,
+      feedbackMessage: schedule.feedbackMessage,
+      intervalDays: schedule.intervalDays
     }
   };
 }
