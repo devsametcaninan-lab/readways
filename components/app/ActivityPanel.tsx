@@ -1,8 +1,41 @@
+"use client";
+
 import Link from "next/link";
-import { flashcardsDue, savedWords } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
 import { appText } from "./app-typography";
+import { fetchDashboardDataForCurrentUser } from "@/lib/dashboard/client";
+import type { DashboardData } from "@/lib/dashboard/types";
 
 export default function ActivityPanel() {
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchDashboardDataForCurrentUser()
+      .then((data) => {
+        if (!cancelled) {
+          setDashboard(data);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const stats = dashboard?.stats;
+  const masteredPct =
+    stats && stats.savedWordsCount > 0
+      ? Math.round((stats.masteredWordsCount / stats.savedWordsCount) * 100)
+      : 0;
+
   return (
     <aside className="hidden w-[280px] shrink-0 flex-col border-l border-white/[0.1] bg-[#0e0f14] xl:flex">
       <div className="border-b border-white/[0.1] px-4 py-3">
@@ -18,15 +51,28 @@ export default function ActivityPanel() {
             </Link>
           </div>
           <div className="space-y-2">
-            {savedWords.slice(0, 4).map((word) => (
-              <div
-                key={word.id}
-                className="rounded-lg border border-white/[0.1] bg-[#12141d] px-3 py-2.5 transition-colors hover:border-white/[0.14] hover:bg-[#141820]"
-              >
-                <p className={appText.title}>{word.word}</p>
-                <p className={`mt-0.5 truncate ${appText.metaSmall}`}>{word.meaning}</p>
-              </div>
-            ))}
+            {loading ? (
+              [0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-[52px] animate-pulse rounded-lg border border-white/[0.1] bg-[#12141d]"
+                />
+              ))
+            ) : dashboard && dashboard.savedWordPreviews.length > 0 ? (
+              dashboard.savedWordPreviews.map((word) => (
+                <div
+                  key={word.id}
+                  className="rounded-lg border border-white/[0.1] bg-[#12141d] px-3 py-2.5 transition-colors hover:border-white/[0.14] hover:bg-[#141820]"
+                >
+                  <p className={appText.title}>{word.word}</p>
+                  <p className={`mt-0.5 truncate ${appText.metaSmall}`}>{word.meaning}</p>
+                </div>
+              ))
+            ) : (
+              <p className={`rounded-lg border border-white/[0.1] bg-[#12141d] px-3 py-2.5 ${appText.metaSmall}`}>
+                No saved words yet
+              </p>
+            )}
           </div>
         </div>
 
@@ -38,26 +84,56 @@ export default function ActivityPanel() {
             </Link>
           </div>
           <div className="space-y-2">
-            {flashcardsDue.map((card) => (
-              <div
-                key={card.id}
-                className="rounded-lg border border-white/[0.1] bg-[#12141d] px-3 py-2.5 transition-colors hover:border-white/[0.14] hover:bg-[#141820]"
-              >
-                <div className="flex items-center justify-between">
-                  <p className={appText.title}>{card.word}</p>
-                  <span className={appText.metaSmall}>Due {card.due}</span>
+            {loading ? (
+              [0, 1].map((i) => (
+                <div
+                  key={i}
+                  className="h-[52px] animate-pulse rounded-lg border border-white/[0.1] bg-[#12141d]"
+                />
+              ))
+            ) : dashboard && dashboard.dueFlashcardPreviews.length > 0 ? (
+              dashboard.dueFlashcardPreviews.map((card) => (
+                <div
+                  key={card.id}
+                  className="rounded-lg border border-white/[0.1] bg-[#12141d] px-3 py-2.5 transition-colors hover:border-white/[0.14] hover:bg-[#141820]"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className={appText.title}>{card.word}</p>
+                    <span className={appText.metaSmall}>Due {card.dueLabel}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className={`rounded-lg border border-white/[0.1] bg-[#12141d] px-3 py-2.5 ${appText.metaSmall}`}>
+                {stats && stats.flashcardsDueCount > 0
+                  ? `${stats.flashcardsDueCount} due — open review`
+                  : "No cards due"}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="rounded-lg border border-white/[0.12] bg-[#12141d] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <p className={appText.metaSmall}>Today&apos;s goal</p>
-          <p className="mt-1.5 text-sm font-medium text-zinc-100">18 / 30 words</p>
-          <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-white/[0.1]">
-            <div className="h-full w-[60%] rounded-full bg-accent/70" />
-          </div>
+          <p className={appText.metaSmall}>Vocabulary progress</p>
+          {loading || !stats ? (
+            <div className="mt-3 h-8 animate-pulse rounded bg-white/[0.06]" />
+          ) : stats.savedWordsCount === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">
+              Upload a PDF and save words to track progress.
+            </p>
+          ) : (
+            <>
+              <p className="mt-1.5 text-sm font-medium text-zinc-100">
+                {stats.masteredWordsCount} / {stats.savedWordsCount} mastered
+              </p>
+              <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-white/[0.1]">
+                <div
+                  className="h-full rounded-full bg-accent/70 transition-[width] duration-300"
+                  style={{ width: `${masteredPct}%` }}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </aside>

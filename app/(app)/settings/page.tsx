@@ -1,6 +1,6 @@
 import AppCard from "@/components/app/AppCard";
 import AnalyticsDevSummary from "@/components/analytics/AnalyticsDevSummary";
-import { mockUser } from "@/lib/mock-data";
+import SettingsProfileCard from "@/components/settings/SettingsProfileCard";
 
 export default function SettingsPage() {
   return (
@@ -11,15 +11,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="mx-auto max-w-xl space-y-4">
-        <AppCard>
-          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
-            Profile
-          </p>
-          <p className="mt-3 text-sm text-slate-300">Name</p>
-          <p className="mt-1 text-base text-white">{mockUser.name}</p>
-          <p className="mt-4 text-sm text-slate-300">Plan</p>
-          <p className="mt-1 text-base text-white">{mockUser.plan}</p>
-        </AppCard>
+        <SettingsProfileCard />
 
         <AppCard>
           <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
