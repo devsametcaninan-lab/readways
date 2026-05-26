@@ -57,6 +57,29 @@ Insert policies on child tables also verify parent ownership (e.g. `document_id`
 
 `review_logs` is **append-only** (select + insert only).
 
+## Storage (PDF originals)
+
+Migrations create a **private** bucket `documents` (not public). Paths:
+
+`{userId}/{documentId}/{original-file-name}.pdf`
+
+Row metadata: `documents.storage_path`, `documents.original_file_name`. Reading still uses `extracted_text`.
+
+### Dashboard setup (if migrations did not create the bucket)
+
+1. Supabase Dashboard → **Storage** → **New bucket**
+2. Name: `documents`, **Public bucket**: off
+3. Optional: file size limit **10 MB**, MIME type `application/pdf`
+4. Run `supabase db push` so RLS policies on `storage.objects` are applied
+
+### Local CLI
+
+```bash
+npx supabase db push
+```
+
+Signed URLs are not required for the reader; use them only if you add download/preview later.
+
 ## Apply migrations
 
 ### Local (Supabase CLI)

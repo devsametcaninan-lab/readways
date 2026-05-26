@@ -56,6 +56,8 @@ export type Database = {
           file_size: number;
           page_count: number;
           extracted_text: string | null;
+          storage_path: string | null;
+          original_file_name: string | null;
           language: string;
           status: "processing" | "ready" | "failed";
           created_at: string;
@@ -69,6 +71,8 @@ export type Database = {
           file_size: number;
           page_count?: number;
           extracted_text?: string | null;
+          storage_path?: string | null;
+          original_file_name?: string | null;
           language?: string;
           status?: "processing" | "ready" | "failed";
           created_at?: string;
@@ -82,6 +86,8 @@ export type Database = {
           file_size?: number;
           page_count?: number;
           extracted_text?: string | null;
+          storage_path?: string | null;
+          original_file_name?: string | null;
           language?: string;
           status?: "processing" | "ready" | "failed";
           created_at?: string;

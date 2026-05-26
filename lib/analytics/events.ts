@@ -1,6 +1,8 @@
 export const ANALYTICS_EVENT_NAMES = [
   "pdf_uploaded",
   "pdf_parse_failed",
+  "pdf_storage_uploaded",
+  "pdf_storage_failed",
   "word_explained",
   "phrase_explained",
   "word_saved",
@@ -21,6 +23,8 @@ export type AnalyticsEventType = (typeof ANALYTICS_EVENT_TYPES)[number];
 export const EVENT_NAME_TO_TYPE: Record<AnalyticsEventName, AnalyticsEventType> = {
   pdf_uploaded: "product",
   pdf_parse_failed: "error",
+  pdf_storage_uploaded: "product",
+  pdf_storage_failed: "error",
   word_explained: "product",
   phrase_explained: "product",
   word_saved: "product",

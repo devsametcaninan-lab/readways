@@ -9,6 +9,11 @@ import {
   markDocumentFailed,
   markDocumentReady
 } from "@/lib/documents/client";
+import { rollbackProcessingDocument } from "@/lib/documents/rollback-upload";
+import {
+  isDocumentStorageUploadError,
+  storeDocumentPdfFile
+} from "@/lib/documents/upload-storage";
 import { notifyDocumentsUpdated } from "@/lib/documents/events";
 import { formatFileSize } from "@/lib/format";
 import { MAX_PDF_BYTES, MAX_PDF_PAGES } from "@/lib/pdf/constants";
@@ -159,15 +164,29 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setError(null);
 
     let pendingDocumentId: string | null = null;
+    let storagePath: string | null = null;
 
     try {
       pendingDocumentId = await createProcessingDocument(file);
       setDocumentId(pendingDocumentId);
-      setProgress(8);
+      setProgress(6);
       setStatusLabel("Uploading…");
 
+      const stored = await storeDocumentPdfFile(pendingDocumentId, file);
+      storagePath = stored.storagePath;
+      setProgress(12);
+      setStatusLabel("Stored securely…");
+
+      trackAnalyticsEventClient({
+        eventName: "pdf_storage_uploaded",
+        metadata: {
+          documentId: pendingDocumentId,
+          fileSize: file.size
+        }
+      });
+
       const result = await extractTextFromPdfFile(file, (extractProgress) => {
-        setProgress(progressPercent(extractProgress));
+        setProgress(12 + Math.round(progressPercent(extractProgress) * 0.86));
         setStatusLabel(progressLabel(extractProgress));
       });
 
@@ -175,7 +194,9 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       await markDocumentReady(pendingDocumentId, {
         pageCount: result.pageCount,
         paragraphs: result.paragraphs,
-        language: result.language
+        language: result.language,
+        storagePath: stored.storagePath,
+        originalFileName: stored.originalFileName
       });
 
       notifyDocumentsUpdated();
@@ -189,10 +210,35 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
           documentId: pendingDocumentId,
           pageCount: result.pageCount,
           language: result.language,
-          textLength: result.textLength
+          textLength: result.textLength,
+          stored: true
         }
       });
     } catch (err) {
+      if (isDocumentStorageUploadError(err)) {
+        if (pendingDocumentId) {
+          await rollbackProcessingDocument({
+            documentId: pendingDocumentId,
+            storagePath
+          }).catch(() => undefined);
+
+          trackAnalyticsEventClient({
+            eventName: "pdf_storage_failed",
+            metadata: {
+              documentId: pendingDocumentId,
+              reason: err.code
+            }
+          });
+        }
+
+        notifyDocumentsUpdated();
+        setDocumentId(null);
+        setState("selected");
+        setError(err.message);
+        toast.error(err.message);
+        return;
+      }
+
       if (pendingDocumentId) {
         const errorCode = isPdfUserError(err) ? err.code : undefined;
         await markDocumentFailed(pendingDocumentId, errorCode).catch(() => undefined);
@@ -202,7 +248,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
           eventName: "pdf_parse_failed",
           metadata: {
             documentId: pendingDocumentId,
-            errorCode: errorCode ?? "UNKNOWN"
+            errorCode: errorCode ?? "UNKNOWN",
+            hadStorage: Boolean(storagePath)
           }
         });
       }
@@ -280,6 +327,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               {file?.name}
               {pageCount != null ? ` · ${pageCount} page${pageCount === 1 ? "" : "s"} prepared` : ""}
             </p>
+            <p className="mt-1 text-[12px] text-zinc-500">Stored securely</p>
             <button
               type="button"
               onClick={handleOpenReader}

@@ -8,6 +8,7 @@ import type { DocumentLanguage } from "@/lib/language/document-language";
 import { encodeDocumentFailureReason } from "./failure-reason";
 import type { PdfErrorCode } from "@/lib/pdf/errors";
 import { paragraphsToExtractedText } from "./text";
+import { sanitizeOriginalFileName } from "./storage";
 
 const LIST_COLUMNS =
   "id, title, file_name, file_size, page_count, extracted_text, language, status, created_at, updated_at";
@@ -36,6 +37,7 @@ export async function createProcessingDocument(file: File): Promise<string> {
       user_id: userId,
       title: file.name,
       file_name: file.name,
+      original_file_name: sanitizeOriginalFileName(file.name),
       file_size: file.size,
       page_count: 0,
       status: "processing"
@@ -52,7 +54,13 @@ export async function createProcessingDocument(file: File): Promise<string> {
 
 export async function markDocumentReady(
   documentId: string,
-  payload: { pageCount: number; paragraphs: string[]; language: DocumentLanguage }
+  payload: {
+    pageCount: number;
+    paragraphs: string[];
+    language: DocumentLanguage;
+    storagePath: string;
+    originalFileName: string;
+  }
 ): Promise<void> {
   const supabase = createClient();
 
@@ -62,6 +70,8 @@ export async function markDocumentReady(
       page_count: payload.pageCount,
       extracted_text: paragraphsToExtractedText(payload.paragraphs),
       language: payload.language,
+      storage_path: payload.storagePath,
+      original_file_name: payload.originalFileName,
       status: "ready"
     })
     .eq("id", documentId);
