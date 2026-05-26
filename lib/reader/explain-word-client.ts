@@ -49,21 +49,29 @@ export async function fetchExplainWord(params: {
   return response.json() as Promise<ExplainWordPayload>;
 }
 
-export function explainWordPayloadToPanelFields(payload: ExplainWordPayload): {
+export type ExplainPanelFields = {
   wordExplanationId: string;
   word: string;
   pronunciation: string;
   definition: string;
   contextMeaning: string;
+  exampleUsage?: string;
+  difficulty?: string;
   sentence: string;
   explanationSource: ExplainWordPayload["source"];
-} {
+};
+
+export function explainWordPayloadToPanelFields(
+  payload: ExplainWordPayload
+): ExplainPanelFields {
   return {
     wordExplanationId: payload.wordExplanationId,
     word: payload.word,
     pronunciation: payload.pronunciation,
     definition: payload.definition,
     contextMeaning: payload.contextual_meaning,
+    exampleUsage: payload.example_usage,
+    difficulty: payload.difficulty,
     sentence: payload.sentence,
     explanationSource: payload.source
   };

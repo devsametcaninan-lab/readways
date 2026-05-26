@@ -8,7 +8,8 @@ import type { ReaderDocument } from "@/lib/documents/types";
 import {
   explainWordPayloadToPanelFields,
   fetchExplainWord,
-  type ExplainClickPayload
+  type ExplainClickPayload,
+  type ExplainPanelFields
 } from "@/lib/reader/explain-word-client";
 import {
   cleanPhraseText,
@@ -76,6 +77,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
   const selectedHighlightKeyRef = useRef<string | null>(null);
   const fetchAbortRef = useRef<AbortController | null>(null);
   const saveInFlightRef = useRef(false);
+  const selectionRef = useRef<PanelVocabularySelection | null>(null);
+  const savedWordKeysRef = useRef(new Set<string>());
+
+  selectionRef.current = selection;
 
   const { pendingPhrase, clearPending } = usePhraseSelection({
     articleRef,
@@ -88,70 +93,108 @@ export default function ReaderView({ document }: ReaderViewProps) {
       return;
     }
 
-    setSelection((current) => {
-      if (
-        !current ||
-        current.status !== "ready" ||
-        !current.wordExplanationId ||
-        current.saveState === "saving" ||
-        current.saveState === "saved" ||
-        current.saveState === "already_saved"
-      ) {
-        return current;
+    const current = selectionRef.current;
+    if (
+      !current ||
+      current.status !== "ready" ||
+      !current.wordExplanationId ||
+      current.saveState === "saving" ||
+      current.saveState === "saved" ||
+      current.saveState === "already_saved"
+    ) {
+      return;
+    }
+
+    const persistKey = `${current.documentId}:${current.normalizedWord}`;
+    if (savedWordKeysRef.current.has(persistKey)) {
+      setSelection((prev) => {
+        if (!prev || prev.highlightKey !== current.highlightKey) {
+          return prev;
+        }
+
+        return { ...prev, saveState: "already_saved" };
+      });
+      toast.info("Already saved");
+      return;
+    }
+
+    saveInFlightRef.current = true;
+    setSelection((prev) => {
+      if (!prev || prev.highlightKey !== current.highlightKey) {
+        return prev;
       }
 
-      saveInFlightRef.current = true;
-
-      void (async () => {
-        try {
-          const result = await fetchSaveWord({
-            documentId: current.documentId,
-            wordExplanationId: current.wordExplanationId!,
-            word: current.word
-          });
-
-          setSelection((prev) => {
-            if (!prev || prev.highlightKey !== current.highlightKey) {
-              return prev;
-            }
-
-            return {
-              ...prev,
-              saveState:
-                result.status === "already_saved" ? "already_saved" : "saved"
-            };
-          });
-
-          if (result.status === "already_saved") {
-            toast.info("Already saved");
-          } else {
-            toast.success("Saved to flashcards");
-          }
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : "Could not save word.";
-          toast.error(message);
-
-          setSelection((prev) => {
-            if (!prev || prev.highlightKey !== current.highlightKey) {
-              return prev;
-            }
-
-            return {
-              ...prev,
-              saveState: "idle"
-            };
-          });
-        } finally {
-          saveInFlightRef.current = false;
-        }
-      })();
-
-      return { ...current, saveState: "saving" };
+      return { ...prev, saveState: "saving" };
     });
+
+    try {
+      const result = await fetchSaveWord({
+        documentId: current.documentId,
+        wordExplanationId: current.wordExplanationId,
+        word: current.word
+      });
+
+      savedWordKeysRef.current.add(persistKey);
+
+      setSelection((prev) => {
+        if (!prev || prev.highlightKey !== current.highlightKey) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          saveState: result.status === "already_saved" ? "already_saved" : "saved"
+        };
+      });
+
+      if (result.status === "already_saved") {
+        toast.info("Already saved");
+      } else {
+        toast.success("Saved to flashcards");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not save word.";
+      toast.error(message);
+
+      setSelection((prev) => {
+        if (!prev || prev.highlightKey !== current.highlightKey) {
+          return prev;
+        }
+
+        return { ...prev, saveState: "idle" };
+      });
+    } finally {
+      saveInFlightRef.current = false;
+    }
   }, [toast]);
 
   const pageLabel = `${document.pageCount} page${document.pageCount === 1 ? "" : "s"}`;
+
+  const applyPanelFields = useCallback(
+    (click: ExplainClickPayload, fields: ExplainPanelFields, displayLabel: string) => {
+      setSelection({
+        saveKey: `${click.highlightKey}:${click.normalizedWord}`,
+        highlightKey: click.highlightKey,
+        documentId: document.id,
+        wordExplanationId: fields.wordExplanationId,
+        normalizedWord: click.normalizedWord,
+        word: displayLabel,
+        partOfSpeech: click.kind === "phrase" ? "phrase" : "word",
+        pronunciation: fields.pronunciation,
+        definition: fields.definition,
+        contextMeaning: fields.contextMeaning,
+        exampleUsage: fields.exampleUsage,
+        difficulty: fields.difficulty,
+        sentence: fields.sentence,
+        sourceTitle: document.title,
+        status: "ready",
+        saveState: "idle",
+        explanationSource: fields.explanationSource
+      });
+    },
+    [document.id, document.title]
+  );
 
   const requestExplanation = useCallback(
     (click: ExplainClickPayload, phraseRange: PhraseHighlightRange | null) => {
@@ -185,30 +228,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
           const fields = explainWordPayloadToPanelFields(payload);
           const displayLabel =
             click.kind === "phrase"
-              ? cleanPhraseText(fields.word) || cleanPhraseText(click.rawWord)
+              ? cleanPhraseText(click.rawWord) || cleanPhraseText(fields.word)
               : cleanDisplayWord(fields.word) || cleanDisplayWord(click.rawWord);
 
-          setSelection({
-            saveKey: `${click.highlightKey}:${click.normalizedWord}`,
-            highlightKey: click.highlightKey,
-            documentId: document.id,
-            wordExplanationId: fields.wordExplanationId,
-            normalizedWord: click.normalizedWord,
-            word: displayLabel,
-            partOfSpeech: click.kind === "phrase" ? "phrase" : "word",
-            pronunciation: fields.pronunciation,
-            definition: fields.definition,
-            contextMeaning: fields.contextMeaning,
-            sentence: fields.sentence,
-            sourceTitle: document.title,
-            status: "ready",
-            saveState: "idle",
-            explanationSource: fields.explanationSource
-          });
-
-          if (fields.explanationSource === "ai") {
-            toast.success("Explanation ready", 3200);
-          }
+          applyPanelFields(click, fields, displayLabel);
         } catch (error) {
           if (isAbortError(error) || controller.signal.aborted) {
             return;
@@ -243,7 +266,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
         }
       })();
     },
-    [document.id, document.title, toast]
+    [applyPanelFields, document.id, document.title, toast]
   );
 
   const handleWordClick = useCallback(

@@ -1,11 +1,13 @@
 import { documentBelongsToUser } from "@/lib/ai-dictionary/document-ownership";
-import { normalizeWord } from "@/lib/ai-dictionary/normalize-word";
 import type { SupabaseClient } from "@/lib/supabase/types";
 import type { Flashcard, SavedWord } from "@/lib/supabase/types";
+import type { WordExplanationRecord } from "./verify";
+import { isUniqueViolation } from "@/lib/supabase/postgres-errors";
 import {
   buildFlashcardBack,
   INITIAL_FLASHCARD_DIFFICULTY
 } from "./flashcard-back";
+import { normalizeStoredWord } from "./normalize-stored-word";
 import type { SaveWordResponse } from "./types";
 import { getWordExplanationForUser } from "./verify";
 
@@ -51,6 +53,61 @@ async function fetchFlashcardForSavedWord(
   return data;
 }
 
+async function insertFlashcardForSavedWord(params: {
+  supabase: SupabaseClient;
+  userId: string;
+  savedWord: SavedWord;
+  explanation: WordExplanationRecord;
+  displayWord: string;
+}): Promise<Flashcard | null> {
+  const { supabase, userId, savedWord, explanation, displayWord } = params;
+  const storedWord = savedWord.word;
+
+  const definition = explanation.definition ?? "";
+  const contextualMeaning = explanation.contextual_meaning ?? "";
+  const back = buildFlashcardBack({
+    definition,
+    contextual_meaning: contextualMeaning,
+    sentence: explanation.sentence
+  });
+
+  const { data: flashcard, error } = await supabase
+    .from("flashcards")
+    .insert({
+      user_id: userId,
+      saved_word_id: savedWord.id,
+      front: displayWord.trim() || storedWord,
+      back,
+      difficulty: INITIAL_FLASHCARD_DIFFICULTY,
+      next_review_at: new Date().toISOString()
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    if (isUniqueViolation(error)) {
+      return fetchFlashcardForSavedWord(supabase, userId, savedWord.id);
+    }
+    return null;
+  }
+
+  return flashcard;
+}
+
+function alreadySavedResponse(
+  savedWord: SavedWord,
+  flashcard: Flashcard | null
+): PersistSaveWordResult {
+  return {
+    ok: true,
+    response: {
+      status: "already_saved",
+      savedWord,
+      flashcard
+    }
+  };
+}
+
 export type PersistSaveWordResult =
   | { ok: true; response: SaveWordResponse }
   | { ok: false; reason: "forbidden_document" | "forbidden_explanation" | "db_error" };
@@ -80,7 +137,10 @@ export async function persistSaveWord(params: {
     return { ok: false, reason: "forbidden_explanation" };
   }
 
-  const storedWord = normalizeWord(word) || explanation.word;
+  const storedWord = normalizeStoredWord(word, explanation.word);
+  if (!storedWord) {
+    return { ok: false, reason: "db_error" };
+  }
 
   const existing = await findExistingSavedWord({
     supabase,
@@ -96,14 +156,7 @@ export async function persistSaveWord(params: {
       existing.id
     );
 
-    return {
-      ok: true,
-      response: {
-        status: "already_saved",
-        savedWord: existing,
-        flashcard
-      }
-    };
+    return alreadySavedResponse(existing, flashcard);
   }
 
   const { data: savedWord, error: savedWordError } = await supabase
@@ -119,31 +172,32 @@ export async function persistSaveWord(params: {
     .single();
 
   if (savedWordError || !savedWord) {
+    if (isUniqueViolation(savedWordError)) {
+      const raced = await findExistingSavedWord({
+        supabase,
+        userId,
+        documentId,
+        word: storedWord
+      });
+
+      if (raced) {
+        const flashcard = await fetchFlashcardForSavedWord(supabase, userId, raced.id);
+        return alreadySavedResponse(raced, flashcard);
+      }
+    }
+
     return { ok: false, reason: "db_error" };
   }
 
-  const definition = explanation.definition ?? "";
-  const contextualMeaning = explanation.contextual_meaning ?? "";
-  const back = buildFlashcardBack({
-    definition,
-    contextual_meaning: contextualMeaning,
-    sentence: explanation.sentence
+  const flashcard = await insertFlashcardForSavedWord({
+    supabase,
+    userId,
+    savedWord,
+    explanation,
+    displayWord: word
   });
 
-  const { data: flashcard, error: flashcardError } = await supabase
-    .from("flashcards")
-    .insert({
-      user_id: userId,
-      saved_word_id: savedWord.id,
-      front: word.trim() || storedWord,
-      back,
-      difficulty: INITIAL_FLASHCARD_DIFFICULTY,
-      next_review_at: new Date().toISOString()
-    })
-    .select("*")
-    .single();
-
-  if (flashcardError || !flashcard) {
+  if (!flashcard) {
     await supabase.from("saved_words").delete().eq("id", savedWord.id);
     return { ok: false, reason: "db_error" };
   }

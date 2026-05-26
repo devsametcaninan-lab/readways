@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { PanelVocabularySelection } from "@/lib/reader/types";
 import Spinner from "@/components/feedback/Spinner";
 import SuccessCheck from "@/components/feedback/SuccessCheck";
@@ -16,7 +17,7 @@ type VocabularyPanelProps = {
 };
 
 function sourceLabel(source: "cache" | "ai"): string {
-  return source === "cache" ? "Cached explanation" : "AI explanation";
+  return source === "cache" ? "From cache" : "AI generated";
 }
 
 function saveButtonLabel(selection: PanelVocabularySelection): string {
@@ -38,7 +39,7 @@ function saveButtonLabel(selection: PanelVocabularySelection): string {
 
 const EXPLANATION_TEXT_MIN_HEIGHT = "min-h-[4.25rem]";
 
-export default function VocabularyPanel({
+function VocabularyPanel({
   selection,
   onSave,
   emptyTitle = "Select a word",
@@ -51,7 +52,8 @@ export default function VocabularyPanel({
   const canSave =
     isReady &&
     Boolean(selection?.wordExplanationId) &&
-    selection.saveState === "idle";
+    selection.saveState === "idle" &&
+    !isSaving;
 
   const saveTitle = isLoading
     ? "Explanation loading…"
@@ -60,6 +62,10 @@ export default function VocabularyPanel({
       : !selection?.wordExplanationId && isReady
         ? "Explanation unavailable"
         : undefined;
+
+  const explanationKey = selection
+    ? `${selection.highlightKey}:${selection.status}:${selection.explanationSource ?? "none"}`
+    : "empty";
 
   return (
     <aside className="flex w-full shrink-0 flex-col border-t border-white/[0.1] bg-[#0e0f14] lg:w-[320px] lg:border-l lg:border-t-0">
@@ -77,7 +83,7 @@ export default function VocabularyPanel({
           <>
             <h3 className="text-2xl font-medium text-white">{selection.word}</h3>
             <p className="mt-2 flex min-h-[1.25rem] flex-wrap items-center gap-x-1.5 text-sm text-zinc-400">
-              <span>{selection.partOfSpeech}</span>
+              <span className="capitalize">{selection.partOfSpeech}</span>
               {isLoading ? (
                 <>
                   <span aria-hidden="true">·</span>
@@ -90,6 +96,12 @@ export default function VocabularyPanel({
                 </>
               ) : null}
             </p>
+
+            {isReady && selection.explanationSource ? (
+              <p className="mt-2 text-[11px] tracking-[0.04em] text-zinc-600">
+                {sourceLabel(selection.explanationSource)}
+              </p>
+            ) : null}
 
             <div className="mt-6 space-y-5">
               <div>
@@ -119,46 +131,51 @@ export default function VocabularyPanel({
               </div>
             ) : (
               <div
+                key={explanationKey}
                 className="mt-6 space-y-6"
                 aria-busy={isLoading}
                 aria-live="polite"
               >
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                    Definition
+                    In this sentence
                   </p>
                   <div className={`mt-2.5 ${EXPLANATION_TEXT_MIN_HEIGHT}`}>
                     {isLoading ? (
-                      <ExplanationTextSkeleton lines={3} />
+                      <ExplanationTextSkeleton lines={2} />
                     ) : (
-                      <p className="text-[15px] leading-relaxed text-zinc-300">
-                        {selection.definition}
+                      <p className="animate-fade-in text-[15px] leading-relaxed text-zinc-200">
+                        {selection.contextMeaning}
                       </p>
                     )}
                   </div>
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                    In this sentence
+                    General meaning
                   </p>
                   <div className={`mt-2.5 ${EXPLANATION_TEXT_MIN_HEIGHT}`}>
                     {isLoading ? (
-                      <ExplanationTextSkeleton lines={3} />
+                      <ExplanationTextSkeleton lines={2} />
                     ) : (
-                      <p className="text-[15px] leading-relaxed text-zinc-300">
-                        {selection.contextMeaning}
+                      <p className="animate-fade-in text-[15px] leading-relaxed text-zinc-300">
+                        {selection.definition}
                       </p>
                     )}
                   </div>
                 </div>
+                {isReady && selection.exampleUsage ? (
+                  <div className="animate-fade-in">
+                    <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
+                      Example
+                    </p>
+                    <p className="mt-2.5 text-[14px] leading-relaxed text-zinc-400">
+                      {selection.exampleUsage}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             )}
-
-            {isReady && selection.explanationSource ? (
-              <p className="mt-5 text-[11px] uppercase tracking-[0.08em] text-zinc-600">
-                {sourceLabel(selection.explanationSource)}
-              </p>
-            ) : null}
 
             <button
               type="button"
@@ -185,3 +202,5 @@ export default function VocabularyPanel({
     </aside>
   );
 }
+
+export default memo(VocabularyPanel);

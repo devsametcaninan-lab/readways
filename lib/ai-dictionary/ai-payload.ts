@@ -17,6 +17,8 @@ export function aiExplanationToPayload(params: {
     pronunciation: ai.pronunciation,
     definition: ai.definition,
     contextual_meaning: ai.contextual_meaning,
+    example_usage: ai.example_usage,
+    difficulty: ai.difficulty,
     sentence,
     language
   };

@@ -13,6 +13,8 @@ export type PanelVocabularySelection = {
   pronunciation: string;
   definition: string;
   contextMeaning: string;
+  exampleUsage?: string;
+  difficulty?: string;
   sentence: string;
   sourceTitle: string;
   status: PanelVocabularyStatus;

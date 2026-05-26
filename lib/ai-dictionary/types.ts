@@ -27,6 +27,8 @@ export type ExplainWordPayload = {
   pronunciation: string;
   definition: string;
   contextual_meaning: string;
+  example_usage?: string;
+  difficulty?: "beginner" | "intermediate" | "advanced";
   sentence: string;
   language: string;
   usage?: ExplainWordUsage;

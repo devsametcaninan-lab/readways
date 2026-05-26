@@ -22,7 +22,8 @@ const config: Config = {
         marquee: "marquee 55s linear infinite",
         "toast-in": "toast-in 220ms ease-out forwards",
         "toast-out": "toast-out 180ms ease-in forwards",
-        "check-pop": "check-pop 240ms ease-out forwards"
+        "check-pop": "check-pop 240ms ease-out forwards",
+        "fade-in": "fade-in 280ms ease-out forwards"
       },
       keyframes: {
         marquee: {
@@ -40,6 +41,10 @@ const config: Config = {
         "check-pop": {
           "0%": { opacity: "0", transform: "scale(0.85)" },
           "100%": { opacity: "1", transform: "scale(1)" }
+        },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(4px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" }
         }
       }
     }
