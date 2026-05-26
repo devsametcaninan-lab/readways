@@ -5,6 +5,7 @@ import { useToast } from "@/components/feedback/ToastProvider";
 import { appText } from "@/components/app/app-typography";
 import { explainErrorToastMessage } from "@/lib/feedback/messages";
 import type { ReaderDocument } from "@/lib/documents/types";
+import { documentLanguageLabel } from "@/lib/language/document-language";
 import {
   explainWordPayloadToPanelFields,
   fetchExplainWord,
@@ -212,7 +213,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
             word: click.rawWord,
             sentence: click.sentence,
             documentId: document.id,
-            language: "en",
+            language: document.language,
             signal: controller.signal
           });
 
@@ -265,7 +266,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
         }
       })();
     },
-    [applyPanelFields, document.id, document.title, toast]
+    [applyPanelFields, document.id, document.language, document.title, toast]
   );
 
   const requestExplanationRef = useRef(requestExplanation);
@@ -327,7 +328,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
         <span>
           {pageLabel} · {document.progress}% complete
         </span>
-        <span className="hidden text-zinc-400 sm:inline">Select words to learn</span>
+        <span className="hidden text-zinc-500 sm:inline">
+          {documentLanguageLabel(document.language)}
+        </span>
+        <span className="hidden text-zinc-400 md:inline">Select words to learn</span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">

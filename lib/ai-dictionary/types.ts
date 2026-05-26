@@ -1,3 +1,5 @@
+import type { DocumentLanguage } from "@/lib/language/document-language";
+
 export type ExplainWordRequestBody = {
   word: string;
   sentence: string;
@@ -9,7 +11,7 @@ export type ValidatedExplainWordRequest = {
   word: string;
   sentence: string;
   documentId: string;
-  language: string;
+  language: DocumentLanguage;
 };
 
 export type ExplainWordSource = "cache" | "ai";

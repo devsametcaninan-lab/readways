@@ -1,3 +1,7 @@
+import {
+  languageNameForPrompt,
+  type DocumentLanguage
+} from "@/lib/language/document-language";
 import { countPhraseWords } from "@/lib/reader/phrase-selection";
 
 export type ExplanationPromptMode = "word" | "phrase";
@@ -6,13 +10,19 @@ export function detectExplanationMode(text: string): ExplanationPromptMode {
   return countPhraseWords(text) >= 2 ? "phrase" : "word";
 }
 
-export function buildExplanationSystemPrompt(mode: ExplanationPromptMode): string {
+export function buildExplanationSystemPrompt(
+  mode: ExplanationPromptMode,
+  language: DocumentLanguage
+): string {
+  const languageName = languageNameForPrompt(language);
   const modeBlock =
     mode === "phrase"
       ? `The selection is a PHRASE (idiom, phrasal verb, or multi-word expression). Explain the whole phrase as one unit — never word-by-word unless essential. Examples: "come on", "look up", "in spite of", "as well as".`
       : `The selection is a single WORD. Give a quick gloss plus how it reads in this sentence.`;
 
   return `You help someone who is actively reading a real document and tapped text for a fast explanation.
+
+The document is written in ${languageName}. Write every explanation field in ${languageName} so it matches what the reader is studying.
 
 ${modeBlock}
 
@@ -42,23 +52,24 @@ Output:
 export function buildExplanationUserPrompt(params: {
   word: string;
   sentence: string;
-  language: string;
+  language: DocumentLanguage;
   mode: ExplanationPromptMode;
 }): string {
   const { word, sentence, language, mode } = params;
   const kind = mode === "phrase" ? "Phrase" : "Word";
+  const languageName = languageNameForPrompt(language);
 
   return `${kind}: ${word}
 Sentence (context only — do not copy into fields): ${sentence}
-Language: ${language}
+Document language: ${languageName}
 
-Explain for a reader mid-flow. Prioritize contextual_meaning. Keep all fields compact.`;
+Explain for a reader mid-flow in ${languageName}. Prioritize contextual_meaning. Keep all fields compact.`;
 }
 
 export function buildExplanationRepairUserPrompt(params: {
   word: string;
   sentence: string;
-  language: string;
+  language: DocumentLanguage;
   mode: ExplanationPromptMode;
 }): string {
   return `${buildExplanationUserPrompt(params)}

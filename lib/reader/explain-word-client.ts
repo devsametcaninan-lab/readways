@@ -1,3 +1,7 @@
+import {
+  normalizeDocumentLanguage,
+  type DocumentLanguage
+} from "@/lib/language/document-language";
 import type { ApiErrorBody, ExplainWordPayload } from "@/lib/ai-dictionary/types";
 
 export type ExplainClickKind = "word" | "phrase";
@@ -25,9 +29,11 @@ export async function fetchExplainWord(params: {
   word: string;
   sentence: string;
   documentId: string;
-  language?: string;
+  language: DocumentLanguage | string;
   signal?: AbortSignal;
 }): Promise<ExplainWordPayload> {
+  const language = normalizeDocumentLanguage(params.language);
+
   const response = await fetch("/api/explain-word", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -37,7 +43,7 @@ export async function fetchExplainWord(params: {
       word: params.word,
       sentence: params.sentence,
       documentId: params.documentId,
-      language: params.language ?? "en"
+      language
     })
   });
 

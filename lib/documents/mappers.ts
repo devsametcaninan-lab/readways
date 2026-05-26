@@ -1,3 +1,4 @@
+import { normalizeDocumentLanguage } from "@/lib/language/document-language";
 import { failureMessageForCode, parseDocumentFailureReason } from "./failure-reason";
 import { formatRelativeUpdatedAt } from "./format";
 import type { DocumentListItem, DocumentRecord, ReaderDocument } from "./types";
@@ -35,6 +36,7 @@ export function toReaderDocument(row: DocumentRecord): ReaderDocument | null {
     source: row.file_name,
     pageCount: row.page_count,
     progress: 0,
-    paragraphs
+    paragraphs,
+    language: normalizeDocumentLanguage(row.language)
   };
 }

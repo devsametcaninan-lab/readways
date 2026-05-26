@@ -6,7 +6,7 @@ import type { DocumentRecord, ReaderDocument } from "./types";
 import type { PdfErrorCode } from "@/lib/pdf/errors";
 
 const READER_COLUMNS =
-  "id, title, file_name, file_size, page_count, extracted_text, status, created_at, updated_at, user_id";
+  "id, title, file_name, file_size, page_count, extracted_text, language, status, created_at, updated_at, user_id";
 
 export type ReaderDocumentResult =
   | { kind: "found"; document: ReaderDocument }

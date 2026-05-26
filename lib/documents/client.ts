@@ -4,12 +4,13 @@ import { createClient } from "@/lib/supabase/client";
 import type { DocumentStatus } from "@/lib/supabase/schema";
 import { toDocumentListItem } from "./mappers";
 import type { DocumentListItem, DocumentRecord } from "./types";
+import type { DocumentLanguage } from "@/lib/language/document-language";
 import { encodeDocumentFailureReason } from "./failure-reason";
 import type { PdfErrorCode } from "@/lib/pdf/errors";
 import { paragraphsToExtractedText } from "./text";
 
 const LIST_COLUMNS =
-  "id, title, file_name, file_size, page_count, extracted_text, status, created_at, updated_at";
+  "id, title, file_name, file_size, page_count, extracted_text, language, status, created_at, updated_at";
 
 async function requireUserId(): Promise<string> {
   const supabase = createClient();
@@ -51,7 +52,7 @@ export async function createProcessingDocument(file: File): Promise<string> {
 
 export async function markDocumentReady(
   documentId: string,
-  payload: { pageCount: number; paragraphs: string[] }
+  payload: { pageCount: number; paragraphs: string[]; language: DocumentLanguage }
 ): Promise<void> {
   const supabase = createClient();
 
@@ -60,6 +61,7 @@ export async function markDocumentReady(
     .update({
       page_count: payload.pageCount,
       extracted_text: paragraphsToExtractedText(payload.paragraphs),
+      language: payload.language,
       status: "ready"
     })
     .eq("id", documentId);

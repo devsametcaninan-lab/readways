@@ -1,3 +1,4 @@
+import type { DocumentLanguage } from "@/lib/language/document-language";
 import { getOpenAIConfig } from "./openai-env";
 import {
   buildExplanationRepairUserPrompt,
@@ -21,7 +22,7 @@ async function requestExplanationJson(params: {
   mode: ExplanationPromptMode;
   word: string;
   sentence: string;
-  language: string;
+  language: DocumentLanguage;
   repair: boolean;
   signal?: AbortSignal;
 }): Promise<string | null> {
@@ -43,7 +44,7 @@ async function requestExplanationJson(params: {
       temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: buildExplanationSystemPrompt(mode) },
+        { role: "system", content: buildExplanationSystemPrompt(mode, language) },
         { role: "user", content: userContent }
       ]
     })
@@ -68,7 +69,7 @@ async function requestExplanationJson(params: {
 export async function generateExplanationWithOpenAI(params: {
   word: string;
   sentence: string;
-  language: string;
+  language: DocumentLanguage;
   signal?: AbortSignal;
 }): Promise<GenerateExplanationResult> {
   const config = getOpenAIConfig();

@@ -173,7 +173,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       setStatusLabel("Ready to read");
       await markDocumentReady(pendingDocumentId, {
         pageCount: result.pageCount,
-        paragraphs: result.paragraphs
+        paragraphs: result.paragraphs,
+        language: result.language
       });
 
       notifyDocumentsUpdated();

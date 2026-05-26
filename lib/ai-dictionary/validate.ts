@@ -1,3 +1,4 @@
+import { normalizeDocumentLanguage } from "@/lib/language/document-language";
 import type {
   ExplainWordRequestBody,
   ValidatedExplainWordRequest
@@ -5,7 +6,6 @@ import type {
 
 const WORD_MAX_LENGTH = 80;
 const SENTENCE_MAX_LENGTH = 800;
-const DEFAULT_LANGUAGE = "en";
 
 export type ExplainWordValidationResult =
   | { ok: true; data: ValidatedExplainWordRequest }
@@ -51,10 +51,9 @@ export function validateExplainWordRequest(
     };
   }
 
-  const language =
-    typeof record.language === "string" && record.language.trim().length > 0
-      ? record.language.trim()
-      : DEFAULT_LANGUAGE;
+  const language = normalizeDocumentLanguage(
+    typeof record.language === "string" ? record.language : undefined
+  );
 
   return {
     ok: true,

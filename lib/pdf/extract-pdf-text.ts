@@ -1,5 +1,6 @@
 "use client";
 
+import type { DocumentLanguage } from "@/lib/language/document-language";
 import { validatePdfFileBasics, validatePdfFileSignature, validatePdfPageCount } from "./validate-pdf-file";
 import { textItemsToPageText } from "./extract-page-text";
 import { normalizeExtractedPdfText } from "./normalize-extracted";
@@ -17,6 +18,7 @@ export type ExtractResult = {
   pageCount: number;
   paragraphs: string[];
   textLength: number;
+  language: DocumentLanguage;
 };
 
 let workerConfigured = false;
@@ -115,6 +117,7 @@ export async function extractTextFromPdfFile(
   return {
     pageCount: normalized.pageCount,
     paragraphs: normalized.paragraphs,
-    textLength: normalized.textLength
+    textLength: normalized.textLength,
+    language: normalized.language
   };
 }

@@ -1,4 +1,5 @@
 import type { DocumentStatus } from "@/lib/supabase/schema";
+import type { DocumentLanguage } from "@/lib/language/document-language";
 
 /** Document row fields used across list and reader views */
 export type DocumentRecord = {
@@ -8,6 +9,7 @@ export type DocumentRecord = {
   file_size: number;
   page_count: number;
   extracted_text: string | null;
+  language: string;
   status: DocumentStatus;
   created_at: string;
   updated_at: string;
@@ -34,4 +36,5 @@ export type ReaderDocument = {
   pageCount: number;
   progress: number;
   paragraphs: string[];
+  language: DocumentLanguage;
 };

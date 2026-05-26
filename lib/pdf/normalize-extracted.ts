@@ -1,4 +1,6 @@
 import { extractedTextToParagraphs } from "@/lib/documents/text";
+import { detectDocumentLanguage } from "@/lib/language/detect-document-language";
+import type { DocumentLanguage } from "@/lib/language/document-language";
 import { MAX_EXTRACTED_CHAR_COUNT } from "./constants";
 import { pdfError } from "./errors";
 import { assertReadableExtractedText } from "./detect-scanned";
@@ -9,6 +11,7 @@ export type NormalizedPdfText = {
   paragraphs: string[];
   textLength: number;
   cleanedFullText: string;
+  language: DocumentLanguage;
 };
 
 export function normalizeExtractedPdfText(
@@ -37,11 +40,13 @@ export function normalizeExtractedPdfText(
   }
 
   const textLength = countMeaningfulCharacters(cleanedFullText);
+  const language = detectDocumentLanguage(cleanedFullText);
 
   return {
     pageCount,
     paragraphs,
     textLength,
-    cleanedFullText
+    cleanedFullText,
+    language
   };
 }

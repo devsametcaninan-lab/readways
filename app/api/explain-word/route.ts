@@ -5,6 +5,7 @@ import {
   findCachedWordExplanation
 } from "@/lib/ai-dictionary/cache";
 import { documentBelongsToUser } from "@/lib/ai-dictionary/document-ownership";
+import { getDocumentLanguageForUser } from "@/lib/documents/document-language";
 import { jsonError, jsonExplainWord, jsonRateLimited } from "@/lib/ai-dictionary/http";
 import { generateExplanationWithOpenAI } from "@/lib/ai-dictionary/openai";
 import { normalizeWord } from "@/lib/ai-dictionary/normalize-word";
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
       return jsonError(400, validation.error);
     }
 
-    const { word, sentence, documentId, language } = validation.data;
+    const { word, sentence, documentId } = validation.data;
     const normalizedWord = normalizeWord(word);
 
     if (!normalizedWord) {
@@ -60,6 +61,12 @@ export async function POST(request: Request) {
     if (!ownsDocument) {
       return jsonError(403, "You do not have access to this document.");
     }
+
+    const language = await getDocumentLanguageForUser({
+      supabase,
+      documentId,
+      userId: user.id
+    });
 
     const plan = await getUserPlan(supabase, user.id);
     const sentenceHash = createSentenceHash(sentence);
