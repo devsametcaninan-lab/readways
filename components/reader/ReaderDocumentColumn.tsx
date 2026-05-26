@@ -1,0 +1,90 @@
+"use client";
+
+import { memo, type RefObject } from "react";
+import type { ExplainClickPayload } from "@/lib/reader/explain-word-client";
+import type { PhraseHighlightRange } from "@/lib/reader/phrase-selection";
+import type { PhraseSelectionResolved } from "@/lib/reader/phrase-selection";
+import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
+import PhraseExplainButton from "./PhraseExplainButton";
+import ReaderArticle from "./ReaderArticle";
+import ReaderPreparingOverlay from "./ReaderPreparingOverlay";
+import { readerColumnClass, readerTitleClass } from "./reader-typography";
+
+export type ReaderDocumentColumnProps = {
+  title: string;
+  articleRef: RefObject<HTMLElement | null>;
+  paragraphs: PreparedParagraph[];
+  isPreparing: boolean;
+  activeHighlightKey: string | null;
+  activePhraseRange: PhraseHighlightRange | null;
+  pendingPhrase: PhraseSelectionResolved | null;
+  onWordClick: (payload: ExplainClickPayload) => void;
+  onExplainPhrase: () => void;
+};
+
+function ReaderDocumentColumn({
+  title,
+  articleRef,
+  paragraphs,
+  isPreparing,
+  activeHighlightKey,
+  activePhraseRange,
+  pendingPhrase,
+  onWordClick,
+  onExplainPhrase
+}: ReaderDocumentColumnProps) {
+  return (
+    <div className={readerColumnClass}>
+      <h1 className={readerTitleClass}>{title}</h1>
+
+      {isPreparing ? (
+        <ReaderPreparingOverlay />
+      ) : (
+        <ReaderArticle
+          articleRef={articleRef}
+          paragraphs={paragraphs}
+          activeHighlightKey={activeHighlightKey}
+          activePhraseRange={activePhraseRange}
+          onWordClick={onWordClick}
+        />
+      )}
+
+      {pendingPhrase ? (
+        <PhraseExplainButton rect={pendingPhrase.rect} onExplain={onExplainPhrase} />
+      ) : null}
+    </div>
+  );
+}
+
+function readerDocumentColumnPropsEqual(
+  prev: ReaderDocumentColumnProps,
+  next: ReaderDocumentColumnProps
+): boolean {
+  if (prev.title !== next.title) return false;
+  if (prev.isPreparing !== next.isPreparing) return false;
+  if (prev.paragraphs !== next.paragraphs) return false;
+  if (prev.activeHighlightKey !== next.activeHighlightKey) return false;
+  if (prev.activePhraseRange !== next.activePhraseRange) return false;
+  if (prev.onWordClick !== next.onWordClick) return false;
+  if (prev.onExplainPhrase !== next.onExplainPhrase) return false;
+  if (prev.articleRef !== next.articleRef) return false;
+
+  const prevPhrase = prev.pendingPhrase;
+  const nextPhrase = next.pendingPhrase;
+
+  if (prevPhrase === nextPhrase) return true;
+  if (!prevPhrase || !nextPhrase) return false;
+
+  return (
+    prevPhrase.phrase === nextPhrase.phrase &&
+    prevPhrase.paragraphIndex === nextPhrase.paragraphIndex &&
+    prevPhrase.start === nextPhrase.start &&
+    prevPhrase.end === nextPhrase.end &&
+    prevPhrase.rect.top === nextPhrase.rect.top &&
+    prevPhrase.rect.left === nextPhrase.rect.left &&
+    prevPhrase.rect.width === nextPhrase.rect.width &&
+    prevPhrase.rect.height === nextPhrase.rect.height
+  );
+}
+
+export default memo(ReaderDocumentColumn, readerDocumentColumnPropsEqual);

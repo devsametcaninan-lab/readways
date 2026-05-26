@@ -1,11 +1,13 @@
 "use client";
 
+import { memo } from "react";
+
 type PhraseExplainButtonProps = {
   rect: DOMRect;
   onExplain: () => void;
 };
 
-export default function PhraseExplainButton({
+function PhraseExplainButton({
   rect,
   onExplain
 }: PhraseExplainButtonProps) {
@@ -33,3 +35,5 @@ export default function PhraseExplainButton({
     </div>
   );
 }
+
+export default memo(PhraseExplainButton);

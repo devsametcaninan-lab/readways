@@ -20,18 +20,38 @@ export function usePhraseSelection(params: {
 
   const syncFromSelection = useCallback(() => {
     if (!enabled) {
-      setPending(null);
+      setPending((current) => (current === null ? current : null));
       return;
     }
 
     const article = articleRef.current;
     if (!article) {
-      setPending(null);
+      setPending((current) => (current === null ? current : null));
       return;
     }
 
     const resolved = resolvePhraseSelection({ articleRoot: article, paragraphs });
-    setPending(resolved);
+
+    setPending((current) => {
+      if (!resolved && !current) {
+        return current;
+      }
+
+      if (!resolved || !current) {
+        return resolved;
+      }
+
+      if (
+        current.phrase === resolved.phrase &&
+        current.paragraphIndex === resolved.paragraphIndex &&
+        current.start === resolved.start &&
+        current.end === resolved.end
+      ) {
+        return current;
+      }
+
+      return resolved;
+    });
   }, [articleRef, paragraphs, enabled]);
 
   useEffect(() => {

@@ -21,14 +21,9 @@ import {
 import { cleanDisplayWord } from "@/lib/reader/text-tokens";
 import type { PanelVocabularySelection } from "@/lib/reader/types";
 import { fetchSaveWord } from "@/lib/save-word/client";
-import PhraseExplainButton from "./PhraseExplainButton";
-import {
-  readerArticleClass,
-  readerColumnClass,
-  readerTitleClass
-} from "./reader-typography";
-import SelectableParagraph from "./SelectableParagraph";
+import ReaderDocumentColumn from "./ReaderDocumentColumn";
 import { usePhraseSelection } from "./usePhraseSelection";
+import { usePreparedParagraphs } from "./usePreparedParagraphs";
 import VocabularyPanel from "./VocabularyPanel";
 
 type ReaderViewProps = {
@@ -80,12 +75,16 @@ export default function ReaderView({ document }: ReaderViewProps) {
   const selectionRef = useRef<PanelVocabularySelection | null>(null);
   const savedWordKeysRef = useRef(new Set<string>());
 
+  const { paragraphs: preparedParagraphs, isPreparing } = usePreparedParagraphs(
+    document.paragraphs
+  );
+
   selectionRef.current = selection;
 
   const { pendingPhrase, clearPending } = usePhraseSelection({
     articleRef,
     paragraphs: document.paragraphs,
-    enabled: true
+    enabled: !isPreparing
   });
 
   const handleSave = useCallback(async () => {
@@ -269,14 +268,17 @@ export default function ReaderView({ document }: ReaderViewProps) {
     [applyPanelFields, document.id, document.title, toast]
   );
 
-  const handleWordClick = useCallback(
-    (click: ExplainClickPayload) => {
-      clearPending();
-      clearBrowserSelection();
-      requestExplanation(click, null);
-    },
-    [clearPending, requestExplanation]
-  );
+  const requestExplanationRef = useRef(requestExplanation);
+  requestExplanationRef.current = requestExplanation;
+
+  const clearPendingRef = useRef(clearPending);
+  clearPendingRef.current = clearPending;
+
+  const stableOnWordClick = useCallback((click: ExplainClickPayload) => {
+    clearPendingRef.current();
+    clearBrowserSelection();
+    requestExplanationRef.current(click, null);
+  }, []);
 
   const handleExplainPhrase = useCallback(() => {
     if (!pendingPhrase) {
@@ -309,6 +311,13 @@ export default function ReaderView({ document }: ReaderViewProps) {
     );
   }, [pendingPhrase, clearPending, requestExplanation]);
 
+  const handleExplainPhraseRef = useRef(handleExplainPhrase);
+  handleExplainPhraseRef.current = handleExplainPhrase;
+
+  const stableOnExplainPhrase = useCallback(() => {
+    handleExplainPhraseRef.current();
+  }, []);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
@@ -322,29 +331,17 @@ export default function ReaderView({ document }: ReaderViewProps) {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className={readerColumnClass}>
-          <h1 className={readerTitleClass}>{document.title}</h1>
-
-          <article ref={articleRef} className={readerArticleClass}>
-            {document.paragraphs.map((paragraph, index) => (
-              <SelectableParagraph
-                key={index}
-                paragraph={paragraph}
-                paragraphIndex={index}
-                activeHighlightKey={activeHighlightKey}
-                activePhraseRange={activePhraseRange}
-                onWordClick={handleWordClick}
-              />
-            ))}
-          </article>
-
-          {pendingPhrase ? (
-            <PhraseExplainButton
-              rect={pendingPhrase.rect}
-              onExplain={handleExplainPhrase}
-            />
-          ) : null}
-        </div>
+        <ReaderDocumentColumn
+          title={document.title}
+          articleRef={articleRef}
+          paragraphs={preparedParagraphs}
+          isPreparing={isPreparing}
+          activeHighlightKey={activeHighlightKey}
+          activePhraseRange={activePhraseRange}
+          pendingPhrase={pendingPhrase}
+          onWordClick={stableOnWordClick}
+          onExplainPhrase={stableOnExplainPhrase}
+        />
 
         <VocabularyPanel
           selection={selection}
