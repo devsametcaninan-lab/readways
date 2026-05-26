@@ -2,17 +2,14 @@
 
 import AppStateCard from "@/components/app/AppStateCard";
 import { appText } from "@/components/app/app-typography";
+import LibraryFirstUpload from "@/components/library/LibraryFirstUpload";
 import WelcomeOnboarding from "@/components/onboarding/WelcomeOnboarding";
 import UploadPdfButton from "@/components/upload/UploadPdfButton";
-import { ONBOARDING_COPY } from "@/lib/onboarding/constants";
-import { useOnboarding } from "@/lib/onboarding/OnboardingProvider";
 import { useUserDocuments } from "@/lib/documents/use-user-documents";
 import DocumentCard from "./DocumentCard";
 
 export default function LibraryView() {
   const { documents, loading, error, reload } = useUserDocuments();
-  const { shouldShow } = useOnboarding();
-  const welcomeDone = !shouldShow("welcome");
 
   return (
     <div className="p-6 md:p-8 lg:p-10">
@@ -53,19 +50,7 @@ export default function LibraryView() {
           </div>
         </>
       ) : (
-        <AppStateCard
-          icon="upload"
-          title="No documents yet"
-          description={
-            welcomeDone
-              ? ONBOARDING_COPY.libraryEmptyLead
-              : "Upload your first PDF to start building vocabulary while you read."
-          }
-        >
-          <div className="mt-6 flex justify-center">
-            <UploadPdfButton />
-          </div>
-        </AppStateCard>
+        <LibraryFirstUpload />
       )}
     </div>
   );

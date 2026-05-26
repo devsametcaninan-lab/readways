@@ -12,10 +12,15 @@ export function feedbackForPdfErrorCode(code: PdfErrorCode): UploadFeedback {
 
   switch (code) {
     case "SCANNED":
+      return {
+        variant: "warning",
+        title: "Scanned PDF — OCR coming soon",
+        description
+      };
     case "NO_TEXT":
       return {
         variant: "warning",
-        title: "This PDF looks scanned",
+        title: "No readable text found",
         description
       };
     case "ENCRYPTED":
@@ -25,17 +30,35 @@ export function feedbackForPdfErrorCode(code: PdfErrorCode): UploadFeedback {
         description
       };
     case "TOO_LARGE":
+      return {
+        variant: "warning",
+        title: "File is too large",
+        description
+      };
     case "TOO_MANY_PAGES":
+      return {
+        variant: "warning",
+        title: "Too many pages",
+        description
+      };
     case "TOO_MUCH_TEXT":
       return {
         variant: "warning",
-        title: "This PDF is too large",
+        title: "This PDF is too large to prepare",
+        description
+      };
+    case "CORRUPTED":
+    case "INVALID_FILE":
+    case "EMPTY_FILE":
+      return {
+        variant: "error",
+        title: "Could not process this PDF",
         description
       };
     default:
       return {
         variant: "error",
-        title: "Couldn't prepare this PDF",
+        title: "Could not process this PDF",
         description
       };
   }

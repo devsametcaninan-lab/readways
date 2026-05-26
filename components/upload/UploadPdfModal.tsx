@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/feedback/ToastProvider";
-import Spinner from "@/components/feedback/Spinner";
 import {
   createProcessingDocument,
   markDocumentFailed,
@@ -15,8 +14,8 @@ import {
   storeDocumentPdfFile
 } from "@/lib/documents/upload-storage";
 import { notifyDocumentsUpdated } from "@/lib/documents/events";
+import { useUserDocuments } from "@/lib/documents/use-user-documents";
 import { formatFileSize } from "@/lib/format";
-import { MAX_PDF_BYTES, MAX_PDF_PAGES } from "@/lib/pdf/constants";
 import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import type { ExtractProgress } from "@/lib/pdf/extract-pdf-text";
 import { isPdfUserError } from "@/lib/pdf/errors";
@@ -30,6 +29,12 @@ import {
   feedbackForStorageFailure,
   type UploadFeedback
 } from "@/lib/app/upload-feedback";
+import { PDF_UPLOAD_LIMITS_SHORT } from "@/lib/upload/limits-label";
+import UploadProgressSteps from "@/components/upload/UploadProgressSteps";
+import {
+  workflowStepFromExtractProgress,
+  type UploadWorkflowStepId
+} from "@/lib/upload/workflow-steps";
 
 type UploadState = "empty" | "selected" | "working" | "ready";
 
@@ -60,32 +65,17 @@ function progressPercent(progress: ExtractProgress): number {
   }
 }
 
-function progressLabel(progress: ExtractProgress): string {
-  switch (progress.phase) {
-    case "validating":
-      return "Validating PDF…";
-    case "loading":
-      return "Opening PDF…";
-    case "extracting":
-      return progress.totalPages > 0
-        ? `Extracting text · page ${progress.currentPage} of ${progress.totalPages}`
-        : "Extracting text…";
-    case "cleaning":
-      return "Cleaning document…";
-    default:
-      return "Preparing document…";
-  }
-}
-
 export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const router = useRouter();
   const toast = useToast();
+  const { documents } = useUserDocuments();
   const inputRef = useRef<HTMLInputElement>(null);
   const successToastShownRef = useRef(false);
+  const isFirstUploadRef = useRef(false);
   const [state, setState] = useState<UploadState>("empty");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
-  const [statusLabel, setStatusLabel] = useState("Uploading…");
+  const [workflowStep, setWorkflowStep] = useState<UploadWorkflowStepId>("upload");
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -95,7 +85,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setState("empty");
     setFile(null);
     setProgress(0);
-    setStatusLabel("Uploading…");
+    setWorkflowStep("upload");
     setDocumentId(null);
     setPageCount(null);
     setIsDragging(false);
@@ -105,13 +95,18 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   }, []);
 
   useEffect(() => {
-    if (!open) reset();
-  }, [open, reset]);
+    if (!open) {
+      reset();
+      return;
+    }
+
+    isFirstUploadRef.current = documents.length === 0;
+  }, [open, reset, documents.length]);
 
   useEffect(() => {
     if (open && state === "ready" && !successToastShownRef.current) {
       successToastShownRef.current = true;
-      toast.success("PDF uploaded successfully");
+      toast.success("Your document is ready");
     }
   }, [open, state, toast]);
 
@@ -123,6 +118,15 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose, state]);
+
+  const trackFirstUploadFailed = (metadata: Record<string, unknown>) => {
+    if (!isFirstUploadRef.current) return;
+
+    trackAnalyticsEventClient({
+      eventName: "first_upload_failed",
+      metadata
+    });
+  };
 
   const handleFile = (next: File) => {
     if (!isPdfFile(next)) {
@@ -153,6 +157,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setFile(next);
     setState("selected");
     setProgress(0);
+    setWorkflowStep("upload");
     setDocumentId(null);
     setPageCount(null);
   };
@@ -169,13 +174,21 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     if (dropped) handleFile(dropped);
   };
 
+  const handleUploadAnother = () => {
+    reset();
+  };
+
   const startExtraction = async () => {
     if (!file) return;
 
     setState("working");
     setProgress(0);
-    setStatusLabel("Uploading…");
+    setWorkflowStep("upload");
     setUploadFeedback(null);
+
+    if (isFirstUploadRef.current) {
+      trackAnalyticsEventClient({ eventName: "first_upload_started" });
+    }
 
     let pendingDocumentId: string | null = null;
     let storagePath: string | null = null;
@@ -216,13 +229,12 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
       pendingDocumentId = await createProcessingDocument(file);
       setDocumentId(pendingDocumentId);
-      setProgress(6);
-      setStatusLabel("Uploading…");
+      setProgress(8);
 
       const stored = await storeDocumentPdfFile(pendingDocumentId, file);
       storagePath = stored.storagePath;
-      setProgress(12);
-      setStatusLabel("Stored securely…");
+      setProgress(18);
+      setWorkflowStep("extract");
 
       trackAnalyticsEventClient({
         eventName: "pdf_storage_uploaded",
@@ -238,19 +250,19 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         storagePath: stored.storagePath,
         originalFileName: stored.originalFileName,
         onProgress: (extractProgress) => {
-          setProgress(
-            12 + Math.round(progressPercent(extractProgress) * 0.86)
-          );
-          setStatusLabel(progressLabel(extractProgress));
+          setWorkflowStep(workflowStepFromExtractProgress(extractProgress));
+          setProgress(18 + Math.round(progressPercent(extractProgress) * 0.72));
         }
       });
 
+      setWorkflowStep("save");
+      setProgress(94);
       notifyDocumentsUpdated();
 
       if (outcome.kind === "ready") {
-        setStatusLabel("Ready to read");
         setPageCount(outcome.pageCount);
         setProgress(100);
+        setWorkflowStep("ready");
         setState("ready");
 
         trackAnalyticsEventClient({
@@ -273,14 +285,24 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
           }
         });
 
+        if (isFirstUploadRef.current) {
+          trackAnalyticsEventClient({
+            eventName: "first_upload_completed",
+            metadata: {
+              documentId: pendingDocumentId,
+              pageCount: outcome.pageCount
+            }
+          });
+        }
+
         return;
       }
 
       if (outcome.kind === "needs_ocr") {
         const feedback = feedbackForPdfErrorCode("SCANNED");
         setState("selected");
-        setProgress(100);
-        setStatusLabel("Needs OCR");
+        setProgress(0);
+        setWorkflowStep("upload");
         setUploadFeedback(feedback);
         toast.error(feedback.title);
 
@@ -292,13 +314,19 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
           }
         });
 
+        trackFirstUploadFailed({
+          documentId: pendingDocumentId,
+          errorCode: outcome.errorCode,
+          reason: "needs_ocr"
+        });
+
         return;
       }
 
       const feedback = feedbackForPdfErrorCode(outcome.errorCode);
       setState("selected");
-      setProgress(100);
-      setStatusLabel("Failed to parse");
+      setProgress(0);
+      setWorkflowStep("upload");
       setUploadFeedback(feedback);
       toast.error(feedback.title);
 
@@ -318,6 +346,13 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
           hadStorage: true
         }
       });
+
+      trackFirstUploadFailed({
+        documentId: pendingDocumentId,
+        errorCode: outcome.errorCode
+      });
+
+      return;
     } catch (err) {
       if (isDocumentStorageUploadError(err)) {
         if (pendingDocumentId) {
@@ -338,8 +373,16 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         notifyDocumentsUpdated();
         setDocumentId(null);
         setState("selected");
+        setProgress(0);
+        setWorkflowStep("upload");
         setUploadFeedback(feedbackForStorageFailure(err.message));
         toast.error("Upload didn't finish");
+
+        trackFirstUploadFailed({
+          documentId: pendingDocumentId,
+          reason: "storage_failed"
+        });
+
         return;
       }
 
@@ -385,24 +428,42 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       }
 
       setState("selected");
+      setProgress(0);
+      setWorkflowStep("upload");
+
       if (isPdfUserError(err)) {
         const feedback = feedbackForPdfErrorCode(err.code);
         setUploadFeedback(feedback);
         toast.error(feedback.title);
+
+        trackFirstUploadFailed({
+          documentId: pendingDocumentId,
+          errorCode: err.code
+        });
       } else if (err instanceof Error) {
         setUploadFeedback({
           variant: "error",
-          title: "Couldn't prepare this PDF",
+          title: "Could not process this PDF",
           description: err.message
         });
-        toast.error("Couldn't prepare this PDF");
+        toast.error("Could not process this PDF");
+
+        trackFirstUploadFailed({
+          documentId: pendingDocumentId,
+          reason: "unknown"
+        });
       } else {
         setUploadFeedback({
           variant: "error",
-          title: "Couldn't prepare this PDF",
+          title: "Could not process this PDF",
           description: "Try another file, or upload a PDF with selectable text."
         });
-        toast.error("Couldn't prepare this PDF");
+        toast.error("Could not process this PDF");
+
+        trackFirstUploadFailed({
+          documentId: pendingDocumentId,
+          reason: "unknown"
+        });
       }
     }
   };
@@ -419,7 +480,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="upload-pdf-title"
@@ -427,161 +488,220 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       <button
         type="button"
         aria-label="Close"
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={isBusy ? undefined : onClose}
         disabled={isBusy}
       />
 
-      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/[0.12] bg-[#12141d] p-6 shadow-[0_32px_80px_rgba(0,0,0,0.6)] md:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 id="upload-pdf-title" className="text-xl font-medium tracking-tight text-white md:text-2xl">
-              Upload PDF
-            </h2>
-            <p className="mt-1.5 text-sm text-zinc-400">
-              Text-based PDFs only · up to 10 MB · {MAX_PDF_PAGES} pages
-            </p>
-          </div>
-          {!isBusy && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-white/[0.12] px-2.5 py-1 text-xs text-zinc-400 transition hover:bg-white/[0.04] hover:text-zinc-200"
-            >
-              Close
-            </button>
-          )}
-        </div>
-
-        {state === "ready" ? (
-          <div className="mt-8 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-accent/30 bg-accent/10">
-              <svg className="h-5 w-5 text-accentSoft" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+      <div className="relative z-10 flex max-h-[min(92dvh,680px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/[0.12] bg-[#12141d] shadow-[0_32px_80px_rgba(0,0,0,0.6)]">
+        <div className="overflow-y-auto overscroll-contain p-5 sm:p-8">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2
+                id="upload-pdf-title"
+                className="text-lg font-medium tracking-tight text-white sm:text-xl md:text-2xl"
+              >
+                Upload PDF
+              </h2>
+              <p className="mt-1.5 text-sm text-zinc-400">{PDF_UPLOAD_LIMITS_SHORT}</p>
             </div>
-            <p className="mt-4 text-base font-medium text-white">Ready to read</p>
-            <p className="mt-2 text-sm text-zinc-400">
-              {file?.name}
-              {pageCount != null ? ` · ${pageCount} page${pageCount === 1 ? "" : "s"} prepared` : ""}
-            </p>
-            <p className="mt-1 text-[12px] text-zinc-500">Stored securely</p>
-            <button
-              type="button"
-              onClick={handleOpenReader}
-              className="mt-6 w-full rounded-lg border border-accent/30 bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#6D7EFF]"
-            >
-              Open in Reader
-            </button>
-          </div>
-        ) : (
-          <>
-            <div
-              onDragEnter={(e) => {
-                e.preventDefault();
-                if (!isBusy) setIsDragging(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setIsDragging(false);
-              }}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={isBusy ? undefined : onDrop}
-              className={`mt-6 rounded-xl border border-dashed px-6 py-10 text-center transition ${
-                isDragging
-                  ? "border-accent/40 bg-accent/[0.06] shadow-[0_0_32px_rgba(124,140,255,0.12)]"
-                  : "border-white/[0.16] bg-[#0e1016] hover:border-white/[0.2]"
-              } ${isBusy ? "pointer-events-none opacity-80" : ""}`}
-            >
-              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.03]">
-                <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </div>
-              <p className="mt-4 text-sm text-zinc-300">
-                {state === "empty" ? "Drag and drop your PDF here" : "Drop a different PDF to replace"}
-              </p>
-              <p className="mt-1 text-[12px] text-zinc-500">
-                PDF files only · Max {formatFileSize(MAX_PDF_BYTES)} · Up to {MAX_PDF_PAGES} pages
-              </p>
-              {!isBusy && (
-                <button
-                  type="button"
-                  onClick={() => inputRef.current?.click()}
-                  className="mt-5 rounded-lg border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 transition hover:border-white/[0.16] hover:bg-white/[0.06]"
-                >
-                  Choose file
-                </button>
-              )}
-              <input
-                ref={inputRef}
-                type="file"
-                accept="application/pdf,.pdf"
-                className="hidden"
-                onChange={onInputChange}
-                disabled={isBusy}
-              />
-            </div>
-
-            {uploadFeedback ? (
-              <div className="mt-3">
-                <AppStateInline
-                  variant={uploadFeedback.variant}
-                  title={uploadFeedback.title}
-                  description={uploadFeedback.description}
-                />
-                {uploadFeedback.showUpgradeCta ? (
-                  <div className="mt-3">
-                    <UpgradeCta source="upload_pdf_modal" className="w-full" />
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {file && (
-              <div className="mt-4 rounded-xl border border-white/[0.12] bg-[#0e1016] px-4 py-3.5">
-                <p className="truncate text-sm font-medium text-zinc-100">{file.name}</p>
-                <p className="mt-1 text-[12px] text-zinc-500">{formatFileSize(file.size)}</p>
-              </div>
-            )}
-
-            {state === "working" && (
-              <div className="mt-5">
-                <p className="mb-2 flex items-center gap-2 text-sm text-zinc-300">
-                  <Spinner />
-                  {statusLabel}
-                </p>
-                <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
-                  <span>Preparing your document</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.1]">
-                  <div
-                    className="h-full rounded-full bg-accent/80 transition-[width] duration-200 ease-out"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {state === "selected" && (
+            {!isBusy && state !== "ready" && (
               <button
                 type="button"
-                onClick={startExtraction}
-                disabled={isBusy}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#6D7EFF] disabled:cursor-not-allowed disabled:opacity-70"
+                onClick={onClose}
+                className="min-h-[40px] shrink-0 rounded-md border border-white/[0.12] px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/[0.04] hover:text-zinc-200"
               >
-                Extract and prepare
+                Close
               </button>
             )}
+          </div>
 
-            {state === "empty" && (
-              <p className="mt-4 text-center text-[12px] text-zinc-600">
-                Text is extracted in your browser and saved to your ReadWays library.
-              </p>
-            )}
-          </>
-        )}
+          {state === "ready" ? (
+            <div className="mt-6 sm:mt-8">
+              <div className="text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-emerald-500/25 bg-emerald-500/[0.08]">
+                  <svg
+                    className="h-5 w-5 text-emerald-300/90"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="mt-4 text-base font-medium text-white">Your document is ready.</p>
+                {file ? (
+                  <p className="mt-2 truncate px-2 text-sm text-zinc-400">
+                    {file.name}
+                    {pageCount != null
+                      ? ` · ${pageCount} page${pageCount === 1 ? "" : "s"}`
+                      : ""}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="mt-6">
+                <UploadProgressSteps activeStep="ready" />
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={handleOpenReader}
+                  className="min-h-[48px] w-full rounded-lg border border-accent/30 bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-[#6D7EFF]"
+                >
+                  Open in Reader
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUploadAnother}
+                  className="min-h-[48px] w-full rounded-lg border border-white/[0.12] bg-white/[0.03] px-5 py-3 text-sm text-zinc-300 transition hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-zinc-100"
+                >
+                  Upload another PDF
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  if (!isBusy) setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    setIsDragging(false);
+                  }
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (!isBusy) setIsDragging(true);
+                }}
+                onDrop={isBusy ? undefined : onDrop}
+                className={`mt-5 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-all duration-200 sm:mt-6 sm:px-6 sm:py-10 ${
+                  isDragging
+                    ? "scale-[1.01] border-accent/50 bg-accent/[0.08] shadow-[inset_0_0_0_1px_rgba(124,140,255,0.15)]"
+                    : "border-white/[0.14] bg-[#0e1016] hover:border-white/[0.22] hover:bg-[#10131a]"
+                } ${isBusy ? "pointer-events-none opacity-70" : ""}`}
+              >
+                <div
+                  className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl border transition-colors duration-200 ${
+                    isDragging
+                      ? "border-accent/30 bg-accent/10"
+                      : "border-white/[0.12] bg-white/[0.03]"
+                  }`}
+                >
+                  <svg
+                    className={`h-5 w-5 transition-colors ${isDragging ? "text-accentSoft" : "text-zinc-400"}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                </div>
+                <p className="mt-4 text-sm font-medium text-zinc-200">
+                  {isDragging
+                    ? "Release to add your PDF"
+                    : state === "empty"
+                      ? "Drag and drop your PDF here"
+                      : "Drop to replace this file"}
+                </p>
+                <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500">
+                  {PDF_UPLOAD_LIMITS_SHORT}
+                </p>
+                {!isBusy && (
+                  <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    className="mt-5 min-h-[44px] rounded-lg border border-white/[0.14] bg-white/[0.05] px-5 py-2.5 text-sm text-zinc-200 transition hover:border-white/[0.2] hover:bg-white/[0.08]"
+                  >
+                    Choose file
+                  </button>
+                )}
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={onInputChange}
+                  disabled={isBusy}
+                />
+              </div>
+
+              {file && state !== "working" && (
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-white/[0.12] bg-[#0e1016] px-4 py-3.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.1] bg-white/[0.04]">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                      PDF
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="truncate text-sm font-medium text-zinc-100">{file.name}</p>
+                    <p className="mt-0.5 text-[12px] text-zinc-500">{formatFileSize(file.size)}</p>
+                  </div>
+                </div>
+              )}
+
+              {uploadFeedback ? (
+                <div className="mt-3">
+                  <AppStateInline
+                    variant={uploadFeedback.variant}
+                    title={uploadFeedback.title}
+                    description={uploadFeedback.description}
+                  />
+                  {uploadFeedback.showUpgradeCta ? (
+                    <div className="mt-3">
+                      <UpgradeCta source="upload_pdf_modal" className="w-full min-h-[44px]" />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {state === "working" && (
+                <div className="mt-5">
+                  <UploadProgressSteps activeStep={workflowStep} />
+                  <div className="mt-4">
+                    <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
+                      <span className="text-zinc-400">Preparing your document</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="h-1 overflow-hidden rounded-full bg-white/[0.08]">
+                      <div
+                        className="h-full rounded-full bg-accent/70 transition-[width] duration-300 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {state === "selected" && (
+                <button
+                  type="button"
+                  onClick={startExtraction}
+                  disabled={isBusy}
+                  className="mt-6 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-[#6D7EFF] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  Extract and prepare
+                </button>
+              )}
+
+              {state === "empty" && (
+                <p className="mt-4 text-center text-[12px] leading-relaxed text-zinc-600">
+                  Text is extracted in your browser, then saved securely to your library.
+                </p>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

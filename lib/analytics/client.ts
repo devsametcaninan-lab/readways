@@ -2,6 +2,9 @@ import type { AnalyticsEventName } from "./events";
 
 const CLIENT_TRACKABLE_EVENTS = new Set<AnalyticsEventName>([
   "pdf_uploaded",
+  "first_upload_started",
+  "first_upload_completed",
+  "first_upload_failed",
   "pdf_parse_failed",
   "pdf_storage_uploaded",
   "pdf_storage_failed",
