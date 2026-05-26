@@ -1,3 +1,4 @@
+import { trackEvent } from "@/lib/analytics/track-event";
 import { createClient } from "@/lib/supabase/server";
 import { jsonError } from "@/lib/ai-dictionary/http";
 import { persistSaveWord } from "@/lib/save-word/persist";
@@ -50,6 +51,16 @@ export async function POST(request: Request) {
 
       return jsonError(500, "Could not save word. Please try again.");
     }
+
+    trackEvent({
+      supabase,
+      userId: user.id,
+      eventName: "word_saved",
+      metadata: {
+        documentId,
+        status: result.response.status
+      }
+    });
 
     return NextResponse.json(result.response);
   } catch {

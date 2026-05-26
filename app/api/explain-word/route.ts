@@ -1,3 +1,5 @@
+import { explanationProductEventName } from "@/lib/analytics/explanation-event";
+import { trackEvent } from "@/lib/analytics/track-event";
 import { createClient } from "@/lib/supabase/server";
 import { aiExplanationToPayload } from "@/lib/ai-dictionary/ai-payload";
 import {
@@ -86,6 +88,24 @@ export async function POST(request: Request) {
         plan
       });
 
+      trackEvent({
+        supabase,
+        userId: user.id,
+        eventName: "ai_cache_hit",
+        metadata: {
+          documentId,
+          language,
+          explanationKind: explanationProductEventName(word)
+        }
+      });
+
+      trackEvent({
+        supabase,
+        userId: user.id,
+        eventName: explanationProductEventName(word),
+        metadata: { documentId, language, source: "cache" }
+      });
+
       return jsonExplainWord({
         ...cachedExplanationToPayload(cached),
         usage
@@ -99,6 +119,19 @@ export async function POST(request: Request) {
     });
 
     if (!allowance.allowed) {
+      trackEvent({
+        supabase,
+        userId: user.id,
+        eventName: "ai_limit_reached",
+        metadata: {
+          documentId,
+          language,
+          plan,
+          used: allowance.usage.used,
+          limit: allowance.usage.limit
+        }
+      });
+
       return jsonRateLimited(allowance.message, allowance.usage);
     }
 
@@ -109,6 +142,17 @@ export async function POST(request: Request) {
     });
 
     if (!aiResult.ok) {
+      trackEvent({
+        supabase,
+        userId: user.id,
+        eventName: "ai_error",
+        metadata: {
+          documentId,
+          language,
+          reason: aiResult.reason
+        }
+      });
+
       if (aiResult.reason === "not_configured") {
         return jsonError(
           503,
@@ -154,6 +198,24 @@ export async function POST(request: Request) {
     if (!usageAfter) {
       return jsonError(500, "Could not update usage. Please try again.");
     }
+
+    trackEvent({
+      supabase,
+      userId: user.id,
+      eventName: "ai_generated",
+      metadata: {
+        documentId,
+        language,
+        explanationKind: explanationProductEventName(word)
+      }
+    });
+
+    trackEvent({
+      supabase,
+      userId: user.id,
+      eventName: explanationProductEventName(word),
+      metadata: { documentId, language, source: "ai" }
+    });
 
     return jsonExplainWord({
       ...aiExplanationToPayload({

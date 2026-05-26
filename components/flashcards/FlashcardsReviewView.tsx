@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { appText } from "@/components/app/app-typography";
 import { useToast } from "@/components/feedback/ToastProvider";
+import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import { submitFlashcardReview } from "@/lib/flashcards/client";
 import type { FlashcardReviewItem, SessionStats as SessionStatsData } from "@/lib/flashcards/types";
 import type { ReviewRating } from "@/lib/supabase/schema";
@@ -74,6 +75,13 @@ export default function FlashcardsReviewView({
       if (nextReviewed >= total) {
         setIsComplete(true);
         toast.success("Review completed");
+        trackAnalyticsEventClient({
+          eventName: "review_completed",
+          metadata: {
+            reviewedCount: nextReviewed,
+            deckSize: total
+          }
+        });
         return;
       }
 

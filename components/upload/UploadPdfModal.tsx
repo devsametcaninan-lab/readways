@@ -12,6 +12,7 @@ import {
 import { notifyDocumentsUpdated } from "@/lib/documents/events";
 import { formatFileSize } from "@/lib/format";
 import { MAX_PDF_BYTES, MAX_PDF_PAGES } from "@/lib/pdf/constants";
+import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import { extractTextFromPdfFile, type ExtractProgress } from "@/lib/pdf/extract-pdf-text";
 import { isPdfUserError } from "@/lib/pdf/errors";
 import { validatePdfFileBasics } from "@/lib/pdf/validate-pdf-file";
@@ -181,11 +182,29 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       setPageCount(result.pageCount);
       setProgress(100);
       setState("ready");
+
+      trackAnalyticsEventClient({
+        eventName: "pdf_uploaded",
+        metadata: {
+          documentId: pendingDocumentId,
+          pageCount: result.pageCount,
+          language: result.language,
+          textLength: result.textLength
+        }
+      });
     } catch (err) {
       if (pendingDocumentId) {
         const errorCode = isPdfUserError(err) ? err.code : undefined;
         await markDocumentFailed(pendingDocumentId, errorCode).catch(() => undefined);
         notifyDocumentsUpdated();
+
+        trackAnalyticsEventClient({
+          eventName: "pdf_parse_failed",
+          metadata: {
+            documentId: pendingDocumentId,
+            errorCode: errorCode ?? "UNKNOWN"
+          }
+        });
       }
 
       setState("selected");

@@ -1,4 +1,5 @@
 import AppCard from "@/components/app/AppCard";
+import AnalyticsDevSummary from "@/components/analytics/AnalyticsDevSummary";
 import { mockUser } from "@/lib/mock-data";
 
 export default function SettingsPage() {
@@ -42,6 +43,8 @@ export default function SettingsPage() {
           </p>
           <p className="mt-3 text-sm text-slate-400">Dark theme (default)</p>
         </AppCard>
+
+        {process.env.NODE_ENV === "development" ? <AnalyticsDevSummary /> : null}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { trackEvent } from "@/lib/analytics/track-event";
 import { createClient } from "@/lib/supabase/server";
 import { jsonError } from "@/lib/ai-dictionary/http";
 import { persistFlashcardReview } from "@/lib/flashcards/review-persist";
@@ -45,6 +46,17 @@ export async function POST(request: Request) {
 
       return jsonError(500, "Could not save review. Please try again.");
     }
+
+    trackEvent({
+      supabase,
+      userId: user.id,
+      eventName: "flashcard_reviewed",
+      metadata: {
+        flashcardId,
+        rating,
+        intervalDays: result.response.intervalDays
+      }
+    });
 
     return NextResponse.json(result.response);
   } catch {
