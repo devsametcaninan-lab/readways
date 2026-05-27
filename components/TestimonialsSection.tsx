@@ -1,3 +1,5 @@
+import { getServerT } from "@/lib/i18n/server";
+
 function CardWatermark({ variant }: { variant: "large" | "small" }) {
   if (variant === "large") {
     return (
@@ -64,6 +66,8 @@ function TestimonialCard({
 }
 
 export default function TestimonialsSection() {
+  const t = getServerT();
+
   return (
     <section className="mt-16 md:mt-20">
       <div className="relative">
@@ -74,28 +78,27 @@ export default function TestimonialsSection() {
 
         <div className="relative mx-auto max-w-3xl text-center">
           <h2 className="text-balance text-3xl font-medium tracking-tight text-white md:text-4xl">
-            Loved by readers who learn through real content.
+            {t("landing.testimonialsTitle")}
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-slate-400">
-            From research papers to long-form articles, ReadWays helps people build vocabulary
-            naturally while reading.
+            {t("landing.testimonialsDescription")}
           </p>
         </div>
 
         <div className="relative mt-14 grid gap-4 md:mt-16 md:grid-cols-[1.35fr_1fr] md:gap-5 lg:gap-6">
           <TestimonialCard
             featured
-            quote="ReadWays made reading research papers feel dramatically less exhausting."
-            role="Medical student"
+            quote={t("landing.testimonial1Quote")}
+            role={t("landing.testimonial1Role")}
           />
           <div className="flex flex-col gap-4 md:gap-5">
             <TestimonialCard
-              quote="I finally stopped switching between PDFs and translation tabs."
-              role="Frontend developer"
+              quote={t("landing.testimonial2Quote")}
+              role={t("landing.testimonial2Role")}
             />
             <TestimonialCard
-              quote="Learning vocabulary inside real sentences changes everything."
-              role="Language learner"
+              quote={t("landing.testimonial3Quote")}
+              role={t("landing.testimonial3Role")}
             />
           </div>
         </div>

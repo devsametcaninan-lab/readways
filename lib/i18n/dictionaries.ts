@@ -3,21 +3,7 @@ import tr from "@/messages/tr.json";
 import { DEFAULT_UI_LOCALE, UI_LOCALE_VALUES, type UiLocale } from "./constants";
 
 export type Messages = typeof tr;
-export type TranslationKey =
-  | "nav.library"
-  | "nav.reader"
-  | "nav.savedWords"
-  | "nav.flashcards"
-  | "nav.progress"
-  | "nav.settings"
-  | "common.openMenu"
-  | "common.closeMenu"
-  | "common.cancel"
-  | "common.submit"
-  | "common.signOut"
-  | "common.signingOut"
-  | "common.sendFeedback"
-  | "shell.activity";
+export type TranslationKey = string;
 
 const dictionaries: Record<UiLocale, Messages> = {
   tr,

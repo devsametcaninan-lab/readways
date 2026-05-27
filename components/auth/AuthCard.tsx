@@ -3,6 +3,7 @@
 import { useToast } from "@/components/feedback/ToastProvider";
 import Spinner from "@/components/feedback/Spinner";
 import { useMemo, useState } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 
@@ -14,25 +15,26 @@ type AuthCardProps = {
 
 export default function AuthCard({ mode, plan, nextPath = "/dashboard" }: AuthCardProps) {
   const toast = useToast();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const envReady = hasSupabaseEnv();
 
-  const title = mode === "login" ? "Welcome back" : "Create your account";
+  const title = mode === "login" ? t("auth.welcomeBack") : t("auth.createYourAccount");
   const subtitle =
     mode === "login"
-      ? "Sign in to continue your reading and vocabulary progress."
-      : "Start with Google and open your reading dashboard in seconds.";
+      ? t("auth.loginSubtitle")
+      : t("auth.signupSubtitle");
 
   const planText = useMemo(() => {
-    if (plan === "pro") return "Selected plan: Pro";
-    if (plan === "free") return "Selected plan: Free";
+    if (plan === "pro") return t("auth.selectedPlanPro");
+    if (plan === "free") return t("auth.selectedPlanFree");
     return null;
-  }, [plan]);
+  }, [plan, t]);
 
   const handleGoogleContinue = async () => {
     if (!envReady) return;
     setLoading(true);
-    toast.info("Redirecting to Google…", 3000);
+    toast.info(t("auth.redirectingGoogle"), 3000);
 
     const supabase = createClient();
     const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
@@ -59,10 +61,9 @@ export default function AuthCard({ mode, plan, nextPath = "/dashboard" }: AuthCa
 
       {!envReady ? (
         <div className="mt-6 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3.5 text-left">
-          <p className="text-sm font-medium text-amber-100/90">Sign-in isn&apos;t configured yet</p>
+          <p className="text-sm font-medium text-amber-100/90">{t("auth.authNotConfiguredTitle")}</p>
           <p className="mt-2 text-[13px] leading-relaxed text-amber-200/80">
-            Authentication needs to be set up on this environment before you can continue with
-            Google.
+            {t("auth.authNotConfiguredDescription")}
           </p>
         </div>
       ) : null}
@@ -82,10 +83,10 @@ export default function AuthCard({ mode, plan, nextPath = "/dashboard" }: AuthCa
         {loading ? (
           <>
             <Spinner />
-            Redirecting…
+            {t("common.redirecting")}
           </>
         ) : (
-          "Continue with Google"
+          t("common.continueWithGoogle")
         )}
       </button>
     </div>

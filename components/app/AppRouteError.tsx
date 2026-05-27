@@ -1,6 +1,7 @@
 "use client";
 
 import AppStateCard, { AppStatePage } from "@/components/app/AppStateCard";
+import { useI18n } from "@/lib/i18n/provider";
 
 type AppRouteErrorProps = {
   reset: () => void;
@@ -12,20 +13,25 @@ type AppRouteErrorProps = {
 
 export default function AppRouteError({
   reset,
-  title = "Something went wrong",
-  description = "This page hit an unexpected error. Your account and saved data are safe — try again or return to the dashboard.",
+  title,
+  description,
   backHref = "/dashboard",
-  backLabel = "Back to dashboard"
+  backLabel
 }: AppRouteErrorProps) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t("auth.routeErrorTitle");
+  const resolvedDescription = description ?? t("auth.routeErrorDescription");
+  const resolvedBackLabel = backLabel ?? t("auth.backToDashboard");
+
   return (
     <AppStatePage>
       <div className="w-full max-w-md">
         <AppStateCard
           variant="error"
-          title={title}
-          description={description}
-          action={{ label: "Try again", onClick: reset, variant: "primary" }}
-          secondaryAction={{ label: backLabel, href: backHref, variant: "secondary" }}
+          title={resolvedTitle}
+          description={resolvedDescription}
+          action={{ label: t("common.tryAgain"), onClick: reset, variant: "primary" }}
+          secondaryAction={{ label: resolvedBackLabel, href: backHref, variant: "secondary" }}
         />
       </div>
     </AppStatePage>

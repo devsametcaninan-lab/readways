@@ -1,48 +1,50 @@
 import Link from "next/link";
-
-const plans = [
-  {
-    name: "Free",
-    price: "Free",
-    priceNote: null,
-    badge: null,
-    features: [
-      "Upload limited PDFs",
-      "Save vocabulary words",
-      "Basic flashcards",
-      "Context-based word meanings",
-      "Standard review system"
-    ],
-    cta: "Get started",
-    highlighted: false
-  },
-  {
-    name: "Pro",
-    price: "$12",
-    priceNote: "/mo",
-    badge: "Most popular",
-    features: [
-      "Unlimited PDFs",
-      "AI-powered contextual explanations",
-      "Advanced flashcards",
-      "Smart spaced repetition",
-      "Reading insights & progress",
-      "Priority new features"
-    ],
-    cta: "Start Pro",
-    highlighted: true
-  }
-];
+import { getServerT } from "@/lib/i18n/server";
 
 export default function PricingSection() {
+  const t = getServerT();
+  const plans = [
+    {
+      name: t("landing.pricingFreeName"),
+      price: t("landing.pricingFreePrice"),
+      priceNote: null,
+      badge: null,
+      features: [
+        t("landing.pricingFreeFeature1"),
+        t("landing.pricingFreeFeature2"),
+        t("landing.pricingFreeFeature3"),
+        t("landing.pricingFreeFeature4"),
+        t("landing.pricingFreeFeature5")
+      ],
+      cta: t("common.getStarted"),
+      highlighted: false
+    },
+    {
+      name: t("landing.pricingProName"),
+      price: "$12",
+      priceNote: t("landing.pricingProPerMonth"),
+      badge: t("landing.pricingProBadge"),
+      features: [
+        t("landing.pricingProFeature1"),
+        t("landing.pricingProFeature2"),
+        t("landing.pricingProFeature3"),
+        t("landing.pricingProFeature4"),
+        t("landing.pricingProFeature5"),
+        t("landing.pricingProFeature6")
+      ],
+      cta: t("landing.pricingProCta"),
+      highlighted: true
+    }
+  ];
+
   return (
     <section id="pricing" className="mt-16 text-center md:mt-20">
       <div className="mx-auto max-w-2xl">
         <h2 className="text-balance text-3xl font-medium tracking-tight text-white md:text-4xl">
-          Simple pricing for focused readers.
+          {t("landing.pricingTitle")}
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-slate-400">
-          Start free and upgrade when you want a deeper reading and vocabulary experience.
+          {t("landing.pricingDescription")}
         </p>
       </div>
 
@@ -92,7 +94,7 @@ export default function PricingSection() {
               </ul>
 
               <Link
-                href={plan.name === "Pro" ? "/signup?plan=pro" : "/signup?plan=free"}
+                href={plan.highlighted ? "/signup?plan=pro" : "/signup?plan=free"}
                 className={`mt-10 w-full rounded-full px-6 py-3 text-sm font-medium transition-all duration-300 md:duration-500 ${
                   plan.highlighted
                     ? "border border-accent/30 bg-accent text-white shadow-premium hover:bg-[#6D7EFF]"

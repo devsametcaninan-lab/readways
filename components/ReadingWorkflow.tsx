@@ -1,16 +1,19 @@
+import { getServerT } from "@/lib/i18n/server";
+
 export default function ReadingWorkflow() {
+  const t = getServerT();
+
   return (
     <section id="workflow" className="mt-16 md:mt-20">
       <div className="grid gap-10 md:grid-cols-2 md:gap-16 lg:gap-24">
         <div>
           <h2 className="max-w-lg text-balance text-3xl font-medium tracking-tight text-white md:text-4xl lg:text-[2.75rem] lg:leading-tight">
-            Learning happens inside the sentence.
+            {t("landing.workflowTitle")}
           </h2>
         </div>
         <div className="flex items-end md:pb-1">
           <p className="max-w-md text-lg leading-relaxed text-slate-400">
-            ReadWays turns passive reading into active language acquisition by helping users
-            understand vocabulary directly in context.
+            {t("landing.workflowDescription")}
           </p>
         </div>
       </div>
@@ -46,23 +49,22 @@ export default function ReadingWorkflow() {
           <div className="relative z-10 w-full max-w-2xl">
             <div className="rounded-2xl border border-white/[0.1] bg-[#0b0c11]/90 p-8 shadow-[0_40px_100px_rgba(0,0,0,0.55)] backdrop-blur-sm md:p-12">
               <p className="text-center text-[11px] tracking-wide text-slate-600">
-                The Atlantic · Essay
+                {t("landing.workflowPaperLabel")}
               </p>
 
               <div className="mt-8 space-y-6 text-center text-[15px] leading-[2] text-slate-500 md:text-[16px] md:leading-[2.1]">
                 <p>
-                  Real fluency grows when you stop translating every line and start noticing how
-                  words behave together.
+                  {t("landing.workflowParagraphOne")}
                 </p>
                 <p className="relative inline-block text-left md:text-center">
-                  The best readers make{" "}
+                  {t("landing.workflowParagraphTwoBefore")}
                   <span className="relative inline-block">
                     <span className="border-b-2 border-accent/80 bg-accent/[0.1] px-1 text-slate-200">
-                      deliberate
+                      {t("landing.workflowParagraphTwoHighlight")}
                     </span>
                     <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-accent/90" />
-                  </span>{" "}
-                  choices — returning to passages until meaning feels natural, not forced.
+                  </span>
+                  {t("landing.workflowParagraphTwoAfter")}
                 </p>
               </div>
             </div>
@@ -75,14 +77,13 @@ export default function ReadingWorkflow() {
                   <p className="text-[12px] text-slate-500">/dɪˈlɪbərət/</p>
                 </div>
                 <p className="mt-3 text-[13px] leading-relaxed text-slate-400">
-                  In this sentence: chosen on purpose — not by accident — describing how skilled
-                  readers approach difficult texts.
+                  {t("landing.workflowPopupMeaning")}
                 </p>
                 <button
                   type="button"
                   className="mt-5 w-full rounded-lg border border-accent/20 bg-accent/90 px-4 py-2.5 text-[13px] font-medium text-white transition-colors duration-300 hover:bg-accent"
                 >
-                  Save as flashcard
+                  {t("landing.saveFlashcard")}
                 </button>
               </div>
             </div>

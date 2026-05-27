@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getServerT } from "@/lib/i18n/server";
 
 function LineArt({ children }: { children: ReactNode }) {
   return (
@@ -57,37 +58,34 @@ function FlashcardVisual() {
   );
 }
 
-const features = [
-  {
-    title: "Read real content",
-    description:
-      "Upload PDFs, articles, essays, research papers, or books and read them in a focused, distraction-free workspace.",
-    Visual: PdfStackVisual
-  },
-  {
-    title: "Understand words in context",
-    description:
-      "Click any unfamiliar word and get its meaning based on the sentence you are reading, not just a generic dictionary definition.",
-    Visual: ContextVisual
-  },
-  {
-    title: "Remember with flashcards",
-    description:
-      "Save words instantly and review them later with flashcards built from the original sentence and context.",
-    Visual: FlashcardVisual
-  }
-];
-
 export default function FeatureShowcase() {
+  const t = getServerT();
+  const features = [
+    {
+      title: t("landing.featureReadTitle"),
+      description: t("landing.featureReadDescription"),
+      Visual: PdfStackVisual
+    },
+    {
+      title: t("landing.featureContextTitle"),
+      description: t("landing.featureContextDescription"),
+      Visual: ContextVisual
+    },
+    {
+      title: t("landing.featureFlashcardsTitle"),
+      description: t("landing.featureFlashcardsDescription"),
+      Visual: FlashcardVisual
+    }
+  ];
+
   return (
     <section id="features" className="mt-24 md:mt-32">
       <div className="max-w-3xl">
         <h2 className="text-balance text-3xl font-medium tracking-tight text-white md:text-4xl">
-          Built for deep reading, not passive memorization.
+          {t("landing.featuresTitle")}
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-slate-400">
-          ReadWays turns real PDFs into an interactive language learning workspace — so every article,
-          essay, or book becomes vocabulary practice.
+          {t("landing.featuresDescription")}
         </p>
       </div>
 

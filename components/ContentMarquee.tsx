@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import { getServerT } from "@/lib/i18n/server";
 
 type MarqueeItem = {
   label: string;
@@ -24,7 +25,7 @@ function IconBase({ children }: { children: React.ReactNode }) {
 
 const contentTypes: MarqueeItem[] = [
   {
-    label: "Research Papers",
+    label: "landing.marqueeResearchPapers",
     icon: (
       <IconBase>
         <path d="M3 2.5h7l3 3V13.5H3V2.5z" />
@@ -34,7 +35,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "Technical Docs",
+    label: "landing.marqueeTechnicalDocs",
     icon: (
       <IconBase>
         <path d="M3 4.5 6 2l3 2.5M3 11.5 6 14l3-2.5M8.5 2v12" />
@@ -42,7 +43,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "News Articles",
+    label: "landing.marqueeNewsArticles",
     icon: (
       <IconBase>
         <rect x="2.5" y="3" width="11" height="10" rx="1" />
@@ -51,7 +52,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "Essays",
+    label: "landing.marqueeEssays",
     icon: (
       <IconBase>
         <path d="M4 2.5h6.5L13 5v8.5H4V2.5z" />
@@ -60,7 +61,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "Academic Reading",
+    label: "landing.marqueeAcademicReading",
     icon: (
       <IconBase>
         <path d="M2.5 5.5 8 3l5.5 2.5V12l-5.5 2.5L2.5 12V5.5z" />
@@ -69,7 +70,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "Language Immersion",
+    label: "landing.marqueeLanguageImmersion",
     icon: (
       <IconBase>
         <circle cx="8" cy="8" r="5.5" />
@@ -78,7 +79,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "Scientific PDFs",
+    label: "landing.marqueeScientificPdfs",
     icon: (
       <IconBase>
         <path d="M6 3v2.5M10 3v2.5M5.5 11.5h5" />
@@ -87,7 +88,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "Books",
+    label: "landing.marqueeBooks",
     icon: (
       <IconBase>
         <path d="M3 3.5h4.5v9H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z" />
@@ -97,7 +98,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "Documentation",
+    label: "landing.marqueeDocumentation",
     icon: (
       <IconBase>
         <path d="M3 4h7l3 2.5V13H3V4z" />
@@ -107,7 +108,7 @@ const contentTypes: MarqueeItem[] = [
     )
   },
   {
-    label: "Long-form Reading",
+    label: "landing.marqueeLongFormReading",
     icon: (
       <IconBase>
         <path d="M5 2.5h6v11H5z" />
@@ -118,13 +119,15 @@ const contentTypes: MarqueeItem[] = [
 ];
 
 function MarqueeTrack() {
+  const t = getServerT();
+
   return (
     <div className="flex shrink-0 items-center px-6">
       {contentTypes.map((item, index) => (
         <Fragment key={item.label}>
           <span className="flex items-center gap-2.5 whitespace-nowrap px-5 text-base text-slate-300 md:text-[17px]">
             {item.icon}
-            {item.label}
+            {t(item.label)}
           </span>
           {index < contentTypes.length - 1 && (
             <span className="text-slate-600" aria-hidden>
@@ -138,10 +141,12 @@ function MarqueeTrack() {
 }
 
 export default function ContentMarquee() {
+  const t = getServerT();
+
   return (
     <section
       className="relative -mx-6 mt-2 w-[calc(100%+3rem)] overflow-hidden border-y border-white/[0.06] py-6 md:-mx-10 md:w-[calc(100%+5rem)]"
-      aria-label="Content types you can read in ReadWays"
+      aria-label={t("landing.marqueeAriaLabel")}
     >
       <div
         aria-hidden

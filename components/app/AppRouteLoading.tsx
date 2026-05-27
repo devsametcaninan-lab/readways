@@ -1,4 +1,7 @@
+"use client";
+
 import Spinner from "@/components/feedback/Spinner";
+import { useI18n } from "@/lib/i18n/provider";
 
 type AppRouteLoadingProps = {
   label?: string;
@@ -6,9 +9,12 @@ type AppRouteLoadingProps = {
 };
 
 export default function AppRouteLoading({
-  label = "Loading your workspace…",
+  label,
   fullScreen = false
 }: AppRouteLoadingProps) {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t("auth.loadingWorkspace");
+
   return (
     <div
       className={
@@ -19,7 +25,7 @@ export default function AppRouteLoading({
     >
       <div className="flex flex-col items-center gap-3 text-center">
         <Spinner className="h-5 w-5 text-zinc-400" />
-        <p className="text-sm text-zinc-500">{label}</p>
+        <p className="text-sm text-zinc-500">{resolvedLabel}</p>
       </div>
     </div>
   );
