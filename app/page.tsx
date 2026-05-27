@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import type { Metadata } from "next";
 import Link from "next/link";
 import ContentMarquee from "@/components/ContentMarquee";
 import FeatureShowcase from "@/components/FeatureShowcase";
@@ -8,6 +9,12 @@ import PricingSection from "@/components/PricingSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import FinalCta from "@/components/FinalCta";
 import ProductMockup from "@/components/ProductMockup";
+
+export const metadata: Metadata = {
+  title: "ReadWays - Learn vocabulary while reading PDFs",
+  description:
+    "Upload PDFs, click words in context, save vocabulary as flashcards, and review what you learn."
+};
 
 export default function Home() {
   return (

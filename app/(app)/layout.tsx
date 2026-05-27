@@ -5,7 +5,11 @@ import { requireUser } from "@/lib/auth/require-user";
 
 export const metadata: Metadata = {
   title: "ReadWays App",
-  description: "Read, learn vocabulary, and review with ReadWays."
+  description: "Read, learn vocabulary, and review with ReadWays.",
+  robots: {
+    index: false,
+    follow: false
+  }
 };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

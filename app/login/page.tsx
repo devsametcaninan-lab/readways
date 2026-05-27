@@ -1,9 +1,19 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import AuthCard from "@/components/auth/AuthCard";
 import { sanitizeNextPath } from "@/lib/auth/paths";
 
 type LoginPageProps = {
   searchParams: Promise<{ next?: string; error?: string }>;
+};
+
+export const metadata: Metadata = {
+  title: "Login",
+  description: "Sign in to your ReadWays account.",
+  robots: {
+    index: false,
+    follow: false
+  }
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
