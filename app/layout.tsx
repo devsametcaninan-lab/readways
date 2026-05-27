@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AppProviders from "@/components/feedback/AppProviders";
+import { BRAND_LOGO_PATH } from "@/lib/seo/brand-assets";
 import { getSiteUrl } from "@/lib/seo/site-url";
 import "./globals.css";
 
@@ -29,10 +30,10 @@ export const metadata: Metadata = {
     url: "/",
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "ReadWays preview image"
+        url: BRAND_LOGO_PATH,
+        width: 512,
+        height: 512,
+        alt: "ReadWays logo"
       }
     ]
   },
@@ -41,12 +42,7 @@ export const metadata: Metadata = {
     title: "ReadWays - Learn vocabulary while reading PDFs",
     description:
       "Upload PDFs, click words in context, save vocabulary as flashcards, and review what you learn.",
-    images: ["/og-image.png"]
-  },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png"
+    images: [BRAND_LOGO_PATH]
   }
 };
 
