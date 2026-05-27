@@ -1,0 +1,22 @@
+{
+  "nav": {
+    "library": "Library",
+    "reader": "Reader",
+    "savedWords": "Saved Words",
+    "flashcards": "Flashcards",
+    "progress": "Progress",
+    "settings": "Settings"
+  },
+  "common": {
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "signOut": "Sign out",
+    "signingOut": "Signing out...",
+    "sendFeedback": "Send feedback"
+  },
+  "shell": {
+    "activity": "Activity"
+  }
+}

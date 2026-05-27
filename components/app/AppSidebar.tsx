@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useI18n } from "@/lib/i18n/provider";
 import { appNavItems, isNavActive } from "./nav-config";
 import SidebarNavIcon from "./SidebarNavIcon";
 import SidebarUserMenu from "./SidebarUserMenu";
@@ -17,6 +18,7 @@ export default function AppSidebar({
 }) {
   const pathname = usePathname();
   const appUser = useAppUser();
+  const { t } = useI18n();
 
   const nav = (
     <>
@@ -50,7 +52,7 @@ export default function AppSidebar({
               }`}
             >
               <SidebarNavIcon type={item.icon} active={active} />
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           );
         })}
@@ -70,7 +72,7 @@ export default function AppSidebar({
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={t("common.closeMenu")}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />

@@ -3,10 +3,12 @@
 import { useFormStatus } from "react-dom";
 import { signOut } from "@/lib/auth/actions";
 import { clearAppSessionState } from "@/lib/auth/session-client";
+import { useI18n } from "@/lib/i18n/provider";
 import Spinner from "./Spinner";
 
 export default function SignOutButton() {
   const { pending } = useFormStatus();
+  const { t } = useI18n();
 
   return (
     <button
@@ -17,10 +19,10 @@ export default function SignOutButton() {
       {pending ? (
         <>
           <Spinner />
-          Signing out…
+          {t("common.signingOut")}
         </>
       ) : (
-        "Sign out"
+        t("common.signOut")
       )}
     </button>
   );

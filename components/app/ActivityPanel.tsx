@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { appText } from "./app-typography";
 import { fetchDashboardDataForCurrentUser } from "@/lib/dashboard/client";
 import type { DashboardData } from "@/lib/dashboard/types";
 
 export default function ActivityPanel() {
+  const { t } = useI18n();
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +41,7 @@ export default function ActivityPanel() {
   return (
     <aside className="hidden w-[280px] shrink-0 flex-col border-l border-white/[0.1] bg-[#0e0f14] xl:flex">
       <div className="border-b border-white/[0.1] px-4 py-3">
-        <p className={appText.label}>Activity</p>
+        <p className={appText.label}>{t("shell.activity")}</p>
       </div>
 
       <div className="flex-1 space-y-6 overflow-y-auto p-4">

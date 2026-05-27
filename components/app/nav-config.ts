@@ -1,18 +1,24 @@
 import type { SidebarIconType } from "./SidebarNavIcon";
 
 export type AppNavItem = {
-  label: string;
+  labelKey:
+    | "nav.library"
+    | "nav.reader"
+    | "nav.savedWords"
+    | "nav.flashcards"
+    | "nav.progress"
+    | "nav.settings";
   href: string;
   icon: SidebarIconType;
 };
 
 export const appNavItems: AppNavItem[] = [
-  { label: "Library", href: "/library", icon: "library" },
-  { label: "Reader", href: "/reader", icon: "reader" },
-  { label: "Saved Words", href: "/saved-words", icon: "saved" },
-  { label: "Flashcards", href: "/flashcards", icon: "flashcards" },
-  { label: "Progress", href: "/dashboard", icon: "progress" },
-  { label: "Settings", href: "/settings", icon: "settings" }
+  { labelKey: "nav.library", href: "/library", icon: "library" },
+  { labelKey: "nav.reader", href: "/reader", icon: "reader" },
+  { labelKey: "nav.savedWords", href: "/saved-words", icon: "saved" },
+  { labelKey: "nav.flashcards", href: "/flashcards", icon: "flashcards" },
+  { labelKey: "nav.progress", href: "/dashboard", icon: "progress" },
+  { labelKey: "nav.settings", href: "/settings", icon: "settings" }
 ];
 
 export function isNavActive(pathname: string, href: string) {

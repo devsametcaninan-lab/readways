@@ -1,0 +1,22 @@
+{
+  "nav": {
+    "library": "Kutuphane",
+    "reader": "Okuyucu",
+    "savedWords": "Kaydedilen Kelimeler",
+    "flashcards": "Kartlar",
+    "progress": "Ilerleme",
+    "settings": "Ayarlar"
+  },
+  "common": {
+    "openMenu": "Menuyu ac",
+    "closeMenu": "Menuyu kapat",
+    "cancel": "Iptal",
+    "submit": "Gonder",
+    "signOut": "Cikis yap",
+    "signingOut": "Cikis yapiliyor...",
+    "sendFeedback": "Geri bildirim gonder"
+  },
+  "shell": {
+    "activity": "Aktivite"
+  }
+}

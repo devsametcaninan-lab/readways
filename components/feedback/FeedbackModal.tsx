@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import SettingsOptionGroup from "@/components/settings/SettingsOptionGroup";
 import { submitFeedback } from "@/lib/feedback/client";
 import { FEEDBACK_CONTACT_EMAIL, FEEDBACK_TYPE_LABELS, type FeedbackType } from "@/lib/feedback/types";
+import { useI18n } from "@/lib/i18n/provider";
 
 type FeedbackModalProps = {
   open: boolean;
@@ -41,6 +42,7 @@ export default function FeedbackModal({
   onSuccess,
   onError
 }: FeedbackModalProps) {
+  const { t } = useI18n();
   const pathname = usePathname();
   const formId = useId();
   const [type, setType] = useState<FeedbackType>("general");
@@ -177,14 +179,14 @@ export default function FeedbackModal({
               disabled={submitting}
               className="min-h-[44px] rounded-lg border border-white/[0.12] bg-white/[0.03] px-5 py-2.5 text-sm text-zinc-300 transition hover:border-white/[0.16] hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={submitting || message.trim().length < 10}
               className="min-h-[44px] rounded-lg border border-accent/30 bg-accent/15 px-5 py-2.5 text-sm font-medium text-[#d4dcff] transition hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Sending…" : "Submit feedback"}
+              {submitting ? "Sending..." : t("common.submit")}
             </button>
           </div>
         </form>

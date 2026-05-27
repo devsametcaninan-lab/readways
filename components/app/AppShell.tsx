@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import ActivityPanel from "./ActivityPanel";
 import AppSidebar from "./AppSidebar";
 
@@ -14,6 +15,7 @@ export default function AppShell({
   fullHeightMain?: boolean;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useI18n();
 
   return (
     <div className="flex min-h-screen overflow-x-hidden bg-[#0a0b10] text-[#f5f7ff]">
@@ -23,7 +25,7 @@ export default function AppShell({
         <header className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-[#0a0b10]/80 px-4 backdrop-blur-xl lg:hidden">
           <button
             type="button"
-            aria-label="Open menu"
+            aria-label={t("common.openMenu")}
             className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-2 text-slate-400"
             onClick={() => setMobileOpen(true)}
           >
