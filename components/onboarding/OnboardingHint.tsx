@@ -34,7 +34,7 @@ export default function OnboardingHint({
         <button
           type="button"
           onClick={onDismiss}
-          className="shrink-0 rounded-md border border-white/[0.12] bg-white/[0.04] px-2.5 py-1 text-[12px] font-medium text-zinc-300 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white"
+          className="min-h-[40px] shrink-0 rounded-md border border-white/[0.12] bg-white/[0.04] px-3 py-2 text-[12px] font-medium text-zinc-300 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white"
         >
           {dismissLabel}
         </button>

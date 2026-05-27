@@ -49,7 +49,7 @@ function DashboardDocumentCard({
             type="button"
             onClick={() => setConfirmOpen(true)}
             disabled={deleting}
-            className="shrink-0 rounded-md border border-white/[0.1] px-2 py-0.5 text-[10px] text-zinc-500 transition hover:border-red-500/25 hover:bg-red-500/[0.06] hover:text-red-200/90 disabled:opacity-50"
+            className="min-h-[40px] shrink-0 rounded-md border border-white/[0.1] px-3 py-2 text-[12px] text-zinc-500 transition hover:border-red-500/25 hover:bg-red-500/[0.06] hover:text-red-200/90 disabled:opacity-50"
           >
             {deleting ? "…" : "Delete"}
           </button>

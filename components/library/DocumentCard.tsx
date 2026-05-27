@@ -53,7 +53,7 @@ export default function DocumentCard({ document: doc, onDeleted }: DocumentCardP
             type="button"
             onClick={() => setConfirmOpen(true)}
             disabled={deleting}
-            className="shrink-0 rounded-md border border-white/[0.1] px-2.5 py-1 text-[11px] text-zinc-500 transition hover:border-red-500/25 hover:bg-red-500/[0.06] hover:text-red-200/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-[40px] shrink-0 rounded-md border border-white/[0.1] px-3 py-2 text-[12px] text-zinc-500 transition hover:border-red-500/25 hover:bg-red-500/[0.06] hover:text-red-200/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {deleting ? "Deleting…" : "Delete"}
           </button>

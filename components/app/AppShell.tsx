@@ -16,7 +16,7 @@ export default function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0b10] text-[#f5f7ff]">
+    <div className="flex min-h-screen overflow-x-hidden bg-[#0a0b10] text-[#f5f7ff]">
       <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">

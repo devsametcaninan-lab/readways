@@ -65,7 +65,7 @@ export default function WordDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="word-detail-title"
@@ -80,7 +80,10 @@ export default function WordDetailModal({
       <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/[0.12] bg-[#12141d] p-6 shadow-[0_32px_80px_rgba(0,0,0,0.6)] md:p-8">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 id="word-detail-title" className="text-2xl font-medium text-white">
+            <h2
+              id="word-detail-title"
+              className="break-words text-2xl font-medium text-white"
+            >
               {word.word}
             </h2>
             <p className="mt-1 text-sm text-zinc-400">
@@ -96,7 +99,9 @@ export default function WordDetailModal({
             <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
               Definition
             </p>
-            <p className="mt-2 text-[15px] leading-relaxed text-zinc-300">{word.definition}</p>
+            <p className="mt-2 break-words text-[15px] leading-relaxed text-zinc-300">
+              {word.definition}
+            </p>
           </div>
         ) : null}
 
@@ -105,7 +110,7 @@ export default function WordDetailModal({
             <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
               In this sentence
             </p>
-            <p className="mt-2 text-[15px] leading-relaxed text-zinc-400">
+            <p className="mt-2 break-words text-[15px] leading-relaxed text-zinc-400">
               {word.contextualMeaning}
             </p>
           </div>
@@ -117,7 +122,7 @@ export default function WordDetailModal({
               <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
                 Source sentence
               </p>
-              <p className="mt-2 text-[15px] italic leading-relaxed text-zinc-400">
+              <p className="mt-2 break-words text-[15px] italic leading-relaxed text-zinc-400">
                 &ldquo;{word.contextSentence}&rdquo;
               </p>
             </div>
