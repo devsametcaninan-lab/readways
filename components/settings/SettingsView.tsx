@@ -194,11 +194,29 @@ export default function SettingsView() {
             name="explanation-style"
             label="Explanation style"
             value={preferences.explanationStyle}
-            onChange={(explanationStyle) => patchPreferences({ explanationStyle })}
+            onChange={() => undefined}
             options={[
-              { value: "concise", label: "Concise", description: "Shorter definitions" },
-              { value: "balanced", label: "Balanced", description: "Default depth" },
-              { value: "detailed", label: "Detailed", description: "More context and nuance" }
+              {
+                value: "concise",
+                label: "Concise",
+                description: "Shorter definitions",
+                disabled: true,
+                badge: "Coming soon"
+              },
+              {
+                value: "balanced",
+                label: "Balanced",
+                description: "Default depth",
+                disabled: true,
+                badge: "Coming soon"
+              },
+              {
+                value: "detailed",
+                label: "Detailed",
+                description: "More context and nuance",
+                disabled: true,
+                badge: "Coming soon"
+              }
             ]}
           />
 
