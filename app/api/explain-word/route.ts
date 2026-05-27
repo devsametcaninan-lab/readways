@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { explanationProductEventName } from "@/lib/analytics/explanation-event";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { createClient } from "@/lib/supabase/server";
@@ -195,6 +196,18 @@ export async function POST(request: Request) {
         }
       });
 
+      Sentry.captureMessage("AI explanation generation failed", {
+        level: aiResult.reason === "timeout" ? "warning" : "error",
+        tags: {
+          area: "ai-explain",
+          reason: aiResult.reason
+        },
+        extra: {
+          documentLanguage,
+          explanationLanguage
+        }
+      });
+
       if (aiResult.reason === "not_configured") {
         return jsonError(
           503,
@@ -232,6 +245,15 @@ export async function POST(request: Request) {
           documentLanguage,
           explanationLanguage,
           reason: "incomplete_fields"
+        }
+      });
+
+      Sentry.captureMessage("AI explanation response incomplete", {
+        level: "warning",
+        tags: { area: "ai-explain", reason: "incomplete_fields" },
+        extra: {
+          documentLanguage,
+          explanationLanguage
         }
       });
 

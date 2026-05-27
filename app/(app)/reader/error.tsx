@@ -1,8 +1,16 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
+import { useEffect } from "react";
 import AppRouteError from "@/components/app/AppRouteError";
 
-export default function ReaderError({ reset }: { error: Error; reset: () => void }) {
+export default function ReaderError({ error, reset }: { error: Error; reset: () => void }) {
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: { boundary: "reader-error" }
+    });
+  }, [error]);
+
   return (
     <AppRouteError
       reset={reset}

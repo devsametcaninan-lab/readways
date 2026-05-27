@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import type { ExtractProgress, ExtractResult } from "@/lib/pdf/extract-pdf-text";
 import { extractTextFromPdfFile } from "@/lib/pdf/extract-pdf-text";
 import { isPdfUserError, type PdfErrorCode } from "@/lib/pdf/errors";
@@ -75,6 +76,14 @@ export async function processPdfDocumentForDocument(params: ProcessPdfDocumentPa
     };
   } catch (err) {
     const mapped = mapExtractionErrorToOutcome(err);
+    Sentry.captureException(err, {
+      level: mapped.kind === "needs_ocr" ? "info" : "warning",
+      tags: {
+        area: "upload-processing",
+        outcome: mapped.kind,
+        errorCode: mapped.errorCode
+      }
+    });
 
     if (mapped.kind === "needs_ocr") {
       await markDocumentNeedsOcr(params.documentId, mapped.errorCode);

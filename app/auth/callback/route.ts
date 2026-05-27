@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { sanitizeNextPath } from "@/lib/auth/paths";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,11 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    Sentry.captureMessage("Auth callback exchange failed", {
+      level: "warning",
+      tags: { area: "auth", endpoint: "auth-callback" }
+    });
+
     const loginUrl = new URL("/login", requestUrl.origin);
     loginUrl.searchParams.set("error", "auth_callback_failed");
     return NextResponse.redirect(loginUrl);

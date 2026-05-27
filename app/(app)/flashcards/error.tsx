@@ -1,8 +1,16 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
+import { useEffect } from "react";
 import AppRouteError from "@/components/app/AppRouteError";
 
-export default function FlashcardsError({ reset }: { error: Error; reset: () => void }) {
+export default function FlashcardsError({ error, reset }: { error: Error; reset: () => void }) {
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: { boundary: "flashcards-error" }
+    });
+  }, [error]);
+
   return (
     <AppRouteError
       reset={reset}

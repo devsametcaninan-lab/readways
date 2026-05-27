@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { logServerError } from "@/lib/logging/server-log";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { validateClientTrackRequest } from "@/lib/analytics/validate-track-request";
@@ -39,6 +40,10 @@ export async function POST(request: Request) {
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
+    Sentry.captureException(error, {
+      level: "warning",
+      tags: { area: "api-route", route: "POST /api/analytics/track" }
+    });
     logServerError("POST /api/analytics/track", error);
     return new NextResponse(null, { status: 204 });
   }
