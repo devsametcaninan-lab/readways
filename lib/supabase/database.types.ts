@@ -421,6 +421,47 @@ export type Database = {
           }
         ];
       };
+      feedback_submissions: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: "bug" | "feature_request" | "general";
+          message: string;
+          route: string;
+          metadata: Json;
+          status: "new" | "reviewed" | "resolved";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: "bug" | "feature_request" | "general";
+          message: string;
+          route?: string;
+          metadata?: Json;
+          status?: "new" | "reviewed" | "resolved";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: "bug" | "feature_request" | "general";
+          message?: string;
+          route?: string;
+          metadata?: Json;
+          status?: "new" | "reviewed" | "resolved";
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "feedback_submissions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       usage_limits: {
         Row: {
           id: string;

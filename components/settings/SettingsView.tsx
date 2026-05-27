@@ -14,6 +14,7 @@ import type {
   ExplanationStyle,
   HighlightMode
 } from "@/lib/preferences/types";
+import FeedbackSettingsSection from "./FeedbackSettingsSection";
 import SettingsOptionGroup from "./SettingsOptionGroup";
 import SettingsSection from "./SettingsSection";
 import SettingsToggle from "./SettingsToggle";
@@ -239,6 +240,8 @@ export default function SettingsView() {
             ]}
           />
         </SettingsSection>
+
+        <FeedbackSettingsSection />
 
         <div id="upgrade">
           <SettingsSection title="Upgrade">

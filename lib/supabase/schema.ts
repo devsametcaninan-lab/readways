@@ -34,6 +34,12 @@ export const DOCUMENT_JOB_TYPE_VALUES = [
 ] as const;
 export type DocumentJobType = (typeof DOCUMENT_JOB_TYPE_VALUES)[number];
 
+export const FEEDBACK_TYPE_VALUES = ["bug", "feature_request", "general"] as const;
+export type FeedbackType = (typeof FEEDBACK_TYPE_VALUES)[number];
+
+export const FEEDBACK_STATUS_VALUES = ["new", "reviewed", "resolved"] as const;
+export type FeedbackStatus = (typeof FEEDBACK_STATUS_VALUES)[number];
+
 export const DOCUMENT_JOB_STATUS_VALUES = [
   "pending",
   "processing",
