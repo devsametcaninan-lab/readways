@@ -26,6 +26,11 @@ export default function DocumentCard({ document: doc, onDeleted }: DocumentCardP
   const deleting = isDeleting(doc.id);
   const canRead = doc.status === "ready";
   const href = canRead ? `/reader/${doc.id}` : undefined;
+  const readingState = canRead
+    ? doc.progress == null
+      ? "Not started"
+      : `${doc.progress}%`
+    : statusLabel[doc.status];
 
   const handleConfirmDelete = async () => {
     const ok = await deleteDocumentById(doc.id);
@@ -65,17 +70,9 @@ export default function DocumentCard({ document: doc, onDeleted }: DocumentCardP
             {doc.status !== "ready" ? ` · ${statusLabel[doc.status]}` : ""}
           </p>
 
-          <div className="mt-5">
-            <div className={`mb-1.5 flex justify-between ${appText.metaSmall}`}>
-              <span>Reading progress</span>
-              <span>{doc.progress}%</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.1]">
-              <div
-                className="h-full rounded-full bg-accent/70 transition-[width] duration-300"
-                style={{ width: `${doc.progress}%` }}
-              />
-            </div>
+          <div className={`mt-5 flex items-center justify-between ${appText.metaSmall}`}>
+            <span>Reading status</span>
+            <span>{readingState}</span>
           </div>
 
           <p className={`mt-4 ${appText.metaSmall}`}>

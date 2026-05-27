@@ -15,7 +15,7 @@ export type SavedWordItem = {
   status: SavedWordStatus;
   savedAt: string;
   savedAtIso: string;
-  reviewProgress: number;
+  reviewProgress: number | null;
   contextSentence: string;
   flashcardId: string | null;
   difficulty: number | null;
@@ -27,15 +27,33 @@ export const statusLabels: Record<SavedWordStatus, string> = {
   mastered: "Mastered"
 };
 
-export function reviewProgressForStatus(status: SavedWordStatus): number {
-  switch (status) {
-    case "mastered":
-      return 100;
-    case "reviewing":
-      return 68;
-    default:
-      return 35;
+export function computeReviewProgress(params: {
+  status: SavedWordStatus;
+  reviewCount: number | null;
+  difficulty: number | null;
+}): number | null {
+  const { status, reviewCount, difficulty } = params;
+
+  if (reviewCount == null) {
+    return null;
   }
+
+  if (status === "mastered") {
+    return 100;
+  }
+
+  if (reviewCount === 0) {
+    return 0;
+  }
+
+  if (status === "learning") {
+    return Math.min(40, 8 + reviewCount * 8);
+  }
+
+  const difficultyBonus =
+    typeof difficulty === "number" ? Math.max(0, Math.min(12, Math.round(difficulty * 2))) : 0;
+
+  return Math.min(90, 45 + reviewCount * 7 + difficultyBonus);
 }
 
 export function isPhraseWord(word: string): boolean {

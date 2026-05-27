@@ -1,14 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatSavedDate } from "./format";
 import {
+  computeReviewProgress,
   isPhraseWord,
-  reviewProgressForStatus,
   type SavedWordItem
 } from "./types";
 
 type FlashcardEmbed = {
   id: string;
   difficulty: number | null;
+  review_count: number;
 };
 
 type SavedWordRow = {
@@ -68,7 +69,11 @@ function mapSavedWordRow(row: SavedWordRow): SavedWordItem {
     status: row.status,
     savedAt: formatSavedDate(row.created_at),
     savedAtIso: row.created_at,
-    reviewProgress: reviewProgressForStatus(row.status),
+    reviewProgress: computeReviewProgress({
+      status: row.status,
+      reviewCount: flashcard?.review_count ?? null,
+      difficulty: flashcard?.difficulty ?? null
+    }),
     contextSentence: explanation?.sentence ?? "",
     flashcardId: flashcard?.id ?? null,
     difficulty: flashcard?.difficulty ?? null
@@ -107,7 +112,8 @@ export async function getSavedWordsForUser(): Promise<SavedWordItem[]> {
       ),
       flashcards (
         id,
-        difficulty
+        difficulty,
+        review_count
       )
     `
     )

@@ -30,6 +30,11 @@ function DashboardDocumentCard({
 
   const canRead = doc.status === "ready";
   const href = canRead ? `/reader/${doc.id}` : "/library";
+  const readingState = canRead
+    ? doc.progress == null
+      ? "Not started"
+      : `${doc.progress}%`
+    : statusLabel[doc.status];
 
   const handleConfirmDelete = async () => {
     const ok = await deleteDocumentById(doc.id);
@@ -58,17 +63,9 @@ function DashboardDocumentCard({
           PDF · Updated {doc.updatedAtLabel}
           {doc.status !== "ready" ? ` · ${statusLabel[doc.status]}` : ""}
         </p>
-        <div className="mt-4">
-          <div className={`mb-1.5 flex justify-between ${appText.metaSmall}`}>
-            <span>Progress</span>
-            <span>{doc.progress}%</span>
-          </div>
-          <div className="h-1 overflow-hidden rounded-full bg-white/[0.1]">
-            <div
-              className="h-full rounded-full bg-accent/70"
-              style={{ width: `${doc.progress}%` }}
-            />
-          </div>
+        <div className={`mt-4 flex items-center justify-between ${appText.metaSmall}`}>
+          <span>Reading status</span>
+          <span>{readingState}</span>
         </div>
         <Link
           href={href}

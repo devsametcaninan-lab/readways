@@ -22,7 +22,7 @@ export type DocumentListItem = {
   title: string;
   fileName: string;
   source: string;
-  progress: number;
+  progress: number | null;
   updatedAtLabel: string;
   savedWordsCount: number;
   status: DocumentStatus;
@@ -36,7 +36,7 @@ export type ReaderDocument = {
   title: string;
   source: string;
   pageCount: number;
-  progress: number;
+  progress: number | null;
   paragraphs: string[];
   language: DocumentLanguage;
 };

@@ -10,7 +10,7 @@ export function toDocumentListItem(row: DocumentRecord): DocumentListItem {
     title: row.title,
     fileName: row.file_name,
     source: "PDF",
-    progress: 0,
+    progress: null,
     updatedAtLabel: formatRelativeUpdatedAt(row.updated_at),
     savedWordsCount: 0,
     status: row.status,
@@ -35,7 +35,7 @@ export function toReaderDocument(row: DocumentRecord): ReaderDocument | null {
     title: row.title,
     source: row.file_name,
     pageCount: row.page_count,
-    progress: 0,
+    progress: null,
     paragraphs,
     language: normalizeDocumentLanguage(row.language)
   };

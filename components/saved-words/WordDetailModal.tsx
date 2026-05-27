@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Spinner from "@/components/feedback/Spinner";
 import { difficultyLabel } from "@/lib/saved-words/format";
-import type { SavedWordItem } from "@/lib/saved-words/types";
+import { statusLabels, type SavedWordItem } from "@/lib/saved-words/types";
 import StatusBadge from "./StatusBadge";
 
 type WordDetailModalProps = {
@@ -134,18 +134,22 @@ export default function WordDetailModal({
             {level ? <span>{level}</span> : null}
           </div>
 
-          <div>
-            <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
-              <span>Review progress</span>
-              <span>{word.reviewProgress}%</span>
+          {word.reviewProgress != null ? (
+            <div>
+              <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
+                <span>Review progress</span>
+                <span>{word.reviewProgress}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.1]">
+                <div
+                  className="h-full rounded-full bg-accent/70 transition-all"
+                  style={{ width: `${word.reviewProgress}%` }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.1]">
-              <div
-                className="h-full rounded-full bg-accent/70 transition-all"
-                style={{ width: `${word.reviewProgress}%` }}
-              />
-            </div>
-          </div>
+          ) : (
+            <p className="text-xs text-zinc-500">Review status: {statusLabels[word.status]}</p>
+          )}
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">

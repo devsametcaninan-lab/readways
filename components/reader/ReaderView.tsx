@@ -624,9 +624,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
         className={`flex h-10 shrink-0 items-center justify-between border-b border-white/[0.1] bg-[#0a0b10] px-4 ${appText.metaSmall}`}
       >
         <span className="truncate text-zinc-300">{document.source}</span>
-        <span>
-          {pageLabel} · {document.progress}% complete
-        </span>
+        <span>{pageLabel} · Reading session</span>
         <span className="hidden text-zinc-500 sm:inline">
           {documentLanguageLabel(document.language)}
         </span>
