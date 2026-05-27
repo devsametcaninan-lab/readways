@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
+import { getServerT } from "@/lib/i18n/server";
 
 const sidebarItems = [
-  { label: "Library", active: false, icon: "library" },
-  { label: "Saved Words", active: false, icon: "saved" },
-  { label: "Flashcards", active: false, icon: "flashcards" },
-  { label: "Reading Progress", active: true, icon: "progress" },
-  { label: "Settings", active: false, icon: "settings" }
+  { labelKey: "landing.mockupLibrary", active: false, icon: "library" },
+  { labelKey: "landing.mockupSavedWords", active: false, icon: "saved" },
+  { labelKey: "landing.mockupFlashcards", active: false, icon: "flashcards" },
+  { labelKey: "landing.mockupReadingProgress", active: true, icon: "progress" },
+  { labelKey: "landing.mockupSettings", active: false, icon: "settings" }
 ] as const;
 
 const flashcards = [
@@ -70,10 +71,17 @@ function PanelLabel({ children }: { children: ReactNode }) {
 }
 
 export default function ProductMockup() {
+  const t = getServerT();
+  const flashcards = [
+    { term: "effortless", due: t("landing.mockupDueNow") },
+    { term: "deliberate", due: "2h" },
+    { term: "coherent", due: t("landing.mockupDueTomorrow") }
+  ];
+
   return (
     <section
       className="relative mt-8 w-full pb-8 pt-2 md:mt-10 md:pb-12"
-      aria-label="ReadWays product preview"
+      aria-label={t("landing.mockupAriaLabel")}
     >
       <div
         aria-hidden
@@ -97,7 +105,7 @@ export default function ProductMockup() {
           </p>
           <div className="flex items-center gap-3 text-[10px] text-slate-600">
             <span>⌘K</span>
-            <span className="hidden sm:inline">Share</span>
+            <span className="hidden sm:inline">{t("landing.mockupShare")}</span>
           </div>
         </div>
 
@@ -117,7 +125,7 @@ export default function ProductMockup() {
             <nav className="flex-1 space-y-0.5 p-2">
               {sidebarItems.map((item) => (
                 <div
-                  key={item.label}
+                  key={item.labelKey}
                   className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] ${
                     item.active
                       ? "border border-white/[0.06] bg-white/[0.05] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
@@ -125,12 +133,12 @@ export default function ProductMockup() {
                   }`}
                 >
                   <SidebarNavIcon type={item.icon} active={item.active} />
-                  {item.label}
+                  {t(item.labelKey)}
                 </div>
               ))}
             </nav>
             <div className="border-t border-white/[0.06] p-3">
-              <PanelLabel>Today&apos;s goal</PanelLabel>
+              <PanelLabel>{t("landing.mockupTodaysGoal")}</PanelLabel>
               <p className="mt-1.5 text-[13px] font-medium text-slate-300">18 / 30 words</p>
               <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-white/[0.06]">
                 <div className="h-full w-[60%] rounded-full bg-accent/60" />
@@ -143,11 +151,11 @@ export default function ProductMockup() {
             {/* Center reading panel */}
             <div className="flex min-w-0 flex-1 flex-col border-b border-white/[0.06] bg-[#0c0d13] lg:border-b-0 lg:border-r">
               <div className="flex h-10 items-center gap-3 border-b border-white/[0.06] bg-[#0a0b10] px-4 text-[10px] text-slate-600">
-                <span className="text-slate-500">Page 12</span>
+                <span className="text-slate-500">{t("landing.mockupPage")} 12</span>
                 <span className="h-3 w-px bg-white/[0.08]" />
-                <span>68% complete</span>
+                <span>68% {t("landing.mockupComplete")}</span>
                 <span className="h-3 w-px bg-white/[0.08]" />
-                <span className="hidden text-slate-500 sm:inline">Highlight mode</span>
+                <span className="hidden text-slate-500 sm:inline">{t("landing.mockupHighlightMode")}</span>
                 <span className="ml-auto flex gap-1.5">
                   <span className="rounded border border-white/[0.08] bg-white/[0.02] px-2 py-0.5 text-slate-500">
                     Aa
@@ -200,34 +208,32 @@ export default function ProductMockup() {
             {/* Right vocabulary panel */}
             <aside className="flex w-full shrink-0 flex-col bg-[#090a0e] lg:w-[280px]">
               <div className="flex h-10 items-center justify-between border-b border-white/[0.06] bg-[#0a0b10] px-4">
-                <span className="text-[10px] text-slate-600">Inspector</span>
+                <span className="text-[10px] text-slate-600">{t("landing.mockupInspector")}</span>
                 <span className="text-[10px] text-slate-700">AI</span>
               </div>
 
               <div className="flex-1 px-4 py-5">
-                <PanelLabel>Vocabulary</PanelLabel>
+                <PanelLabel>{t("landing.mockupVocabulary")}</PanelLabel>
                 <h3 className="mt-2.5 text-[22px] font-medium tracking-tight text-white">effortless</h3>
                 <p className="mt-1 text-[12px] text-slate-600">adjective · /ˈefərtləs/</p>
 
                 <div className="mt-6 space-y-5 border-t border-white/[0.06] pt-5">
                   <div>
-                    <PanelLabel>Definition</PanelLabel>
+                    <PanelLabel>{t("landing.mockupDefinition")}</PanelLabel>
                     <p className="mt-2 text-[13px] leading-relaxed text-slate-300">
-                      requiring little or no effort; achieved with ease
+                      {t("landing.mockupDefinitionText")}
                     </p>
                   </div>
                   <div>
-                    <PanelLabel>In your text</PanelLabel>
+                    <PanelLabel>{t("landing.mockupInYourText")}</PanelLabel>
                     <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
-                      Used to contrast passive study with natural fluency—the author suggests tools can make
-                      progress feel <span className="text-slate-300">effortless</span> without removing
-                      challenge.
+                      {t("landing.mockupInYourTextText")}
                     </p>
                   </div>
                   <div>
-                    <PanelLabel>Example</PanelLabel>
+                    <PanelLabel>{t("landing.mockupExample")}</PanelLabel>
                     <p className="mt-2 text-[13px] italic leading-relaxed text-slate-600">
-                      &ldquo;With practice, reading in a second language can feel effortless.&rdquo;
+                      &ldquo;{t("landing.mockupExampleSentence")}&rdquo;
                     </p>
                   </div>
                 </div>
@@ -236,7 +242,7 @@ export default function ProductMockup() {
                   type="button"
                   className="mt-6 w-full rounded-md border border-accent/20 bg-accent/90 px-3 py-2.5 text-[13px] font-medium text-white shadow-[0_8px_24px_rgba(124,140,255,0.15)]"
                 >
-                  Save to Flashcards
+                  {t("landing.mockupSaveToFlashcards")}
                 </button>
               </div>
             </aside>
@@ -246,7 +252,7 @@ export default function ProductMockup() {
         {/* Bottom widgets bar */}
         <div className="flex flex-col gap-4 border-t border-white/[0.06] bg-[#07080c] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
-            <PanelLabel>Flashcards</PanelLabel>
+            <PanelLabel>{t("landing.mockupFlashcards")}</PanelLabel>
             <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-0.5">
               {flashcards.map((card) => (
                 <div
@@ -255,7 +261,11 @@ export default function ProductMockup() {
                 >
                   <div>
                     <p className="text-[12px] font-medium text-slate-200">{card.term}</p>
-                    <p className="mt-0.5 text-[10px] text-slate-600">Due {card.due}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-600">
+                      {t("landing.mockupDuePrefix")
+                        ? `${t("landing.mockupDuePrefix")} ${card.due}`
+                        : card.due}
+                    </p>
                   </div>
                   <span className="text-[10px] text-slate-600">↗</span>
                 </div>
@@ -266,7 +276,7 @@ export default function ProductMockup() {
           <div className="flex shrink-0 items-center gap-3">
             <div className="hidden min-w-[140px] flex-col gap-1.5 rounded-lg border border-white/[0.07] bg-[#0b0c11] px-3.5 py-2.5 sm:flex">
               <div className="flex items-center justify-between">
-                <PanelLabel>Session</PanelLabel>
+                <PanelLabel>{t("landing.mockupSession")}</PanelLabel>
                 <span className="text-[10px] text-slate-500">12 / 24</span>
               </div>
               <div className="h-1 overflow-hidden rounded-full bg-white/[0.06]">
@@ -275,11 +285,11 @@ export default function ProductMockup() {
             </div>
             <div className="flex items-center gap-3 rounded-lg border border-white/[0.07] bg-[#0b0c11] px-3.5 py-2.5 shadow-[0_4px_16px_rgba(0,0,0,0.25)]">
               <div>
-                <p className="text-[12px] font-medium text-slate-300">Quick quiz</p>
-                <p className="mt-0.5 text-[10px] text-slate-600">3 cards due</p>
+                <p className="text-[12px] font-medium text-slate-300">{t("landing.mockupQuickQuiz")}</p>
+                <p className="mt-0.5 text-[10px] text-slate-600">{t("landing.mockupCardsDue")}</p>
               </div>
               <span className="rounded border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[10px] text-slate-500">
-                Start
+                {t("landing.mockupStart")}
               </span>
             </div>
           </div>
