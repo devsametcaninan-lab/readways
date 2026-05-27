@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { explanationProductEventName } from "@/lib/analytics/explanation-event";
 import { trackEvent } from "@/lib/analytics/track-event";
+import { buildAiUsageMetadata } from "@/lib/ai-monitoring/metadata";
 import { createClient } from "@/lib/supabase/server";
 import { aiExplanationToPayload } from "@/lib/ai-dictionary/ai-payload";
 import {
@@ -79,6 +80,9 @@ export async function POST(request: Request) {
       documentLanguage
     );
 
+    const explanationKind = explanationProductEventName(word);
+    const requestStartedAt = Date.now();
+
     const plan = await getUserPlan(supabase, user.id);
     const sentenceHash = createSentenceHash(sentence);
 
@@ -102,12 +106,14 @@ export async function POST(request: Request) {
         supabase,
         userId: user.id,
         eventName: "ai_cache_hit",
-        metadata: {
+        metadata: buildAiUsageMetadata({
           documentId,
           documentLanguage,
           explanationLanguage,
-          explanationKind: explanationProductEventName(word)
-        }
+          explanationKind,
+          cacheStatus: "hit",
+          durationMs: Date.now() - requestStartedAt
+        })
       });
 
       trackEvent({
@@ -127,6 +133,21 @@ export async function POST(request: Request) {
         usage
       });
     }
+
+    trackEvent({
+      supabase,
+      userId: user.id,
+      eventName: "ai_cache_miss",
+      metadata: buildAiUsageMetadata({
+        documentId,
+        documentLanguage,
+        explanationLanguage,
+        explanationKind,
+        cacheStatus: "miss",
+        word,
+        sentence
+      })
+    });
 
     const allowance = await checkExplanationAllowance({
       supabase,
@@ -169,12 +190,16 @@ export async function POST(request: Request) {
       });
     }
 
+    const generationStartedAt = Date.now();
+
     const aiResult = await generateExplanationWithOpenAI({
       word,
       sentence,
       documentLanguage,
       explanationLanguage
     });
+
+    const generationDurationMs = Date.now() - generationStartedAt;
 
     if (!aiResult.ok) {
       const failureEvent =
@@ -184,16 +209,30 @@ export async function POST(request: Request) {
             ? "ai_invalid_response"
             : "ai_error";
 
+      const failureMetadata = buildAiUsageMetadata({
+        documentId,
+        documentLanguage,
+        explanationLanguage,
+        explanationKind,
+        cacheStatus: "miss",
+        durationMs: generationDurationMs,
+        word,
+        sentence,
+        reason: aiResult.reason
+      });
+
       trackEvent({
         supabase,
         userId: user.id,
         eventName: failureEvent,
-        metadata: {
-          documentId,
-          documentLanguage,
-          explanationLanguage,
-          reason: aiResult.reason
-        }
+        metadata: failureMetadata
+      });
+
+      trackEvent({
+        supabase,
+        userId: user.id,
+        eventName: "ai_generation_failed",
+        metadata: failureMetadata
       });
 
       Sentry.captureMessage("AI explanation generation failed", {
@@ -236,16 +275,30 @@ export async function POST(request: Request) {
     }
 
     if (!isPersistableAiExplanation(aiResult.data)) {
+      const incompleteMetadata = buildAiUsageMetadata({
+        documentId,
+        documentLanguage,
+        explanationLanguage,
+        explanationKind,
+        cacheStatus: "miss",
+        durationMs: generationDurationMs,
+        word,
+        sentence,
+        reason: "incomplete_fields"
+      });
+
       trackEvent({
         supabase,
         userId: user.id,
         eventName: "ai_invalid_response",
-        metadata: {
-          documentId,
-          documentLanguage,
-          explanationLanguage,
-          reason: "incomplete_fields"
-        }
+        metadata: incompleteMetadata
+      });
+
+      trackEvent({
+        supabase,
+        userId: user.id,
+        eventName: "ai_generation_failed",
+        metadata: incompleteMetadata
       });
 
       Sentry.captureMessage("AI explanation response incomplete", {
@@ -296,12 +349,19 @@ export async function POST(request: Request) {
       supabase,
       userId: user.id,
       eventName: "ai_generated",
-      metadata: {
+      metadata: buildAiUsageMetadata({
         documentId,
         documentLanguage,
         explanationLanguage,
-        explanationKind: explanationProductEventName(word)
-      }
+        explanationKind,
+        cacheStatus: "miss",
+        durationMs: generationDurationMs,
+        word,
+        sentence,
+        definition: aiResult.data.definition,
+        contextualMeaning: aiResult.data.contextual_meaning,
+        pronunciation: aiResult.data.pronunciation
+      })
     });
 
     trackEvent({
