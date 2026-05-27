@@ -9,10 +9,12 @@ import type { ReaderDocument } from "@/lib/documents/types";
 import { documentLanguageLabel } from "@/lib/language/document-language";
 import {
   explainWordPayloadToPanelFields,
+  explainWordRequestKey,
   fetchExplainWord,
   type ExplainClickPayload,
   type ExplainPanelFields
 } from "@/lib/reader/explain-word-client";
+import { validateExplainClick } from "@/lib/reader/explain-request";
 import {
   hasActiveTextSelectionIn,
   isReaderProtectedTarget
@@ -82,6 +84,12 @@ export default function ReaderView({ document }: ReaderViewProps) {
   );
   const selectedHighlightKeyRef = useRef<string | null>(null);
   const fetchAbortRef = useRef<AbortController | null>(null);
+  const explainRequestIdRef = useRef(0);
+  const loadingExplainKeyRef = useRef<string | null>(null);
+  const lastExplainRequestRef = useRef<{
+    click: ExplainClickPayload;
+    phraseRange: PhraseHighlightRange | null;
+  } | null>(null);
   const saveInFlightRef = useRef(false);
   const selectionRef = useRef<PanelVocabularySelection | null>(null);
   const savedWordKeysRef = useRef(new Set<string>());
@@ -113,6 +121,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
       !current ||
       current.status !== "ready" ||
       !current.wordExplanationId ||
+      !current.definition.trim() ||
+      !current.contextMeaning.trim() ||
       current.saveState === "saving" ||
       current.saveState === "saved" ||
       current.saveState === "already_saved"
@@ -211,16 +221,85 @@ export default function ReaderView({ document }: ReaderViewProps) {
     [document.id, document.title]
   );
 
+  const showExplainError = useCallback(
+    (click: ExplainClickPayload, message: string, paywall?: PanelVocabularySelection["paywall"]) => {
+      if (selectedHighlightKeyRef.current !== click.highlightKey) {
+        return;
+      }
+
+      if (paywall || isRateLimitMessage(message)) {
+        trackAnalyticsEventClient({
+          eventName: "paywall_shown",
+          metadata: { source: "reader_vocabulary", feature: "ai_explanation" }
+        });
+      }
+
+      toast.error(explainErrorToastMessage(message));
+
+      setSelection((prev) => {
+        if (!prev || prev.highlightKey !== click.highlightKey) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          status: "error",
+          errorMessage: message,
+          paywall
+        };
+      });
+    },
+    [toast]
+  );
+
   const requestExplanation = useCallback(
     (click: ExplainClickPayload, phraseRange: PhraseHighlightRange | null) => {
       if (onboarding?.shouldShow("reader")) {
         void onboarding.dismiss("reader");
       }
 
+      const requestKey = explainWordRequestKey(
+        document.id,
+        click.normalizedWord,
+        click.sentence
+      );
+
+      if (
+        loadingExplainKeyRef.current === requestKey &&
+        selectionRef.current?.status === "loading"
+      ) {
+        trackAnalyticsEventClient({
+          eventName: "duplicate_request_prevented",
+          metadata: {
+            documentId: document.id,
+            kind: click.kind
+          }
+        });
+        return;
+      }
+
+      const clientValidation = validateExplainClick(click);
+      if (!clientValidation.ok) {
+        selectedHighlightKeyRef.current = click.highlightKey;
+        setActiveHighlightKey(click.highlightKey);
+        setActivePhraseRange(phraseRange);
+        setSelection({
+          ...buildInstantSelection(click, document.id, document.title),
+          status: "error",
+          errorMessage: clientValidation.message
+        });
+        toast.error(clientValidation.message);
+        return;
+      }
+
+      lastExplainRequestRef.current = { click, phraseRange };
+
       fetchAbortRef.current?.abort();
       const controller = new AbortController();
       fetchAbortRef.current = controller;
+      const requestId = ++explainRequestIdRef.current;
 
+      loadingExplainKeyRef.current = requestKey;
       selectedHighlightKeyRef.current = click.highlightKey;
       setActiveHighlightKey(click.highlightKey);
       setActivePhraseRange(phraseRange);
@@ -236,15 +315,24 @@ export default function ReaderView({ document }: ReaderViewProps) {
             signal: controller.signal
           });
 
-          if (controller.signal.aborted) {
-            return;
-          }
-
-          if (selectedHighlightKeyRef.current !== click.highlightKey) {
+          if (
+            controller.signal.aborted ||
+            requestId !== explainRequestIdRef.current ||
+            selectedHighlightKeyRef.current !== click.highlightKey
+          ) {
             return;
           }
 
           const fields = explainWordPayloadToPanelFields(payload);
+
+          if (!fields.wordExplanationId || !fields.definition.trim() || !fields.contextMeaning.trim()) {
+            showExplainError(
+              click,
+              "Could not load a complete explanation. Please try again."
+            );
+            return;
+          }
+
           const displayLabel =
             click.kind === "phrase"
               ? cleanPhraseText(click.rawWord) || cleanPhraseText(fields.word)
@@ -252,7 +340,11 @@ export default function ReaderView({ document }: ReaderViewProps) {
 
           applyPanelFields(click, fields, displayLabel);
         } catch (error) {
-          if (isAbortError(error) || controller.signal.aborted) {
+          if (
+            isAbortError(error) ||
+            controller.signal.aborted ||
+            requestId !== explainRequestIdRef.current
+          ) {
             return;
           }
 
@@ -271,43 +363,47 @@ export default function ReaderView({ document }: ReaderViewProps) {
               ? error.message
               : "Could not load word explanation.";
 
-          if (paywall || isRateLimitMessage(message)) {
-            trackAnalyticsEventClient({
-              eventName: "paywall_shown",
-              metadata: { source: "reader_vocabulary", feature: "ai_explanation" }
-            });
+          showExplainError(
+            click,
+            message,
+            paywall
+              ? { title: paywall.title, message: paywall.message }
+              : isRateLimitMessage(message)
+                ? {
+                    title: "Daily AI limit reached",
+                    message: "Upgrade to continue reading without limits."
+                  }
+                : undefined
+          );
+        } finally {
+          if (loadingExplainKeyRef.current === requestKey) {
+            loadingExplainKeyRef.current = null;
           }
 
-          toast.error(explainErrorToastMessage(message));
-
-          setSelection((prev) => {
-            if (!prev || prev.highlightKey !== click.highlightKey) {
-              return prev;
-            }
-
-            return {
-              ...prev,
-              status: "error",
-              errorMessage: message,
-              paywall: paywall
-                ? { title: paywall.title, message: paywall.message }
-                : isRateLimitMessage(message)
-                  ? {
-                      title: "Daily AI limit reached",
-                      message: "Upgrade to continue reading without limits."
-                    }
-                  : undefined
-            };
-          });
-        } finally {
           if (fetchAbortRef.current === controller) {
             fetchAbortRef.current = null;
           }
         }
       })();
     },
-    [applyPanelFields, document.id, document.language, document.title, onboarding, toast]
+    [
+      applyPanelFields,
+      document.id,
+      document.language,
+      document.title,
+      onboarding,
+      showExplainError
+    ]
   );
+
+  const handleRetryExplain = useCallback(() => {
+    const last = lastExplainRequestRef.current;
+    if (!last) {
+      return;
+    }
+
+    requestExplanation(last.click, last.phraseRange);
+  }, [requestExplanation]);
 
   const requestExplanationRef = useRef(requestExplanation);
   requestExplanationRef.current = requestExplanation;
@@ -361,6 +457,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
 
   const handleCloseVocabulary = useCallback(() => {
     fetchAbortRef.current?.abort();
+    loadingExplainKeyRef.current = null;
     clearPending();
     clearBrowserSelection();
     selectedHighlightKeyRef.current = null;
@@ -510,6 +607,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
         <VocabularyPanel
           selection={selection}
           onSave={handleSave}
+          onRetry={handleRetryExplain}
           emptyDescription="Select any word from your document to understand it in context."
           isMobileOpen={Boolean(selection)}
           onClose={handleCloseVocabulary}

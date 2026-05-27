@@ -12,6 +12,7 @@ import { jsonError, jsonExplainWord, jsonRateLimited } from "@/lib/ai-dictionary
 import { generateExplanationWithOpenAI } from "@/lib/ai-dictionary/openai";
 import { normalizeWord } from "@/lib/ai-dictionary/normalize-word";
 import { insertWordExplanation } from "@/lib/ai-dictionary/save-explanation";
+import { isPersistableAiExplanation } from "@/lib/ai-dictionary/validate-persisted-explanation";
 import { createSentenceHash } from "@/lib/ai-dictionary/sentence-hash";
 import {
   checkExplanationAllowance,
@@ -158,10 +159,17 @@ export async function POST(request: Request) {
     });
 
     if (!aiResult.ok) {
+      const failureEvent =
+        aiResult.reason === "timeout"
+          ? "ai_timeout"
+          : aiResult.reason === "invalid_response" || aiResult.reason === "empty_response"
+            ? "ai_invalid_response"
+            : "ai_error";
+
       trackEvent({
         supabase,
         userId: user.id,
-        eventName: "ai_error",
+        eventName: failureEvent,
         metadata: {
           documentId,
           language,
@@ -176,7 +184,17 @@ export async function POST(request: Request) {
         );
       }
 
-      if (aiResult.reason === "invalid_response") {
+      if (aiResult.reason === "timeout") {
+        return jsonError(
+          504,
+          "Explanation took too long. Please try again."
+        );
+      }
+
+      if (
+        aiResult.reason === "invalid_response" ||
+        aiResult.reason === "empty_response"
+      ) {
         return jsonError(
           502,
           "Could not understand the explanation response. Please try again."
@@ -184,6 +202,24 @@ export async function POST(request: Request) {
       }
 
       return jsonError(502, "Could not generate explanation. Please try again.");
+    }
+
+    if (!isPersistableAiExplanation(aiResult.data)) {
+      trackEvent({
+        supabase,
+        userId: user.id,
+        eventName: "ai_invalid_response",
+        metadata: {
+          documentId,
+          language,
+          reason: "incomplete_fields"
+        }
+      });
+
+      return jsonError(
+        502,
+        "Could not understand the explanation response. Please try again."
+      );
     }
 
     const displayWord = cleanDisplayWord(aiResult.data.word) || cleanDisplayWord(word);

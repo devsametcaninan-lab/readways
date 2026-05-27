@@ -5,6 +5,7 @@ import type {
 } from "./types";
 
 const WORD_MAX_LENGTH = 80;
+const PHRASE_MAX_LENGTH = 200;
 const SENTENCE_MAX_LENGTH = 800;
 
 export type ExplainWordValidationResult =
@@ -40,8 +41,16 @@ export function validateExplainWordRequest(
   const sentence = record.sentence.trim();
   const documentId = record.documentId.trim();
 
-  if (word.length > WORD_MAX_LENGTH) {
-    return { ok: false, error: `word must be at most ${WORD_MAX_LENGTH} characters.` };
+  const isPhrase = /\s/.test(word);
+  const wordMax = isPhrase ? PHRASE_MAX_LENGTH : WORD_MAX_LENGTH;
+
+  if (word.length > wordMax) {
+    return {
+      ok: false,
+      error: isPhrase
+        ? `phrase must be at most ${PHRASE_MAX_LENGTH} characters.`
+        : `word must be at most ${WORD_MAX_LENGTH} characters.`
+    };
   }
 
   if (sentence.length > SENTENCE_MAX_LENGTH) {

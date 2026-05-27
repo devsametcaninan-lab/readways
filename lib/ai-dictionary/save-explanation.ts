@@ -13,10 +13,23 @@ export type SaveWordExplanationParams = {
   language: string;
 };
 
+function isValidPersistRow(row: Omit<SaveWordExplanationParams, "supabase">): boolean {
+  return Boolean(
+    row.word.trim() &&
+      row.sentence.trim() &&
+      row.definition.trim() &&
+      row.contextual_meaning.trim()
+  );
+}
+
 export async function insertWordExplanation(
   params: SaveWordExplanationParams
 ): Promise<string | null> {
   const { supabase, ...row } = params;
+
+  if (!isValidPersistRow(row)) {
+    return null;
+  }
 
   const { data, error } = await supabase
     .from("word_explanations")

@@ -6,6 +6,7 @@ const CLIENT_TRACKABLE_EVENTS = new Set<AnalyticsEventName>([
   "first_upload_completed",
   "first_upload_failed",
   "pdf_parse_failed",
+  "upload_error",
   "pdf_storage_uploaded",
   "pdf_storage_failed",
   "document_processing_ready",
@@ -17,7 +18,8 @@ const CLIENT_TRACKABLE_EVENTS = new Set<AnalyticsEventName>([
   "paywall_shown",
   "upgrade_cta_clicked",
   "limit_reached",
-  "review_completed"
+  "review_completed",
+  "duplicate_request_prevented"
 ]);
 
 /**

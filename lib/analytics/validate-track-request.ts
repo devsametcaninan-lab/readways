@@ -15,6 +15,7 @@ const CLIENT_ALLOWED_EVENTS = new Set<AnalyticsEventName>([
   "first_upload_completed",
   "first_upload_failed",
   "pdf_parse_failed",
+  "upload_error",
   "pdf_storage_uploaded",
   "pdf_storage_failed",
   "document_processing_ready",

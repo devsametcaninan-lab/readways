@@ -30,6 +30,7 @@ import {
   type UploadFeedback
 } from "@/lib/app/upload-feedback";
 import { PDF_UPLOAD_LIMITS_SHORT } from "@/lib/upload/limits-label";
+import { trackUploadError } from "@/lib/upload/track-upload-error";
 import UploadProgressSteps from "@/components/upload/UploadProgressSteps";
 import {
   workflowStepFromExtractProgress,
@@ -72,6 +73,12 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const successToastShownRef = useRef(false);
   const isFirstUploadRef = useRef(false);
+  const uploadCancelledRef = useRef(false);
+  const uploadInFlightRef = useRef(false);
+  const uploadContextRef = useRef<{
+    documentId: string | null;
+    storagePath: string | null;
+  }>({ documentId: null, storagePath: null });
   const [state, setState] = useState<UploadState>("empty");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
@@ -92,6 +99,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setUploadFeedback(null);
     if (inputRef.current) inputRef.current.value = "";
     successToastShownRef.current = false;
+    uploadCancelledRef.current = false;
+    uploadContextRef.current = { documentId: null, storagePath: null };
   }, []);
 
   useEffect(() => {
@@ -178,9 +187,43 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     reset();
   };
 
-  const startExtraction = async () => {
-    if (!file) return;
+  const recoverAfterUploadFailure = useCallback(
+    (feedback: UploadFeedback) => {
+      setState("selected");
+      setProgress(0);
+      setWorkflowStep("upload");
+      setDocumentId(null);
+      uploadContextRef.current = { documentId: null, storagePath: null };
+      setUploadFeedback(feedback);
+    },
+    []
+  );
 
+  const handleCancelUpload = useCallback(async () => {
+    uploadCancelledRef.current = true;
+    const { documentId: pendingId, storagePath } = uploadContextRef.current;
+
+    if (pendingId) {
+      await rollbackProcessingDocument({
+        documentId: pendingId,
+        storagePath
+      }).catch(() => undefined);
+      notifyDocumentsUpdated();
+    }
+
+    uploadContextRef.current = { documentId: null, storagePath: null };
+    setDocumentId(null);
+    setState("selected");
+    setProgress(0);
+    setWorkflowStep("upload");
+    toast.info("Upload cancelled");
+  }, [toast]);
+
+  const startExtraction = async () => {
+    if (!file || uploadInFlightRef.current) return;
+
+    uploadCancelledRef.current = false;
+    uploadInFlightRef.current = true;
     setState("working");
     setProgress(0);
     setWorkflowStep("upload");
@@ -192,6 +235,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
     let pendingDocumentId: string | null = null;
     let storagePath: string | null = null;
+
+    const isCancelled = () => uploadCancelledRef.current;
 
     try {
       try {
@@ -228,11 +273,35 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       }
 
       pendingDocumentId = await createProcessingDocument(file);
+      if (isCancelled()) {
+        await rollbackProcessingDocument({
+          documentId: pendingDocumentId,
+          storagePath: null
+        }).catch(() => undefined);
+        notifyDocumentsUpdated();
+        return;
+      }
+
+      uploadContextRef.current = { documentId: pendingDocumentId, storagePath: null };
       setDocumentId(pendingDocumentId);
       setProgress(8);
 
       const stored = await storeDocumentPdfFile(pendingDocumentId, file);
       storagePath = stored.storagePath;
+      uploadContextRef.current = {
+        documentId: pendingDocumentId,
+        storagePath
+      };
+
+      if (isCancelled()) {
+        await rollbackProcessingDocument({
+          documentId: pendingDocumentId,
+          storagePath
+        }).catch(() => undefined);
+        notifyDocumentsUpdated();
+        return;
+      }
+
       setProgress(18);
       setWorkflowStep("extract");
 
@@ -250,16 +319,30 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         storagePath: stored.storagePath,
         originalFileName: stored.originalFileName,
         onProgress: (extractProgress) => {
+          if (isCancelled()) {
+            return;
+          }
+
           setWorkflowStep(workflowStepFromExtractProgress(extractProgress));
           setProgress(18 + Math.round(progressPercent(extractProgress) * 0.72));
         }
       });
+
+      if (isCancelled()) {
+        await rollbackProcessingDocument({
+          documentId: pendingDocumentId,
+          storagePath
+        }).catch(() => undefined);
+        notifyDocumentsUpdated();
+        return;
+      }
 
       setWorkflowStep("save");
       setProgress(94);
       notifyDocumentsUpdated();
 
       if (outcome.kind === "ready") {
+        uploadContextRef.current = { documentId: null, storagePath: null };
         setPageCount(outcome.pageCount);
         setProgress(100);
         setWorkflowStep("ready");
@@ -300,11 +383,15 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
       if (outcome.kind === "needs_ocr") {
         const feedback = feedbackForPdfErrorCode("SCANNED");
-        setState("selected");
-        setProgress(0);
-        setWorkflowStep("upload");
-        setUploadFeedback(feedback);
+        recoverAfterUploadFailure(feedback);
         toast.error(feedback.title);
+
+        trackUploadError({
+          errorCode: outcome.errorCode,
+          documentId: pendingDocumentId,
+          stage: "extraction",
+          reason: "needs_ocr"
+        });
 
         trackAnalyticsEventClient({
           eventName: "document_needs_ocr",
@@ -324,11 +411,14 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       }
 
       const feedback = feedbackForPdfErrorCode(outcome.errorCode);
-      setState("selected");
-      setProgress(0);
-      setWorkflowStep("upload");
-      setUploadFeedback(feedback);
+      recoverAfterUploadFailure(feedback);
       toast.error(feedback.title);
+
+      trackUploadError({
+        errorCode: outcome.errorCode,
+        documentId: pendingDocumentId,
+        stage: "extraction"
+      });
 
       trackAnalyticsEventClient({
         eventName: "document_processing_failed",
@@ -371,12 +461,14 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         }
 
         notifyDocumentsUpdated();
-        setDocumentId(null);
-        setState("selected");
-        setProgress(0);
-        setWorkflowStep("upload");
-        setUploadFeedback(feedbackForStorageFailure(err.message));
+        recoverAfterUploadFailure(feedbackForStorageFailure(err.message));
         toast.error("Upload didn't finish");
+
+        trackUploadError({
+          documentId: pendingDocumentId,
+          stage: "storage",
+          reason: err.code
+        });
 
         trackFirstUploadFailed({
           documentId: pendingDocumentId,
@@ -427,43 +519,72 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         });
       }
 
-      setState("selected");
-      setProgress(0);
-      setWorkflowStep("upload");
+      if (isCancelled()) {
+        return;
+      }
 
       if (isPdfUserError(err)) {
         const feedback = feedbackForPdfErrorCode(err.code);
-        setUploadFeedback(feedback);
+        recoverAfterUploadFailure(feedback);
         toast.error(feedback.title);
+
+        trackUploadError({
+          errorCode: err.code,
+          documentId: pendingDocumentId,
+          stage: "extraction"
+        });
 
         trackFirstUploadFailed({
           documentId: pendingDocumentId,
           errorCode: err.code
         });
       } else if (err instanceof Error) {
-        setUploadFeedback({
-          variant: "error",
-          title: "Could not process this PDF",
-          description: err.message
-        });
-        toast.error("Could not process this PDF");
-
-        trackFirstUploadFailed({
-          documentId: pendingDocumentId,
-          reason: "unknown"
-        });
-      } else {
-        setUploadFeedback({
+        recoverAfterUploadFailure({
           variant: "error",
           title: "Could not process this PDF",
           description: "Try another file, or upload a PDF with selectable text."
         });
         toast.error("Could not process this PDF");
 
+        trackUploadError({
+          documentId: pendingDocumentId,
+          stage: "extraction",
+          reason: "unknown"
+        });
+
         trackFirstUploadFailed({
           documentId: pendingDocumentId,
           reason: "unknown"
         });
+      } else {
+        recoverAfterUploadFailure({
+          variant: "error",
+          title: "Could not process this PDF",
+          description: "Try another file, or upload a PDF with selectable text."
+        });
+        toast.error("Could not process this PDF");
+
+        trackUploadError({
+          documentId: pendingDocumentId,
+          stage: "extraction",
+          reason: "unknown"
+        });
+
+        trackFirstUploadFailed({
+          documentId: pendingDocumentId,
+          reason: "unknown"
+        });
+      }
+    } finally {
+      uploadInFlightRef.current = false;
+
+      if (uploadCancelledRef.current) {
+        uploadCancelledRef.current = false;
+        setState("selected");
+        setProgress(0);
+        setWorkflowStep("upload");
+        setDocumentId(null);
+        uploadContextRef.current = { documentId: null, storagePath: null };
       }
     }
   };
@@ -680,18 +801,43 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                       />
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleCancelUpload()}
+                    className="mt-4 min-h-[44px] w-full rounded-lg border border-white/[0.12] bg-white/[0.03] px-5 py-2.5 text-sm text-zinc-300 transition hover:border-white/[0.16] hover:bg-white/[0.05]"
+                  >
+                    Cancel upload
+                  </button>
                 </div>
               )}
 
               {state === "selected" && (
-                <button
-                  type="button"
-                  onClick={startExtraction}
-                  disabled={isBusy}
-                  className="mt-6 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-[#6D7EFF] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  Extract and prepare
-                </button>
+                <div className="mt-6 flex flex-col gap-3">
+                  <button
+                    type="button"
+                    onClick={startExtraction}
+                    disabled={isBusy || !file}
+                    className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-[#6D7EFF] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {uploadFeedback ? "Try again" : "Extract and prepare"}
+                  </button>
+                  {uploadFeedback ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadFeedback(null);
+                        if (inputRef.current) {
+                          inputRef.current.value = "";
+                        }
+                        setFile(null);
+                        setState("empty");
+                      }}
+                      className="min-h-[44px] rounded-lg border border-white/[0.12] bg-white/[0.03] px-5 py-2.5 text-sm text-zinc-400 transition hover:text-zinc-200"
+                    >
+                      Choose a different file
+                    </button>
+                  ) : null}
+                </div>
               )}
 
               {state === "empty" && (

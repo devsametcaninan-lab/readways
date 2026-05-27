@@ -12,9 +12,16 @@ import { parseAiExplanationJson, type ValidatedAiExplanation } from "./openai-re
 const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 30_000;
 
+export type GenerateExplanationFailureReason =
+  | "not_configured"
+  | "request_failed"
+  | "invalid_response"
+  | "timeout"
+  | "empty_response";
+
 export type GenerateExplanationResult =
   | { ok: true; data: ValidatedAiExplanation }
-  | { ok: false; reason: "not_configured" | "request_failed" | "invalid_response" };
+  | { ok: false; reason: GenerateExplanationFailureReason };
 
 async function requestExplanationJson(params: {
   apiKey: string;
@@ -119,7 +126,7 @@ export async function generateExplanationWithOpenAI(params: {
     });
 
     if (!second) {
-      return { ok: false, reason: "request_failed" };
+      return { ok: false, reason: first ? "invalid_response" : "empty_response" };
     }
 
     const repaired = parseAiExplanationJson(second, sanitizeInput);
@@ -128,7 +135,11 @@ export async function generateExplanationWithOpenAI(params: {
     }
 
     return { ok: true, data: repaired.data };
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return { ok: false, reason: "timeout" };
+    }
+
     return { ok: false, reason: "request_failed" };
   } finally {
     clearTimeout(timeout);

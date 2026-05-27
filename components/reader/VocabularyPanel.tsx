@@ -16,6 +16,7 @@ import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
 type VocabularyPanelProps = {
   selection: PanelVocabularySelection | null;
   onSave: () => void;
+  onRetry?: () => void;
   /** When false on mobile, the panel will be hidden as a bottom-sheet. */
   isMobileOpen?: boolean;
   /** Mobile-only close action. */
@@ -52,6 +53,7 @@ const EXPLANATION_TEXT_MIN_HEIGHT = "min-h-[4.25rem]";
 function VocabularyPanel({
   selection,
   onSave,
+  onRetry,
   isMobileOpen,
   onClose,
   panelRef,
@@ -63,9 +65,13 @@ function VocabularyPanel({
   const isError = selection?.status === "error";
   const isReady = selection?.status === "ready";
   const isSaving = selection?.saveState === "saving";
+  const hasValidExplanation =
+    Boolean(selection?.definition.trim()) && Boolean(selection?.contextMeaning.trim());
+
   const canSave =
     isReady &&
     Boolean(selection?.wordExplanationId) &&
+    hasValidExplanation &&
     selection.saveState === "idle" &&
     !isSaving;
 
@@ -182,6 +188,14 @@ function VocabularyPanel({
                   <div className="mt-4">
                     <UpgradeCta source="reader_vocabulary_panel" className="w-full" />
                   </div>
+                ) : onRetry ? (
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className="mt-4 min-h-[44px] w-full rounded-md border border-white/[0.12] bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-200 transition hover:border-white/[0.16] hover:bg-white/[0.06]"
+                  >
+                    Try again
+                  </button>
                 ) : null}
               </div>
             ) : (

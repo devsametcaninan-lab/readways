@@ -4,6 +4,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "first_upload_completed",
   "first_upload_failed",
   "pdf_parse_failed",
+  "upload_error",
   "pdf_storage_uploaded",
   "pdf_storage_failed",
   "document_processing_ready",
@@ -25,6 +26,9 @@ export const ANALYTICS_EVENT_NAMES = [
   "ai_cache_hit",
   "ai_generated",
   "ai_limit_reached",
+  "ai_timeout",
+  "ai_invalid_response",
+  "duplicate_request_prevented",
   "ai_error"
 ] as const;
 
@@ -40,6 +44,7 @@ export const EVENT_NAME_TO_TYPE: Record<AnalyticsEventName, AnalyticsEventType> 
   first_upload_completed: "product",
   first_upload_failed: "error",
   pdf_parse_failed: "error",
+  upload_error: "error",
   pdf_storage_uploaded: "product",
   pdf_storage_failed: "error",
   document_processing_ready: "product",
@@ -61,6 +66,9 @@ export const EVENT_NAME_TO_TYPE: Record<AnalyticsEventName, AnalyticsEventType> 
   ai_cache_hit: "ai",
   ai_generated: "ai",
   ai_limit_reached: "ai",
+  ai_timeout: "error",
+  ai_invalid_response: "error",
+  duplicate_request_prevented: "product",
   ai_error: "error"
 };
 
