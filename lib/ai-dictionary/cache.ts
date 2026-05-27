@@ -17,8 +17,10 @@ export async function findCachedWordExplanation(params: {
   documentId: string;
   word: string;
   sentenceHash: string;
+  explanationLanguage: string;
 }): Promise<CachedWordExplanationRow | null> {
-  const { supabase, userId, documentId, word, sentenceHash } = params;
+  const { supabase, userId, documentId, word, sentenceHash, explanationLanguage } =
+    params;
 
   const { data, error } = await supabase
     .from("word_explanations")
@@ -29,6 +31,7 @@ export async function findCachedWordExplanation(params: {
     .eq("document_id", documentId)
     .eq("word", word)
     .eq("sentence_hash", sentenceHash)
+    .eq("language", explanationLanguage)
     .maybeSingle();
 
   if (error || !data) {

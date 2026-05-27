@@ -6,6 +6,7 @@ import type { PhraseHighlightRange } from "@/lib/reader/phrase-selection";
 import type { PhraseSelectionResolved } from "@/lib/reader/phrase-selection";
 import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
 import ReaderOnboardingHints from "@/components/onboarding/ReaderOnboardingHints";
+import PhraseSelectionHint from "./PhraseSelectionHint";
 import PhraseExplainButton from "./PhraseExplainButton";
 import ReaderArticle from "./ReaderArticle";
 import ReaderPreparingOverlay from "./ReaderPreparingOverlay";
@@ -52,6 +53,8 @@ function ReaderDocumentColumn({
       }
     >
       <h1 className={readerTitleClass}>{title}</h1>
+
+      {!isPreparing ? <PhraseSelectionHint /> : null}
 
       {isPreparing ? (
         <ReaderPreparingOverlay />

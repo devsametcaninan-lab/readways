@@ -29,15 +29,38 @@ async function requestExplanationJson(params: {
   mode: ExplanationPromptMode;
   word: string;
   sentence: string;
-  language: DocumentLanguage;
+  documentLanguage: DocumentLanguage;
+  explanationLanguage: DocumentLanguage;
   repair: boolean;
   signal?: AbortSignal;
 }): Promise<string | null> {
-  const { apiKey, model, mode, word, sentence, language, repair, signal } = params;
+  const {
+    apiKey,
+    model,
+    mode,
+    word,
+    sentence,
+    documentLanguage,
+    explanationLanguage,
+    repair,
+    signal
+  } = params;
 
   const userContent = repair
-    ? buildExplanationRepairUserPrompt({ word, sentence, language, mode })
-    : buildExplanationUserPrompt({ word, sentence, language, mode });
+    ? buildExplanationRepairUserPrompt({
+        word,
+        sentence,
+        documentLanguage,
+        explanationLanguage,
+        mode
+      })
+    : buildExplanationUserPrompt({
+        word,
+        sentence,
+        documentLanguage,
+        explanationLanguage,
+        mode
+      });
 
   const response = await fetch(OPENAI_CHAT_URL, {
     method: "POST",
@@ -51,7 +74,10 @@ async function requestExplanationJson(params: {
       temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: buildExplanationSystemPrompt(mode, language) },
+        {
+          role: "system",
+          content: buildExplanationSystemPrompt(mode, documentLanguage, explanationLanguage)
+        },
         { role: "user", content: userContent }
       ]
     })
@@ -76,7 +102,8 @@ async function requestExplanationJson(params: {
 export async function generateExplanationWithOpenAI(params: {
   word: string;
   sentence: string;
-  language: DocumentLanguage;
+  documentLanguage: DocumentLanguage;
+  explanationLanguage: DocumentLanguage;
   signal?: AbortSignal;
 }): Promise<GenerateExplanationResult> {
   const config = getOpenAIConfig();
@@ -102,7 +129,8 @@ export async function generateExplanationWithOpenAI(params: {
       mode,
       word: params.word,
       sentence: params.sentence,
-      language: params.language,
+      documentLanguage: params.documentLanguage,
+      explanationLanguage: params.explanationLanguage,
       repair: false,
       signal
     });
@@ -120,7 +148,8 @@ export async function generateExplanationWithOpenAI(params: {
       mode,
       word: params.word,
       sentence: params.sentence,
-      language: params.language,
+      documentLanguage: params.documentLanguage,
+      explanationLanguage: params.explanationLanguage,
       repair: true,
       signal
     });

@@ -146,9 +146,14 @@ function VocabularyPanel({
               ) : null}
             </p>
 
-            {isReady && selection.explanationSource ? (
-              <p className="mt-2 text-[11px] tracking-[0.04em] text-zinc-600">
-                {sourceLabel(selection.explanationSource)}
+            {isReady && (selection.explanationSource || selection.explanationLanguageLabel) ? (
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] tracking-[0.04em] text-zinc-600">
+                {selection.explanationLanguageLabel ? (
+                  <span>Explanation: {selection.explanationLanguageLabel}</span>
+                ) : null}
+                {selection.explanationSource ? (
+                  <span>{sourceLabel(selection.explanationSource)}</span>
+                ) : null}
               </p>
             ) : null}
 

@@ -25,6 +25,7 @@ export type PanelVocabularySelection = {
   status: PanelVocabularyStatus;
   saveState: PanelSaveState;
   explanationSource?: "cache" | "ai";
+  explanationLanguageLabel?: string;
   errorMessage?: string;
   paywall?: PanelPaywallState;
 };

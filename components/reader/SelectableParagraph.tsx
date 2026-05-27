@@ -7,6 +7,7 @@ import { tokenOverlapsRange } from "@/lib/reader/phrase-selection";
 import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
 import { selectableParagraphPropsEqual } from "@/lib/reader/paragraph-render";
 import { extractSentence, highlightKeyForWord, type WordToken } from "@/lib/reader/text-tokens";
+import { useUserPreferences } from "@/lib/preferences/UserPreferencesProvider";
 import ClickableWord from "./ClickableWord";
 import { readerParagraphClass } from "./reader-typography";
 import { wordHighlightClass } from "./word-highlight";
@@ -29,7 +30,9 @@ function SelectableParagraph({
   activePhraseRange,
   onWordClick
 }: SelectableParagraphProps) {
+  const { preferences } = useUserPreferences();
   const { text, tokens, index: paragraphIndex } = paragraph;
+  const highlightMode = preferences.highlightMode;
 
   const isPhraseHighlightActive =
     activePhraseRange?.paragraphIndex === paragraphIndex;
@@ -63,7 +66,10 @@ function SelectableParagraph({
             tokenOverlapsRange(token.start, token.end, activePhraseRange!);
 
           return (
-            <span key={tokenIndex} className={phraseActive ? wordHighlightClass(true) : undefined}>
+            <span
+              key={tokenIndex}
+              className={phraseActive ? wordHighlightClass(true, highlightMode) : undefined}
+            >
               {token.value}
             </span>
           );

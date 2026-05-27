@@ -21,6 +21,7 @@ import {
   getUserPlan,
   incrementExplanationUsage
 } from "@/lib/ai-dictionary/usage";
+import { resolveFinalExplanationLanguage } from "@/lib/ai-dictionary/explanation-language";
 import { validateExplainWordRequest } from "@/lib/ai-dictionary/validate";
 import { cleanDisplayWord } from "@/lib/reader/text-tokens";
 
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       return jsonError(400, validation.error);
     }
 
-    const { word, sentence, documentId } = validation.data;
+    const { word, sentence, documentId, explanationLanguagePreference } = validation.data;
     const normalizedWord = normalizeWord(word);
 
     if (!normalizedWord) {
@@ -66,11 +67,16 @@ export async function POST(request: Request) {
       return jsonError(403, "You do not have access to this document.");
     }
 
-    const language = await getDocumentLanguageForUser({
+    const documentLanguage = await getDocumentLanguageForUser({
       supabase,
       documentId,
       userId: user.id
     });
+
+    const explanationLanguage = resolveFinalExplanationLanguage(
+      explanationLanguagePreference,
+      documentLanguage
+    );
 
     const plan = await getUserPlan(supabase, user.id);
     const sentenceHash = createSentenceHash(sentence);
@@ -80,7 +86,8 @@ export async function POST(request: Request) {
       userId: user.id,
       documentId,
       word: normalizedWord,
-      sentenceHash
+      sentenceHash,
+      explanationLanguage
     });
 
     if (cached) {
@@ -96,7 +103,8 @@ export async function POST(request: Request) {
         eventName: "ai_cache_hit",
         metadata: {
           documentId,
-          language,
+          documentLanguage,
+          explanationLanguage,
           explanationKind: explanationProductEventName(word)
         }
       });
@@ -105,7 +113,12 @@ export async function POST(request: Request) {
         supabase,
         userId: user.id,
         eventName: explanationProductEventName(word),
-        metadata: { documentId, language, source: "cache" }
+        metadata: {
+          documentId,
+          documentLanguage,
+          explanationLanguage,
+          source: "cache"
+        }
       });
 
       return jsonExplainWord({
@@ -128,7 +141,8 @@ export async function POST(request: Request) {
         metadata: {
           feature: "ai_explanation",
           documentId,
-          language,
+          documentLanguage,
+          explanationLanguage,
           plan,
           used: allowance.usage.used,
           limit: allowance.usage.limit
@@ -141,7 +155,8 @@ export async function POST(request: Request) {
         eventName: "ai_limit_reached",
         metadata: {
           documentId,
-          language,
+          documentLanguage,
+          explanationLanguage,
           plan,
           used: allowance.usage.used,
           limit: allowance.usage.limit
@@ -156,7 +171,8 @@ export async function POST(request: Request) {
     const aiResult = await generateExplanationWithOpenAI({
       word,
       sentence,
-      language
+      documentLanguage,
+      explanationLanguage
     });
 
     if (!aiResult.ok) {
@@ -173,7 +189,8 @@ export async function POST(request: Request) {
         eventName: failureEvent,
         metadata: {
           documentId,
-          language,
+          documentLanguage,
+          explanationLanguage,
           reason: aiResult.reason
         }
       });
@@ -212,7 +229,8 @@ export async function POST(request: Request) {
         eventName: "ai_invalid_response",
         metadata: {
           documentId,
-          language,
+          documentLanguage,
+          explanationLanguage,
           reason: "incomplete_fields"
         }
       });
@@ -235,7 +253,7 @@ export async function POST(request: Request) {
       definition: aiResult.data.definition,
       contextual_meaning: aiResult.data.contextual_meaning,
       pronunciation: aiResult.data.pronunciation,
-      language
+      language: explanationLanguage
     });
 
     if (!wordExplanationId) {
@@ -258,7 +276,8 @@ export async function POST(request: Request) {
       eventName: "ai_generated",
       metadata: {
         documentId,
-        language,
+        documentLanguage,
+        explanationLanguage,
         explanationKind: explanationProductEventName(word)
       }
     });
@@ -267,14 +286,19 @@ export async function POST(request: Request) {
       supabase,
       userId: user.id,
       eventName: explanationProductEventName(word),
-      metadata: { documentId, language, source: "ai" }
+      metadata: {
+        documentId,
+        documentLanguage,
+        explanationLanguage,
+        source: "ai"
+      }
     });
 
     return jsonExplainWord({
       ...aiExplanationToPayload({
         ai: aiResult.data,
         sentence,
-        language,
+        language: explanationLanguage,
         displayWord,
         wordExplanationId
       }),

@@ -1,4 +1,4 @@
-import { normalizeDocumentLanguage } from "@/lib/language/document-language";
+import { parseExplanationLanguagePreference } from "./explanation-language";
 import type {
   ExplainWordRequestBody,
   ValidatedExplainWordRequest
@@ -60,12 +60,12 @@ export function validateExplainWordRequest(
     };
   }
 
-  const language = normalizeDocumentLanguage(
-    typeof record.language === "string" ? record.language : undefined
-  );
+  const explanationLanguagePreference =
+    parseExplanationLanguagePreference(record.explanationLanguagePreference) ??
+    "same_as_document";
 
   return {
     ok: true,
-    data: { word, sentence, documentId, language }
+    data: { word, sentence, documentId, explanationLanguagePreference }
   };
 }

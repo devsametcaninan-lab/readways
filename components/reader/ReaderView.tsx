@@ -35,6 +35,9 @@ import ReaderDocumentColumn from "./ReaderDocumentColumn";
 import { usePhraseSelection } from "./usePhraseSelection";
 import { usePreparedParagraphs } from "./usePreparedParagraphs";
 import { useOnboardingOptional } from "@/lib/onboarding/OnboardingProvider";
+import { mapSettingsLanguageToApiPreference } from "@/lib/ai-dictionary/explanation-language";
+import { resolveExplanationLanguage } from "@/lib/preferences/resolve-language";
+import { useUserPreferences } from "@/lib/preferences/UserPreferencesProvider";
 import VocabularyPanel from "./VocabularyPanel";
 
 type ReaderViewProps = {
@@ -74,6 +77,7 @@ function isAbortError(error: unknown): boolean {
 
 export default function ReaderView({ document }: ReaderViewProps) {
   const toast = useToast();
+  const { preferences } = useUserPreferences();
   const onboarding = useOnboardingOptional();
   const articleRef = useRef<HTMLElement>(null);
   const vocabularyPanelRef = useRef<HTMLElement | null>(null);
@@ -93,6 +97,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
   const saveInFlightRef = useRef(false);
   const selectionRef = useRef<PanelVocabularySelection | null>(null);
   const savedWordKeysRef = useRef(new Set<string>());
+  const autoSavedKeysRef = useRef(new Set<string>());
   const pendingPhraseRef = useRef<PhraseSelectionResolved | null>(null);
   const [isLgUp, setIsLgUp] = useState(false);
   const [mobileVocabPaddingBottomPx, setMobileVocabPaddingBottomPx] = useState(0);
@@ -194,6 +199,40 @@ export default function ReaderView({ document }: ReaderViewProps) {
     }
   }, [toast]);
 
+  useEffect(() => {
+    if (!preferences.autoSaveWords) {
+      return;
+    }
+
+    const current = selectionRef.current;
+    if (
+      !current ||
+      current.status !== "ready" ||
+      !current.wordExplanationId ||
+      !current.definition.trim() ||
+      !current.contextMeaning.trim() ||
+      current.saveState !== "idle"
+    ) {
+      return;
+    }
+
+    const autoKey = current.saveKey;
+    if (autoSavedKeysRef.current.has(autoKey)) {
+      return;
+    }
+
+    autoSavedKeysRef.current.add(autoKey);
+    void handleSave();
+  }, [selection, preferences.autoSaveWords, handleSave]);
+
+  const explanationLanguage = resolveExplanationLanguage(
+    preferences.defaultExplanationLanguage,
+    document.language
+  );
+  const explanationLanguagePreference = mapSettingsLanguageToApiPreference(
+    preferences.defaultExplanationLanguage
+  );
+
   const pageLabel = `${document.pageCount} page${document.pageCount === 1 ? "" : "s"}`;
 
   const applyPanelFields = useCallback(
@@ -215,7 +254,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
         sourceTitle: document.title,
         status: "ready",
         saveState: "idle",
-        explanationSource: fields.explanationSource
+        explanationSource: fields.explanationSource,
+        explanationLanguageLabel: fields.explanationLanguageLabel
       });
     },
     [document.id, document.title]
@@ -261,7 +301,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
       const requestKey = explainWordRequestKey(
         document.id,
         click.normalizedWord,
-        click.sentence
+        click.sentence,
+        explanationLanguage
       );
 
       if (
@@ -311,7 +352,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
             word: click.rawWord,
             sentence: click.sentence,
             documentId: document.id,
-            language: document.language,
+            documentLanguage: document.language,
+            explanationLanguagePreference,
             signal: controller.signal
           });
 
@@ -389,8 +431,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
     [
       applyPanelFields,
       document.id,
-      document.language,
       document.title,
+      document.language,
+      explanationLanguage,
+      explanationLanguagePreference,
       onboarding,
       showExplainError
     ]

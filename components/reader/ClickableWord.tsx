@@ -3,6 +3,7 @@
 import { memo, useCallback, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { isPointerTap, READER_INTERACTION } from "@/lib/reader/reader-interaction";
 import type { WordToken } from "@/lib/reader/text-tokens";
+import { useUserPreferences } from "@/lib/preferences/UserPreferencesProvider";
 import { wordHighlightClass } from "./word-highlight";
 
 type ClickableWordProps = {
@@ -23,6 +24,7 @@ function ClickableWord({
   isPhraseActive,
   onActivate
 }: ClickableWordProps) {
+  const { preferences } = useUserPreferences();
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const handlePointerDown = useCallback((event: PointerEvent<HTMLSpanElement>) => {
@@ -58,10 +60,11 @@ function ClickableWord({
     [onActivate, token]
   );
 
+  const highlightMode = preferences.highlightMode;
   const className =
     isPhraseActive || isWordActive
-      ? wordHighlightClass(true)
-      : wordHighlightClass(isWordActive);
+      ? wordHighlightClass(true, highlightMode)
+      : wordHighlightClass(isWordActive, highlightMode);
 
   return (
     <span

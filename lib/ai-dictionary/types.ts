@@ -1,17 +1,21 @@
 import type { DocumentLanguage } from "@/lib/language/document-language";
+import type { ExplanationLanguagePreference } from "./explanation-language";
 
 export type ExplainWordRequestBody = {
   word: string;
   sentence: string;
   documentId: string;
+  /** @deprecated Ignored — server uses document language from DB. */
   language?: string;
+  documentLanguage?: string;
+  explanationLanguagePreference?: string;
 };
 
 export type ValidatedExplainWordRequest = {
   word: string;
   sentence: string;
   documentId: string;
-  language: DocumentLanguage;
+  explanationLanguagePreference: ExplanationLanguagePreference;
 };
 
 export type ExplainWordSource = "cache" | "ai";

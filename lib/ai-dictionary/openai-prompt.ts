@@ -12,17 +12,24 @@ export function detectExplanationMode(text: string): ExplanationPromptMode {
 
 export function buildExplanationSystemPrompt(
   mode: ExplanationPromptMode,
-  language: DocumentLanguage
+  documentLanguage: DocumentLanguage,
+  explanationLanguage: DocumentLanguage
 ): string {
-  const languageName = languageNameForPrompt(language);
+  const documentLanguageName = languageNameForPrompt(documentLanguage);
+  const explanationLanguageName = languageNameForPrompt(explanationLanguage);
   const modeBlock =
     mode === "phrase"
       ? `The selection is a PHRASE (idiom, phrasal verb, or multi-word expression). Explain the whole phrase as one unit — never word-by-word unless essential. Examples: "come on", "look up", "in spite of", "as well as".`
       : `The selection is a single WORD. Give a quick gloss plus how it reads in this sentence.`;
 
+  const languageBlock =
+    documentLanguage === explanationLanguage
+      ? `The document sentence is in ${documentLanguageName}. Write every explanation field VALUE in ${explanationLanguageName}.`
+      : `The document sentence is in ${documentLanguageName}. Write definition, contextual_meaning, example_usage, and pronunciation in ${explanationLanguageName}. Keep the JSON key "word" exactly as the reader selected it (do not translate the selection). Do not translate the whole source sentence into your fields unless one or two words are essential for clarity.`;
+
   return `You help someone who is actively reading a real document and tapped text for a fast explanation.
 
-The document is written in ${languageName}. Write every explanation field in ${languageName} so it matches what the reader is studying.
+${languageBlock}
 
 ${modeBlock}
 
@@ -44,7 +51,9 @@ Field rules:
 - difficulty: "beginner" | "intermediate" | "advanced" — realistic for this text and selection.
 
 Output:
-- Return strict JSON only. No markdown. No code fences. No commentary before or after.
+- Return strict JSON only. JSON keys must stay in English (word, pronunciation, definition, contextual_meaning, example_usage, difficulty).
+- Field values must be in ${explanationLanguageName}.
+- No markdown. No code fences. No commentary before or after.
 - Use this exact shape:
 {"word":"","pronunciation":"","definition":"","contextual_meaning":"","example_usage":"","difficulty":"beginner"}`;
 }
@@ -52,24 +61,28 @@ Output:
 export function buildExplanationUserPrompt(params: {
   word: string;
   sentence: string;
-  language: DocumentLanguage;
+  documentLanguage: DocumentLanguage;
+  explanationLanguage: DocumentLanguage;
   mode: ExplanationPromptMode;
 }): string {
-  const { word, sentence, language, mode } = params;
+  const { word, sentence, documentLanguage, explanationLanguage, mode } = params;
   const kind = mode === "phrase" ? "Phrase" : "Word";
-  const languageName = languageNameForPrompt(language);
+  const documentLanguageName = languageNameForPrompt(documentLanguage);
+  const explanationLanguageName = languageNameForPrompt(explanationLanguage);
 
   return `${kind}: ${word}
-Sentence (context only — do not copy into fields): ${sentence}
-Document language: ${languageName}
+Sentence (context only — preserve as-is, do not copy into fields): ${sentence}
+Document language: ${documentLanguageName}
+Explanation language for field values: ${explanationLanguageName}
 
-Explain for a reader mid-flow in ${languageName}. Prioritize contextual_meaning. Keep all fields compact.`;
+Explain for a reader mid-flow. Prioritize contextual_meaning. Keep all value fields compact and in ${explanationLanguageName}.`;
 }
 
 export function buildExplanationRepairUserPrompt(params: {
   word: string;
   sentence: string;
-  language: DocumentLanguage;
+  documentLanguage: DocumentLanguage;
+  explanationLanguage: DocumentLanguage;
   mode: ExplanationPromptMode;
 }): string {
   return `${buildExplanationUserPrompt(params)}

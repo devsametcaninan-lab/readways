@@ -1,4 +1,9 @@
 import {
+  explanationLanguageDisplayLabel,
+  parseExplanationLanguagePreference,
+  type ExplanationLanguagePreference
+} from "@/lib/ai-dictionary/explanation-language";
+import {
   normalizeDocumentLanguage,
   type DocumentLanguage
 } from "@/lib/language/document-language";
@@ -22,19 +27,24 @@ export type WordClickPayload = ExplainClickPayload;
 export function explainWordRequestKey(
   documentId: string,
   normalizedWord: string,
-  sentence: string
+  sentence: string,
+  explanationLanguage: string
 ): string {
-  return `${documentId}:${normalizedWord}:${sentence.trim()}`;
+  return `${documentId}:${normalizedWord}:${sentence.trim()}:${explanationLanguage}`;
 }
 
 export async function fetchExplainWord(params: {
   word: string;
   sentence: string;
   documentId: string;
-  language: DocumentLanguage | string;
+  documentLanguage: DocumentLanguage | string;
+  explanationLanguagePreference: ExplanationLanguagePreference;
   signal?: AbortSignal;
 }): Promise<ExplainWordPayload> {
-  const language = normalizeDocumentLanguage(params.language);
+  const documentLanguage = normalizeDocumentLanguage(params.documentLanguage);
+  const explanationLanguagePreference =
+    parseExplanationLanguagePreference(params.explanationLanguagePreference) ??
+    "same_as_document";
 
   const response = await fetch("/api/explain-word", {
     method: "POST",
@@ -45,7 +55,8 @@ export async function fetchExplainWord(params: {
       word: params.word,
       sentence: params.sentence,
       documentId: params.documentId,
-      language
+      documentLanguage,
+      explanationLanguagePreference
     })
   });
 
@@ -79,6 +90,7 @@ export type ExplainPanelFields = {
   difficulty?: string;
   sentence: string;
   explanationSource: ExplainWordPayload["source"];
+  explanationLanguageLabel: string;
 };
 
 export function explainWordPayloadToPanelFields(
@@ -93,6 +105,7 @@ export function explainWordPayloadToPanelFields(
     exampleUsage: payload.example_usage,
     difficulty: payload.difficulty,
     sentence: payload.sentence,
-    explanationSource: payload.source
+    explanationSource: payload.source,
+    explanationLanguageLabel: explanationLanguageDisplayLabel(payload.language)
   };
 }
