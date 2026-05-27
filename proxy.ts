@@ -1,9 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  isAuthPagePath,
+  isProtectedAppPath,
+  sanitizeNextPath
+} from "@/lib/auth/paths";
 import { updateSession } from "@/lib/supabase/middleware";
-
-const AUTH_PAGES = new Set(["/login", "/signup"]);
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  if (!hasSupabaseEnv()) {
+    if (isProtectedAppPath(pathname)) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    return NextResponse.next({ request });
+  }
+
   const updated = updateSession(request);
   if (updated instanceof NextResponse) {
     return updated;
@@ -14,16 +30,14 @@ export async function proxy(request: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
-  if (!user && !AUTH_PAGES.has(pathname)) {
+  if (!user && isProtectedAppPath(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("next", pathname);
+    redirectUrl.searchParams.set("next", sanitizeNextPath(pathname));
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && AUTH_PAGES.has(pathname)) {
+  if (user && isAuthPagePath(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/dashboard";
     redirectUrl.search = "";

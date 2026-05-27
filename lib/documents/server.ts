@@ -26,10 +26,16 @@ export async function getReaderDocumentForUser(
     return { kind: "not_found" };
   }
 
+  const normalizedId = documentId.trim();
+  if (!normalizedId) {
+    return { kind: "not_found" };
+  }
+
   const { data, error } = await supabase
     .from("documents")
     .select(READER_COLUMNS)
-    .eq("id", documentId)
+    .eq("id", normalizedId)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   if (error || !data) {
@@ -37,10 +43,6 @@ export async function getReaderDocumentForUser(
   }
 
   const row = data as DocumentRecord & { user_id: string };
-
-  if (row.user_id !== user.id) {
-    return { kind: "not_found" };
-  }
 
   if (row.status !== "ready") {
     return {

@@ -9,9 +9,10 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 type AuthCardProps = {
   mode: "login" | "signup";
   plan?: "free" | "pro" | null;
+  nextPath?: string;
 };
 
-export default function AuthCard({ mode, plan }: AuthCardProps) {
+export default function AuthCard({ mode, plan, nextPath = "/dashboard" }: AuthCardProps) {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const envReady = hasSupabaseEnv();
@@ -34,7 +35,7 @@ export default function AuthCard({ mode, plan }: AuthCardProps) {
     toast.info("Redirecting to Google…", 3000);
 
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/callback?next=/dashboard`;
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 
     await supabase.auth.signInWithOAuth({
       provider: "google",

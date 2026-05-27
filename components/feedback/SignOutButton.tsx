@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { signOut } from "@/lib/auth/actions";
+import { clearAppSessionState } from "@/lib/auth/session-client";
 import Spinner from "./Spinner";
 
 export default function SignOutButton() {
@@ -27,7 +28,13 @@ export default function SignOutButton() {
 
 export function SignOutForm() {
   return (
-    <form action={signOut} className="mt-3">
+    <form
+      action={signOut}
+      className="mt-3"
+      onSubmit={() => {
+        clearAppSessionState();
+      }}
+    >
       <SignOutButton />
     </form>
   );

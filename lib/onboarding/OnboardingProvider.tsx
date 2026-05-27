@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  clearOnboardingCache,
   dismissOnboardingStep,
   fetchOnboardingState,
   readOnboardingCache
@@ -52,8 +53,9 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   useEffect(() => {
     let cancelled = false;
 
+    const supabase = createClient();
+
     void (async () => {
-      const supabase = createClient();
       const {
         data: { user }
       } = await supabase.auth.getUser();
@@ -63,6 +65,9 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
       }
 
       if (!user) {
+        clearOnboardingCache();
+        setUserId(null);
+        setState({});
         setReady(true);
         return;
       }
@@ -83,8 +88,37 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
       }
     })();
 
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session?.user) {
+        clearOnboardingCache();
+        setUserId(null);
+        setState({});
+        setReady(true);
+        return;
+      }
+
+      if (event === "SIGNED_IN" && session.user) {
+        setUserId(session.user.id);
+        void fetchOnboardingState(supabase, session.user.id)
+          .then((remote) => {
+            if (!cancelled) {
+              setState(remote);
+              setReady(true);
+            }
+          })
+          .catch(() => {
+            if (!cancelled) {
+              setReady(true);
+            }
+          });
+      }
+    });
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, []);
 

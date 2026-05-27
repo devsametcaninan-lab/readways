@@ -25,6 +25,18 @@ export function readOnboardingCache(): OnboardingState | null {
   }
 }
 
+export function clearOnboardingCache(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function writeOnboardingCache(state: OnboardingState): void {
   if (typeof window === "undefined") {
     return;
