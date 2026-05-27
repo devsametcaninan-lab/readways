@@ -1,3 +1,5 @@
+import { handleRouteError } from "@/lib/api/route-error";
+import { jsonError } from "@/lib/ai-dictionary/http";
 import { getBillingUsageSnapshot } from "@/lib/billing";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -12,7 +14,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+      return jsonError(401, "Authentication required.");
     }
 
     const snapshot = await getBillingUsageSnapshot({
@@ -28,10 +30,9 @@ export async function GET() {
       ai: snapshot.ai,
       pdf: snapshot.pdf
     });
-  } catch {
-    return NextResponse.json(
-      { error: "Could not load billing limits." },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleRouteError("GET /api/billing/limits", error, {
+      message: "Could not load billing limits."
+    });
   }
 }

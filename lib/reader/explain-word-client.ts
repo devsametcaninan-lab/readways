@@ -2,6 +2,7 @@ import {
   normalizeDocumentLanguage,
   type DocumentLanguage
 } from "@/lib/language/document-language";
+import { safeUserFacingMessage } from "@/lib/api/client-error";
 import type { ApiErrorBody, ExplainWordPayload } from "@/lib/ai-dictionary/types";
 import { parseExplainLimitPaywall } from "./explain-limit";
 
@@ -60,7 +61,9 @@ export async function fetchExplainWord(params: {
       throw err;
     }
 
-    throw new Error(body?.error ?? "Could not load word explanation.");
+    throw new Error(
+      safeUserFacingMessage(body?.error, "Could not load word explanation.")
+    );
   }
 
   return response.json() as Promise<ExplainWordPayload>;

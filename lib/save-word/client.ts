@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from "@/lib/ai-dictionary/types";
+import { parseApiErrorMessage } from "@/lib/api/client-error";
 import type { SaveWordResponse } from "./types";
 
 export async function fetchSaveWord(params: {
@@ -14,8 +14,7 @@ export async function fetchSaveWord(params: {
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
-    throw new Error(body?.error ?? "Could not save word.");
+    throw new Error(await parseApiErrorMessage(response, "Could not save word."));
   }
 
   return response.json() as Promise<SaveWordResponse>;

@@ -8,6 +8,7 @@ import {
 } from "@/lib/ai-dictionary/cache";
 import { documentBelongsToUser } from "@/lib/ai-dictionary/document-ownership";
 import { getDocumentLanguageForUser } from "@/lib/documents/document-language";
+import { handleRouteError } from "@/lib/api/route-error";
 import { jsonError, jsonExplainWord, jsonRateLimited } from "@/lib/ai-dictionary/http";
 import { generateExplanationWithOpenAI } from "@/lib/ai-dictionary/openai";
 import { normalizeWord } from "@/lib/ai-dictionary/normalize-word";
@@ -279,7 +280,7 @@ export async function POST(request: Request) {
       }),
       usage: usageAfter
     });
-  } catch {
-    return jsonError(500, "Something went wrong. Please try again.");
+  } catch (error) {
+    return handleRouteError("POST /api/explain-word", error);
   }
 }

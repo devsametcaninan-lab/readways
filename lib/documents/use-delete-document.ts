@@ -1,5 +1,6 @@
 "use client";
 
+import { safeUserFacingMessage } from "@/lib/api/client-error";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useToast } from "@/components/feedback/ToastProvider";
@@ -33,9 +34,12 @@ export function useDeleteDocument() {
 
         return true;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Could not delete document. Please try again.";
-        toast.error(message);
+        toast.error(
+          safeUserFacingMessage(
+            err instanceof Error ? err.message : null,
+            "Could not delete document. Please try again."
+          )
+        );
         return false;
       } finally {
         setDeletingId(null);

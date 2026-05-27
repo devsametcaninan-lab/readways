@@ -1,5 +1,6 @@
 "use client";
 
+import { parseApiErrorMessage, safeSupabaseClientMessage } from "@/lib/api/client-error";
 import { createClient } from "@/lib/supabase/client";
 import type { DocumentStatus } from "@/lib/supabase/schema";
 import { toDocumentListItem } from "./mappers";
@@ -46,7 +47,9 @@ export async function createProcessingDocument(file: File): Promise<string> {
     .single();
 
   if (error || !data) {
-    throw new Error(error?.message ?? "Could not create document.");
+    throw new Error(
+      safeSupabaseClientMessage(error?.message, "Could not create document.")
+    );
   }
 
   return data.id;
@@ -77,7 +80,9 @@ export async function markDocumentReady(
     .eq("id", documentId);
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(
+      safeSupabaseClientMessage(error.message, "Could not update document.")
+    );
   }
 }
 
@@ -123,7 +128,9 @@ export async function listUserDocuments(limit?: number): Promise<DocumentListIte
   const { data, error } = await query;
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(
+      safeSupabaseClientMessage(error.message, "Could not load documents.")
+    );
   }
 
   return (data as DocumentRecord[]).map(toDocumentListItem);
@@ -134,26 +141,15 @@ export type DeleteDocumentResponse = {
   storageWarning?: string;
 };
 
-async function parseApiErrorMessage(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-    if (body.error) {
-      return body.error;
-    }
-  } catch {
-    // ignore
-  }
-
-  return "Could not delete document. Please try again.";
-}
-
 export async function deleteDocument(documentId: string): Promise<DeleteDocumentResponse> {
   const response = await fetch(`/api/documents/${documentId}`, {
     method: "DELETE"
   });
 
   if (!response.ok) {
-    throw new Error(await parseApiErrorMessage(response));
+    throw new Error(
+      await parseApiErrorMessage(response, "Could not delete document. Please try again.")
+    );
   }
 
   return (await response.json()) as DeleteDocumentResponse;

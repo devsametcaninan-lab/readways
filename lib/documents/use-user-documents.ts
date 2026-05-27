@@ -1,5 +1,6 @@
 "use client";
 
+import { safeUserFacingMessage } from "@/lib/api/client-error";
 import { useCallback, useEffect, useState } from "react";
 import { listUserDocuments } from "./client";
 import { DOCUMENTS_UPDATED_EVENT } from "./events";
@@ -19,7 +20,12 @@ export function useUserDocuments(limit?: number) {
       setDocuments(rows);
     } catch (err) {
       setDocuments([]);
-      setError(err instanceof Error ? err.message : "Could not load documents.");
+      setError(
+        safeUserFacingMessage(
+          err instanceof Error ? err.message : null,
+          "Could not load documents."
+        )
+      );
     } finally {
       setLoading(false);
     }

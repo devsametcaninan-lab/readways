@@ -1,15 +1,4 @@
-async function parseErrorMessage(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-    if (body.error) {
-      return body.error;
-    }
-  } catch {
-    // ignore
-  }
-
-  return "Something went wrong. Please try again.";
-}
+import { parseApiErrorMessage } from "@/lib/api/client-error";
 
 export async function deleteSavedWord(savedWordId: string): Promise<void> {
   const response = await fetch(`/api/saved-words/${savedWordId}`, {
@@ -17,7 +6,9 @@ export async function deleteSavedWord(savedWordId: string): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response));
+    throw new Error(
+      await parseApiErrorMessage(response, "Could not remove word. Please try again.")
+    );
   }
 }
 
@@ -27,6 +18,8 @@ export async function queueSavedWordReview(savedWordId: string): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response));
+    throw new Error(
+      await parseApiErrorMessage(response, "Could not queue review. Please try again.")
+    );
   }
 }

@@ -1,3 +1,4 @@
+import { handleRouteError } from "@/lib/api/route-error";
 import { jsonError } from "@/lib/ai-dictionary/http";
 import { queueSavedWordForReview } from "@/lib/saved-words/queue-review";
 import { createClient } from "@/lib/supabase/server";
@@ -45,7 +46,7 @@ export async function POST(_request: Request, context: RouteContext) {
     }
 
     return NextResponse.json({ ok: true, flashcardId: result.flashcardId });
-  } catch {
-    return jsonError(500, "Something went wrong. Please try again.");
+  } catch (error) {
+    return handleRouteError("POST /api/saved-words/[id]/queue-review", error);
   }
 }

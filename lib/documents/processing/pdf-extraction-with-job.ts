@@ -1,5 +1,6 @@
 "use client";
 
+import { safeUserFacingMessage } from "@/lib/api/client-error";
 import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import {
   createDocumentJobClient,
@@ -111,8 +112,10 @@ export async function runPdfExtractionWithJob(
 
     return { outcome, jobId: job.id };
   } catch (err) {
-    const errorMessage =
-      err instanceof Error ? err.message : "PDF extraction failed unexpectedly.";
+    const errorMessage = safeUserFacingMessage(
+      err instanceof Error ? err.message : null,
+      "PDF extraction failed. Please try again."
+    );
 
     await markDocumentJobFailedClient({
       jobId: job.id,
@@ -130,6 +133,6 @@ export async function runPdfExtractionWithJob(
       }
     });
 
-    throw err;
+    throw new Error(errorMessage);
   }
 }

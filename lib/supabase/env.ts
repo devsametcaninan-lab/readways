@@ -3,6 +3,9 @@
  * Frontend continues to work without these set.
  */
 
+export const MISSING_SUPABASE_ENV_MESSAGE =
+  "ReadWays is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.";
+
 export function getSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -19,9 +22,7 @@ export function requireSupabaseEnv(): { url: string; anonKey: string } {
   const { url, anonKey } = getSupabaseEnv();
 
   if (!url || !anonKey) {
-    throw new Error(
-      "Missing Supabase env: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY"
-    );
+    throw new Error(MISSING_SUPABASE_ENV_MESSAGE);
   }
 
   return { url, anonKey };

@@ -1,3 +1,4 @@
+import { handleRouteError } from "@/lib/api/route-error";
 import { jsonError } from "@/lib/ai-dictionary/http";
 import { deleteSavedWordForUser } from "@/lib/saved-words/delete-saved-word";
 import { createClient } from "@/lib/supabase/server";
@@ -41,7 +42,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
-    return jsonError(500, "Something went wrong. Please try again.");
+  } catch (error) {
+    return handleRouteError("DELETE /api/saved-words/[id]", error);
   }
 }

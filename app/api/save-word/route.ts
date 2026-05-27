@@ -1,5 +1,6 @@
 import { trackEvent } from "@/lib/analytics/track-event";
 import { createClient } from "@/lib/supabase/server";
+import { handleRouteError } from "@/lib/api/route-error";
 import { jsonError } from "@/lib/ai-dictionary/http";
 import { persistSaveWord } from "@/lib/save-word/persist";
 import { validateSaveWordRequest } from "@/lib/save-word/validate";
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(result.response);
-  } catch {
-    return jsonError(500, "Something went wrong. Please try again.");
+  } catch (error) {
+    return handleRouteError("POST /api/save-word", error);
   }
 }

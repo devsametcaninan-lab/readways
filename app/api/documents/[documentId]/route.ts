@@ -1,3 +1,4 @@
+import { handleRouteError } from "@/lib/api/route-error";
 import { jsonError } from "@/lib/ai-dictionary/http";
 import { deleteDocumentForUser } from "@/lib/documents/delete-document";
 import { trackEvent } from "@/lib/analytics/track-event";
@@ -69,7 +70,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       ok: true,
       storageWarning: result.storageWarning
     });
-  } catch {
-    return jsonError(500, "Something went wrong. Please try again.");
+  } catch (error) {
+    return handleRouteError("DELETE /api/documents/[documentId]", error);
   }
 }

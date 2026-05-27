@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/logging/server-log";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { validateClientTrackRequest } from "@/lib/analytics/validate-track-request";
 import { jsonError } from "@/lib/ai-dictionary/http";
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
     });
 
     return new NextResponse(null, { status: 204 });
-  } catch {
+  } catch (error) {
+    logServerError("POST /api/analytics/track", error);
     return new NextResponse(null, { status: 204 });
   }
 }

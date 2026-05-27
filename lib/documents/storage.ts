@@ -1,3 +1,4 @@
+import { safeUserFacingMessage } from "@/lib/api/client-error";
 import type { SupabaseClient } from "@/lib/supabase/types";
 
 export const DOCUMENTS_STORAGE_BUCKET = "documents";
@@ -110,7 +111,13 @@ export async function removeDocumentFromStorage(
     .remove([storagePath]);
 
   if (error) {
-    return { ok: false, message: error.message };
+    return {
+      ok: false,
+      message: safeUserFacingMessage(
+        error.message,
+        "Could not remove the file from storage."
+      )
+    };
   }
 
   return { ok: true };
