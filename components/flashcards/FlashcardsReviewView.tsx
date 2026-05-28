@@ -11,6 +11,7 @@ import type { FlashcardReviewItem, SessionStats as SessionStatsData } from "@/li
 import type { ReviewRating } from "@/lib/supabase/schema";
 import AppStateCard from "@/components/app/AppStateCard";
 import FlashcardOnboardingHint from "@/components/onboarding/FlashcardOnboardingHint";
+import { useI18n } from "@/lib/i18n/provider";
 import FlipCard from "./FlipCard";
 import RatingButtons from "./RatingButtons";
 import ReviewComplete from "./ReviewComplete";
@@ -27,6 +28,7 @@ export default function FlashcardsReviewView({
 }: FlashcardsReviewViewProps) {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const onboarding = useOnboardingOptional();
   const total = initialDeck.length;
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -82,7 +84,7 @@ export default function FlashcardsReviewView({
 
       if (nextReviewed >= total) {
         setIsComplete(true);
-        toast.success("Review completed");
+        toast.success(t("app.flashcardsReviewCompleted"));
         trackAnalyticsEventClient({
           eventName: "review_completed",
           metadata: {
@@ -96,7 +98,7 @@ export default function FlashcardsReviewView({
       setCurrentIndex((index) => index + 1);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Could not save review.";
+        error instanceof Error ? error.message : t("app.flashcardsSaveReviewError");
       setReviewError(message);
       toast.error(message);
     } finally {
@@ -107,9 +109,11 @@ export default function FlashcardsReviewView({
   return (
     <div className="p-6 md:p-8 lg:p-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-medium tracking-tight text-white md:text-3xl">Flashcards</h1>
+        <h1 className="text-2xl font-medium tracking-tight text-white md:text-3xl">
+          {t("app.flashcardsTitle")}
+        </h1>
         <p className={`mt-2 ${appText.body}`}>
-          Review words from your reading with spaced repetition.
+          {t("app.flashcardsSubtitle")}
         </p>
       </div>
 
@@ -120,10 +124,10 @@ export default function FlashcardsReviewView({
       {total === 0 ? (
         <AppStateCard
           icon="flashcards"
-          title="No cards due today"
-          description="You're all caught up. Saved words will appear here when they're ready to review."
-          action={{ label: "Saved words", href: "/saved-words" }}
-          secondaryAction={{ label: "Go to Library", href: "/library", variant: "secondary" }}
+          title={t("app.flashcardsNoDueTitle")}
+          description={t("app.flashcardsNoDueBody")}
+          action={{ label: t("app.flashcardsSavedWordsAction"), href: "/saved-words" }}
+          secondaryAction={{ label: t("app.savedWordsGoLibrary"), href: "/library", variant: "secondary" }}
         />
       ) : isComplete ? (
         <ReviewComplete reviewedCount={reviewedCount} onReviewAgain={resetSession} />
@@ -134,10 +138,10 @@ export default function FlashcardsReviewView({
               <p className="tabular-nums text-zinc-400">
                 <span className="font-medium text-zinc-200">{reviewedCount}</span>
                 <span className="text-zinc-600"> / </span>
-                {total} reviewed
+                {total} {t("app.flashcardsReviewedCount")}
               </p>
               <p className="text-zinc-500">
-                Card {currentIndex + 1} of {total}
+                {t("app.flashcardsCardOf")} {currentIndex + 1} / {total}
               </p>
             </div>
 
@@ -158,7 +162,7 @@ export default function FlashcardsReviewView({
             >
               <FlashcardOnboardingHint />
               <p className="mb-4 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
-                How well did you recall it?
+                {t("app.flashcardsHowWellRecall")}
               </p>
               <RatingButtons onRate={handleRate} disabled={isSubmitting} />
               {scheduleFeedback && !reviewError ? (
@@ -166,14 +170,14 @@ export default function FlashcardsReviewView({
               ) : null}
               {reviewError ? (
                 <p className="mt-4 text-center text-sm leading-relaxed text-red-300/90">
-                  Couldn&apos;t save your rating. {reviewError}
+                  {t("app.flashcardsRatingSaveError")} {reviewError}
                 </p>
               ) : null}
             </div>
 
             {!isFlipped && (
               <p className="mt-6 text-center text-[12px] text-zinc-600">
-                Flip the card to rate your recall
+                {t("app.flashcardsFlipHint")}
               </p>
             )}
           </div>

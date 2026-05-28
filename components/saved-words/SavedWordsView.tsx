@@ -7,6 +7,7 @@ import { deleteSavedWord, queueSavedWordReview } from "@/lib/saved-words/client"
 import { groupSavedWordsByDocument } from "@/lib/saved-words/group";
 import { filterSavedWords, type SavedWordsFilter } from "@/lib/saved-words/search";
 import type { SavedWordItem } from "@/lib/saved-words/types";
+import { useI18n } from "@/lib/i18n/provider";
 import SavedWordCard from "./SavedWordCard";
 import SavedWordsEmptyState from "./SavedWordsEmptyState";
 import SavedWordsToolbar from "./SavedWordsToolbar";
@@ -17,6 +18,7 @@ type SavedWordsViewProps = {
 };
 
 export default function SavedWordsView({ initialWords }: SavedWordsViewProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [words, setWords] = useState(initialWords);
@@ -42,15 +44,15 @@ export default function SavedWordsView({ initialWords }: SavedWordsViewProps) {
     async (item: SavedWordItem) => {
       try {
         await queueSavedWordReview(item.id);
-        toast.success("Queued for flashcard review");
+        toast.success(t("app.savedWordsQueuedReview"));
         router.push("/flashcards");
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Could not queue review.";
+          error instanceof Error ? error.message : t("app.savedWordsQueueError");
         toast.error(message);
       }
     },
-    [router, toast]
+    [router, t, toast]
   );
 
   const handleRemove = useCallback(
@@ -63,15 +65,15 @@ export default function SavedWordsView({ initialWords }: SavedWordsViewProps) {
           setSelectedWord(null);
         }
 
-        toast.success(`Removed “${item.word}” from your vault`);
+        toast.success(`“${item.word}” ${t("app.savedWordsRemovedFromVault")}`);
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Could not remove word.";
+          error instanceof Error ? error.message : t("app.savedWordsRemoveError");
         toast.error(message);
         throw error;
       }
     },
-    [selectedWord?.id, toast]
+    [selectedWord?.id, t, toast]
   );
 
   const hasVault = words.length > 0;
@@ -81,11 +83,10 @@ export default function SavedWordsView({ initialWords }: SavedWordsViewProps) {
     <div className="p-6 md:p-8 lg:p-10">
       <header className="mb-8">
         <h1 className="text-2xl font-medium tracking-tight text-white md:text-3xl">
-          Saved Words
+          {t("app.savedWordsTitle")}
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
-          Your personal vocabulary vault — words and phrases collected while reading,
-          ready to revisit anytime.
+          {t("app.savedWordsSubtitle")}
         </p>
       </header>
 

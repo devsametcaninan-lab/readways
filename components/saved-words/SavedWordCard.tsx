@@ -6,6 +6,7 @@ import { appText } from "@/components/app/app-typography";
 import Spinner from "@/components/feedback/Spinner";
 import { difficultyLabel, previewText } from "@/lib/saved-words/format";
 import type { SavedWordItem } from "@/lib/saved-words/types";
+import { useI18n } from "@/lib/i18n/provider";
 import StatusBadge from "./StatusBadge";
 
 type SavedWordCardProps = {
@@ -21,6 +22,7 @@ export default function SavedWordCard({
   onReviewAgain,
   onRemove
 }: SavedWordCardProps) {
+  const { t } = useI18n();
   const [reviewPending, setReviewPending] = useState(false);
   const [removePending, setRemovePending] = useState(false);
 
@@ -87,7 +89,7 @@ export default function SavedWordCard({
 
       {contextPreview ? (
         <p className="mt-2.5 text-[13px] leading-relaxed text-zinc-500">
-          <span className={appText.label}>In context · </span>
+          <span className={appText.label}>{t("app.savedWordInContext")} · </span>
           {contextPreview}
         </p>
       ) : null}
@@ -95,7 +97,7 @@ export default function SavedWordCard({
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
         <span className="truncate">{item.source}</span>
         <span aria-hidden="true">·</span>
-        <span>Saved {item.savedAt}</span>
+        <span>{t("app.savedWordSavedAt")} {item.savedAt}</span>
         {level ? (
           <>
             <span aria-hidden="true">·</span>
@@ -112,7 +114,7 @@ export default function SavedWordCard({
           className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 transition hover:border-white/[0.16] hover:text-zinc-200 disabled:opacity-50"
         >
           {reviewPending ? <Spinner className="h-3 w-3" /> : null}
-          Review again
+          {t("app.savedWordReviewAgain")}
         </button>
 
         {item.documentId ? (
@@ -121,7 +123,7 @@ export default function SavedWordCard({
             onClick={(event) => event.stopPropagation()}
             className="rounded-md border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 transition hover:border-white/[0.16] hover:text-zinc-200"
           >
-            Open source
+            {t("app.savedWordOpenSource")}
           </Link>
         ) : null}
 
@@ -131,7 +133,7 @@ export default function SavedWordCard({
           onClick={handleRemove}
           className="rounded-md border border-white/[0.08] bg-transparent px-3 py-1.5 text-xs text-zinc-500 transition hover:border-red-500/25 hover:bg-red-500/[0.06] hover:text-red-300/90 disabled:opacity-50"
         >
-          {removePending ? "Removing…" : "Remove"}
+          {removePending ? t("app.savedWordRemoving") : t("app.savedWordRemove")}
         </button>
       </div>
     </article>

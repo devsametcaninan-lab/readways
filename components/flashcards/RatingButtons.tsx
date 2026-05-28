@@ -5,13 +5,16 @@ type RatingButtonsProps = {
   disabled?: boolean;
 };
 
-const ratings: { value: Rating; label: string; hint: string }[] = [
-  { value: "hard", label: "Hard", hint: "Soon" },
-  { value: "good", label: "Good", hint: "Standard" },
-  { value: "easy", label: "Easy", hint: "Later" }
-];
+import { useI18n } from "@/lib/i18n/provider";
 
 export default function RatingButtons({ onRate, disabled = false }: RatingButtonsProps) {
+  const { t } = useI18n();
+  const ratings: { value: Rating; label: string; hint: string }[] = [
+    { value: "hard", label: t("app.flashcardsHard"), hint: t("app.flashcardsSoon") },
+    { value: "good", label: t("app.flashcardsGood"), hint: t("app.flashcardsStandard") },
+    { value: "easy", label: t("app.flashcardsEasy"), hint: t("app.flashcardsLater") }
+  ];
+
   return (
     <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
       {ratings.map((rating) => (

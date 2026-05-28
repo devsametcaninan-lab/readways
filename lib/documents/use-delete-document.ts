@@ -6,11 +6,13 @@ import { useCallback, useState } from "react";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { deleteDocument } from "@/lib/documents/client";
 import { notifyDocumentsUpdated } from "@/lib/documents/events";
+import { useI18n } from "@/lib/i18n/provider";
 
 export function useDeleteDocument() {
   const router = useRouter();
   const pathname = usePathname();
   const toast = useToast();
+  const { t } = useI18n();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const deleteDocumentById = useCallback(
@@ -26,7 +28,7 @@ export function useDeleteDocument() {
           router.push("/library");
         }
 
-        toast.success("Document deleted");
+        toast.success(t("app.documentDeletedToast"));
 
         if (result.storageWarning) {
           toast.error(result.storageWarning);
@@ -37,7 +39,7 @@ export function useDeleteDocument() {
         toast.error(
           safeUserFacingMessage(
             err instanceof Error ? err.message : null,
-            "Could not delete document. Please try again."
+            t("app.documentDeleteFailedToast")
           )
         );
         return false;
@@ -45,7 +47,7 @@ export function useDeleteDocument() {
         setDeletingId(null);
       }
     },
-    [pathname, router, toast]
+    [pathname, router, t, toast]
   );
 
   return {

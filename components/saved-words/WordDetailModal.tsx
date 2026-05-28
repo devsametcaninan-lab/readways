@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Spinner from "@/components/feedback/Spinner";
 import { difficultyLabel } from "@/lib/saved-words/format";
-import { statusLabels, type SavedWordItem } from "@/lib/saved-words/types";
+import type { SavedWordItem } from "@/lib/saved-words/types";
+import { useI18n } from "@/lib/i18n/provider";
 import StatusBadge from "./StatusBadge";
 
 type WordDetailModalProps = {
@@ -20,6 +21,7 @@ export default function WordDetailModal({
   onReviewAgain,
   onRemove
 }: WordDetailModalProps) {
+  const { t } = useI18n();
   const [reviewPending, setReviewPending] = useState(false);
   const [removePending, setRemovePending] = useState(false);
 
@@ -43,6 +45,12 @@ export default function WordDetailModal({
   }
 
   const level = difficultyLabel(word.difficulty);
+  const statusLabel =
+    word.status === "learning"
+      ? t("app.statusLearning")
+      : word.status === "reviewing"
+        ? t("app.statusReviewing")
+        : t("app.statusMastered");
 
   const runReview = async () => {
     setReviewPending(true);
@@ -72,7 +80,7 @@ export default function WordDetailModal({
     >
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t("app.uploadClose")}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -97,7 +105,7 @@ export default function WordDetailModal({
         {word.definition ? (
           <div className="mt-6">
             <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-              Definition
+              {t("app.savedWordDefinition")}
             </p>
             <p className="mt-2 break-words text-[15px] leading-relaxed text-zinc-300">
               {word.definition}
@@ -108,7 +116,7 @@ export default function WordDetailModal({
         {word.contextualMeaning ? (
           <div className="mt-5">
             <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-              In this sentence
+              {t("app.savedWordInSentence")}
             </p>
             <p className="mt-2 break-words text-[15px] leading-relaxed text-zinc-400">
               {word.contextualMeaning}
@@ -120,7 +128,7 @@ export default function WordDetailModal({
           {word.contextSentence ? (
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                Source sentence
+                {t("app.savedWordSourceSentence")}
               </p>
               <p className="mt-2 break-words text-[15px] italic leading-relaxed text-zinc-400">
                 &ldquo;{word.contextSentence}&rdquo;
@@ -129,15 +137,15 @@ export default function WordDetailModal({
           ) : null}
 
           <div className="flex flex-wrap gap-4 text-sm text-zinc-500">
-            <span>Source: {word.source}</span>
-            <span>Saved: {word.savedAt}</span>
+            <span>{t("app.savedWordSource")}: {word.source}</span>
+            <span>{t("app.savedWordSaved")}: {word.savedAt}</span>
             {level ? <span>{level}</span> : null}
           </div>
 
           {word.reviewProgress != null ? (
             <div>
               <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
-                <span>Review progress</span>
+                <span>{t("app.savedWordReviewProgress")}</span>
                 <span>{word.reviewProgress}%</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.1]">
@@ -148,7 +156,9 @@ export default function WordDetailModal({
               </div>
             </div>
           ) : (
-            <p className="text-xs text-zinc-500">Review status: {statusLabels[word.status]}</p>
+            <p className="text-xs text-zinc-500">
+              {t("app.savedWordReviewStatus")}: {statusLabel}
+            </p>
           )}
         </div>
 
@@ -160,7 +170,7 @@ export default function WordDetailModal({
             className="inline-flex items-center gap-2 rounded-md border border-accent/25 bg-accent/10 px-4 py-2 text-sm text-accentSoft transition hover:bg-accent/15 disabled:opacity-50"
           >
             {reviewPending ? <Spinner className="h-3.5 w-3.5" /> : null}
-            Review again
+            {t("app.savedWordReviewAgain")}
           </button>
 
           {word.documentId ? (
@@ -168,7 +178,7 @@ export default function WordDetailModal({
               href={`/reader/${word.documentId}`}
               className="rounded-md border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.06]"
             >
-              Open source document
+              {t("app.savedWordOpenSourceDocument")}
             </Link>
           ) : null}
 
@@ -178,7 +188,7 @@ export default function WordDetailModal({
             onClick={() => void runRemove()}
             className="rounded-md border border-white/[0.1] px-4 py-2 text-sm text-zinc-500 transition hover:border-red-500/25 hover:bg-red-500/[0.06] hover:text-red-300/90 disabled:opacity-50"
           >
-            {removePending ? "Removing…" : "Remove word"}
+            {removePending ? t("app.savedWordRemoving") : t("app.savedWordRemoveWord")}
           </button>
         </div>
 
@@ -187,7 +197,7 @@ export default function WordDetailModal({
           onClick={onClose}
           className="mt-6 w-full rounded-md border border-white/[0.12] bg-white/[0.04] py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.06]"
         >
-          Close
+          {t("app.savedWordClose")}
         </button>
       </div>
     </div>

@@ -1,14 +1,7 @@
 "use client";
 
-import { statusLabels } from "@/lib/saved-words/types";
 import type { SavedWordsFilter } from "@/lib/saved-words/search";
-
-const filters: { value: SavedWordsFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "learning", label: statusLabels.learning },
-  { value: "reviewing", label: statusLabels.reviewing },
-  { value: "mastered", label: statusLabels.mastered }
-];
+import { useI18n } from "@/lib/i18n/provider";
 
 type SavedWordsToolbarProps = {
   search: string;
@@ -27,30 +20,38 @@ export default function SavedWordsToolbar({
   onSearchChange,
   onFilterChange
 }: SavedWordsToolbarProps) {
+  const { t } = useI18n();
+  const filters: { value: SavedWordsFilter; label: string }[] = [
+    { value: "all", label: t("app.savedWordsFilterAll") },
+    { value: "learning", label: t("app.statusLearning") },
+    { value: "reviewing", label: t("app.statusReviewing") },
+    { value: "mastered", label: t("app.statusMastered") }
+  ];
+
   return (
     <div className="mb-8 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-md">
           <input
             type="search"
-            placeholder="Search words, definitions, context, or sources…"
+            placeholder={t("app.savedWordsSearchPlaceholder")}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full rounded-lg border border-white/[0.12] bg-[#12141d] py-2.5 pl-4 pr-4 text-sm text-zinc-200 placeholder:text-zinc-600 transition focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10"
-            aria-label="Search saved words"
+            aria-label={t("app.savedWordsSearchAria")}
           />
         </div>
         <p className="text-[12px] text-zinc-500 sm:ml-auto">
           {visibleCount === totalCount
-            ? `${totalCount} ${totalCount === 1 ? "entry" : "entries"}`
-            : `${visibleCount} of ${totalCount}`}
+            ? `${totalCount} ${t("app.savedWordsEntries")}`
+            : `${visibleCount} ${t("app.savedWordsOfTotal")} ${totalCount}`}
         </p>
       </div>
 
       <div
         className="flex flex-wrap gap-2"
         role="tablist"
-        aria-label="Filter by learning status"
+        aria-label={t("app.savedWordsFilterAria")}
       >
         {filters.map((item) => {
           const active = filter === item.value;

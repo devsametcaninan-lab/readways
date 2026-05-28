@@ -9,6 +9,7 @@ import DeleteDocumentModal from "@/components/documents/DeleteDocumentModal";
 import { useUserDocuments } from "@/lib/documents/use-user-documents";
 import { useDeleteDocument } from "@/lib/documents/use-delete-document";
 import type { DocumentListItem } from "@/lib/documents/types";
+import { useI18n } from "@/lib/i18n/provider";
 
 function DashboardDocumentCard({
   doc,
@@ -17,22 +18,23 @@ function DashboardDocumentCard({
   doc: DocumentListItem;
   onDeleted: (documentId: string) => void;
 }) {
+  const { t } = useI18n();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { isDeleting, deleteDocumentById } = useDeleteDocument();
   const deleting = isDeleting(doc.id);
 
   const statusLabel: Record<DocumentListItem["status"], string> = {
-    processing: "Processing",
-    ready: "Ready",
-    needs_ocr: "Needs OCR",
-    failed: "Failed"
+    processing: t("app.documentStatusProcessing"),
+    ready: t("app.documentStatusReady"),
+    needs_ocr: t("app.documentStatusNeedsOcr"),
+    failed: t("app.documentStatusFailed")
   };
 
   const canRead = doc.status === "ready";
   const href = canRead ? `/reader/${doc.id}` : "/library";
   const readingState = canRead
     ? doc.progress == null
-      ? "Not started"
+      ? t("app.documentNotStarted")
       : `${doc.progress}%`
     : statusLabel[doc.status];
 
@@ -56,15 +58,15 @@ function DashboardDocumentCard({
             disabled={deleting}
             className="min-h-[40px] shrink-0 rounded-md border border-white/[0.1] px-3 py-2 text-[12px] text-zinc-500 transition hover:border-red-500/25 hover:bg-red-500/[0.06] hover:text-red-200/90 disabled:opacity-50"
           >
-            {deleting ? "…" : "Delete"}
+            {deleting ? "…" : t("app.documentDelete")}
           </button>
         </div>
         <p className={`mt-1.5 ${appText.metaSmall}`}>
-          PDF · Updated {doc.updatedAtLabel}
+          {t("app.dashboardPdfUpdatedPrefix")} {doc.updatedAtLabel}
           {doc.status !== "ready" ? ` · ${statusLabel[doc.status]}` : ""}
         </p>
         <div className={`mt-4 flex items-center justify-between ${appText.metaSmall}`}>
-          <span>Reading status</span>
+          <span>{t("app.documentReadingStatus")}</span>
           <span>{readingState}</span>
         </div>
         <Link
@@ -75,7 +77,7 @@ function DashboardDocumentCard({
               : "text-zinc-500 hover:text-zinc-400"
           }`}
         >
-          {canRead ? "Continue reading →" : "View in library →"}
+          {canRead ? `${t("app.documentContinueReading")} →` : `${t("app.dashboardViewInLibrary")} →`}
         </Link>
       </AppCard>
 
@@ -91,6 +93,7 @@ function DashboardDocumentCard({
 }
 
 export default function DashboardRecentDocuments() {
+  const { t } = useI18n();
   const { documents, loading, error, reload } = useUserDocuments(3);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
 
@@ -124,9 +127,9 @@ export default function DashboardRecentDocuments() {
         compact
         variant="error"
         icon="library"
-        title="Couldn't load recent documents"
-        description="Check your connection and try again."
-        action={{ label: "Try again", onClick: reload }}
+        title={t("app.dashboardRecentLoadErrorTitle")}
+        description={t("app.dashboardRecentLoadErrorBody")}
+        action={{ label: t("app.commonTryAgain"), onClick: reload }}
       />
     );
   }
@@ -136,9 +139,9 @@ export default function DashboardRecentDocuments() {
       <AppStateCard
         compact
         icon="upload"
-        title="No documents yet"
-        description="Upload a PDF to start reading and saving vocabulary."
-        action={{ label: "Open Library", href: "/library" }}
+        title={t("app.dashboardNoDocumentsTitle")}
+        description={t("app.dashboardNoDocumentsBody")}
+        action={{ label: t("app.dashboardOpenLibrary"), href: "/library" }}
       />
     );
   }

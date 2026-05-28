@@ -1,6 +1,7 @@
 "use client";
 
 import type { FlashcardReviewItem } from "@/lib/flashcards/types";
+import { useI18n } from "@/lib/i18n/provider";
 
 type FlipCardProps = {
   card: FlashcardReviewItem;
@@ -9,11 +10,12 @@ type FlipCardProps = {
 };
 
 export default function FlipCard({ card, isFlipped, onFlip }: FlipCardProps) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
       onClick={onFlip}
-      aria-label={isFlipped ? "Show word front" : "Reveal meaning"}
+      aria-label={isFlipped ? t("app.flashcardsShowFront") : t("app.flashcardsRevealMeaning")}
       className="flashcard-scene group w-full max-w-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0b10]"
     >
       <div
@@ -23,13 +25,13 @@ export default function FlipCard({ card, isFlipped, onFlip }: FlipCardProps) {
       >
         <div className="flashcard-face flashcard-front flex min-h-[22rem] flex-col items-center justify-center rounded-2xl border border-white/[0.12] bg-[#12141d] px-8 py-10 shadow-[0_12px_48px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)] transition group-hover:border-white/[0.16] group-hover:shadow-[0_16px_56px_rgba(0,0,0,0.5),0_0_40px_rgba(124,140,255,0.08)] md:min-h-[24rem]">
           <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
-            Saved from reading
+            {t("app.flashcardsSavedFromReading")}
           </p>
           <p className="mt-6 text-4xl font-medium tracking-tight text-white md:text-5xl">
             {card.word}
           </p>
           <p className="mt-8 text-sm text-zinc-500 transition group-hover:text-zinc-400">
-            Click to reveal meaning
+            {t("app.flashcardsClickReveal")}
           </p>
         </div>
 
@@ -46,13 +48,13 @@ export default function FlipCard({ card, isFlipped, onFlip }: FlipCardProps) {
           <div className="mt-6 space-y-4 overflow-y-auto">
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500">
-                Definition
+                {t("app.savedWordDefinition")}
               </p>
               <p className="mt-1.5 text-[15px] leading-relaxed text-zinc-200">{card.definition}</p>
             </div>
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500">
-                In context
+                {t("app.savedWordInContext")}
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
                 {card.contextualMeaning}

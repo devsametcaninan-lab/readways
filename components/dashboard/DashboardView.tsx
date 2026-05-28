@@ -6,26 +6,28 @@ import { appText } from "@/components/app/app-typography";
 import DashboardRecentDocuments from "@/components/dashboard/DashboardRecentDocuments";
 import UploadPdfButton from "@/components/upload/UploadPdfButton";
 import type { DashboardPageData } from "@/lib/dashboard/server";
+import { getServerT } from "@/lib/i18n/server";
 
 type DashboardViewProps = {
   data: DashboardPageData;
 };
 
 export default function DashboardView({ data }: DashboardViewProps) {
+  const t = getServerT();
   const { user, dashboard } = data;
 
   return (
     <div className="p-6 md:p-8 lg:p-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm text-zinc-400">Welcome back</p>
+          <p className="text-sm text-zinc-400">{t("app.dashboardWelcomeBack")}</p>
           <h1 className="mt-1 text-2xl font-medium tracking-tight text-white md:text-3xl">
             {user.name}
           </h1>
           <p className={`mt-2 max-w-lg ${appText.body}`}>
             {dashboard.isNewUser
-              ? "Upload your first PDF to start building your vocabulary."
-              : "Continue reading or upload a new document to grow your vocabulary."}
+              ? t("app.dashboardFirstUpload")
+              : t("app.dashboardContinueReading")}
           </p>
         </div>
         <UploadPdfButton />
@@ -37,14 +39,14 @@ export default function DashboardView({ data }: DashboardViewProps) {
         <div className="mb-8">
           <AppStateInline
             variant="default"
-            title="Your progress starts here"
-            description="Upload a PDF, tap words while you read, and save vocabulary. Your stats will appear as you go."
+            title={t("app.dashboardProgressStartsHere")}
+            description={t("app.dashboardProgressHint")}
           />
         </div>
       ) : null}
 
       <section className="mb-8">
-        <h2 className={`mb-4 ${appText.label}`}>Reading progress</h2>
+        <h2 className={`mb-4 ${appText.label}`}>{t("app.dashboardReadingProgress")}</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {dashboard.progressStats.map((stat) => (
             <AppCard key={stat.label} className="p-4">
@@ -58,9 +60,9 @@ export default function DashboardView({ data }: DashboardViewProps) {
 
       <section className="mb-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className={appText.label}>Recent documents</h2>
+          <h2 className={appText.label}>{t("app.dashboardRecentDocuments")}</h2>
           <Link href="/library" className={appText.link}>
-            View library
+            {t("app.dashboardViewLibrary")}
           </Link>
         </div>
         <DashboardRecentDocuments />
@@ -69,9 +71,9 @@ export default function DashboardView({ data }: DashboardViewProps) {
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className={appText.label}>Saved words</h2>
+            <h2 className={appText.label}>{t("app.dashboardSavedWords")}</h2>
             <Link href="/saved-words" className={appText.link}>
-              View all
+              {t("app.dashboardViewAll")}
             </Link>
           </div>
           <AppCard className="divide-y divide-white/[0.1] p-0">
@@ -87,9 +89,9 @@ export default function DashboardView({ data }: DashboardViewProps) {
               ))
             ) : (
               <div className="px-4 py-6 text-center">
-                <p className={`${appText.meta}`}>No saved words yet</p>
+                <p className={`${appText.meta}`}>{t("app.dashboardNoSavedWords")}</p>
                 <p className={`mt-1 ${appText.metaSmall}`}>
-                  Tap a word in the reader to save it here.
+                  {t("app.dashboardTapWordHint")}
                 </p>
               </div>
             )}
@@ -98,9 +100,9 @@ export default function DashboardView({ data }: DashboardViewProps) {
 
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className={appText.label}>Flashcards due</h2>
+            <h2 className={appText.label}>{t("app.dashboardFlashcardsDue")}</h2>
             <Link href="/flashcards" className={appText.link}>
-              Start review
+              {t("app.dashboardStartReview")}
             </Link>
           </div>
           <AppCard className="divide-y divide-white/[0.1] p-0">
@@ -114,7 +116,9 @@ export default function DashboardView({ data }: DashboardViewProps) {
                     <p className={appText.title}>{card.word}</p>
                     <p className={`mt-1 truncate ${appText.metaSmall}`}>{card.context}</p>
                   </div>
-                  <span className={`shrink-0 ${appText.metaSmall}`}>Due {card.dueLabel}</span>
+                  <span className={`shrink-0 ${appText.metaSmall}`}>
+                    {t("app.dashboardDuePrefix")} {card.dueLabel}
+                  </span>
                 </div>
               ))
             ) : (
@@ -122,13 +126,13 @@ export default function DashboardView({ data }: DashboardViewProps) {
                 <p className={appText.meta}>
                   {dashboard.stats.flashcardsDueCount === 0 &&
                   dashboard.stats.flashcardsCount > 0
-                    ? "No cards due right now"
-                    : "No flashcards yet"}
+                    ? t("app.dashboardNoCardsNow")
+                    : t("app.dashboardNoFlashcardsYet")}
                 </p>
                 <p className={`mt-1 ${appText.metaSmall}`}>
                   {dashboard.stats.flashcardsCount > 0
-                    ? "You're caught up — check back later."
-                    : "Saved words become flashcards automatically."}
+                    ? t("app.dashboardCaughtUp")
+                    : t("app.dashboardSavedWordsBecomeCards")}
                 </p>
               </div>
             )}

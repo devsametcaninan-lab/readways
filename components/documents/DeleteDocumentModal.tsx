@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
+
 type DeleteDocumentModalProps = {
   open: boolean;
   title: string;
@@ -15,6 +17,7 @@ export default function DeleteDocumentModal({
   onCancel,
   onConfirm
 }: DeleteDocumentModalProps) {
+  const { t } = useI18n();
   if (!open) return null;
 
   return (
@@ -26,7 +29,7 @@ export default function DeleteDocumentModal({
     >
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t("app.uploadClose")}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={deleting ? undefined : onCancel}
         disabled={deleting}
@@ -37,10 +40,10 @@ export default function DeleteDocumentModal({
           id="delete-document-title"
           className="text-lg font-medium tracking-tight text-white sm:text-xl"
         >
-          Delete this document?
+          {t("app.documentDeleteTitle")}
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-          This will remove the document, saved words, and flashcards connected to it.
+          {t("app.documentDeleteBody")}
         </p>
         <p className="mt-2 truncate text-sm text-zinc-500">{title}</p>
 
@@ -51,7 +54,7 @@ export default function DeleteDocumentModal({
             disabled={deleting}
             className="min-h-[44px] rounded-lg border border-white/[0.12] bg-white/[0.03] px-5 py-2.5 text-sm text-zinc-300 transition hover:border-white/[0.16] hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -59,7 +62,7 @@ export default function DeleteDocumentModal({
             disabled={deleting}
             className="min-h-[44px] rounded-lg border border-red-500/30 bg-red-500/15 px-5 py-2.5 text-sm font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {deleting ? "Deleting…" : "Delete document"}
+            {deleting ? t("app.documentDeleting") : t("app.documentDeleteAction")}
           </button>
         </div>
       </div>

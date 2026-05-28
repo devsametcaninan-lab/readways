@@ -1,6 +1,7 @@
 "use client";
 
 import { useUploadPdf } from "./UploadPdfContext";
+import { useI18n } from "@/lib/i18n/provider";
 
 type UploadPdfButtonProps = {
   className?: string;
@@ -12,13 +13,15 @@ const defaultClassName =
 
 export default function UploadPdfButton({
   className = defaultClassName,
-  label = "Upload PDF"
+  label
 }: UploadPdfButtonProps) {
+  const { t } = useI18n();
   const { openUpload } = useUploadPdf();
+  const resolvedLabel = label ?? t("app.uploadPdfTitle");
 
   return (
     <button type="button" onClick={openUpload} className={className}>
-      {label}
+      {resolvedLabel}
     </button>
   );
 }

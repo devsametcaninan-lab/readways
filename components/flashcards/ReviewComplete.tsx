@@ -1,4 +1,5 @@
 import AppStateCard from "@/components/app/AppStateCard";
+import { useI18n } from "@/lib/i18n/provider";
 
 type ReviewCompleteProps = {
   reviewedCount: number;
@@ -6,19 +7,20 @@ type ReviewCompleteProps = {
 };
 
 export default function ReviewComplete({ reviewedCount, onReviewAgain }: ReviewCompleteProps) {
+  const { t } = useI18n();
   return (
     <div className="mx-auto w-full max-w-md">
       <AppStateCard
         variant="success"
         icon="check"
-        title="Review complete"
+        title={t("app.flashcardsReviewCompleteTitle")}
         description={
           reviewedCount === 1
-            ? "You reviewed 1 card this session. Nice work — your memory schedule has been updated."
-            : `You reviewed ${reviewedCount} cards this session. Nice work — your memory schedule has been updated.`
+            ? t("app.flashcardsReviewCompleteSingle")
+            : `${t("app.flashcardsReviewCompleteMultiplePrefix")} ${reviewedCount} ${t("app.flashcardsReviewCompleteMultipleSuffix")}`
         }
-        action={{ label: "Review again", onClick: onReviewAgain }}
-        secondaryAction={{ label: "Saved words", href: "/saved-words", variant: "secondary" }}
+        action={{ label: t("app.flashcardsReviewAgain"), onClick: onReviewAgain }}
+        secondaryAction={{ label: t("app.flashcardsSavedWordsAction"), href: "/saved-words", variant: "secondary" }}
       />
     </div>
   );

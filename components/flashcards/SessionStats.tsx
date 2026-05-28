@@ -1,15 +1,17 @@
 import { appText } from "@/components/app/app-typography";
 import type { SessionStats as SessionStatsType } from "@/lib/flashcards/types";
+import { useI18n } from "@/lib/i18n/provider";
 
 type SessionStatsProps = {
   stats: SessionStatsType;
 };
 
 export default function SessionStats({ stats }: SessionStatsProps) {
+  const { t } = useI18n();
   const items = [
-    { label: "Due today", value: stats.dueToday },
-    { label: "Learning", value: stats.learning },
-    { label: "Mastered", value: stats.mastered }
+    { label: t("app.flashcardsStatsDueToday"), value: stats.dueToday },
+    { label: t("app.flashcardsStatsLearning"), value: stats.learning },
+    { label: t("app.flashcardsStatsMastered"), value: stats.mastered }
   ];
 
   return (

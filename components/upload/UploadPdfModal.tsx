@@ -36,6 +36,7 @@ import {
   workflowStepFromExtractProgress,
   type UploadWorkflowStepId
 } from "@/lib/upload/workflow-steps";
+import { useI18n } from "@/lib/i18n/provider";
 
 type UploadState = "empty" | "selected" | "working" | "ready";
 
@@ -69,6 +70,7 @@ function progressPercent(progress: ExtractProgress): number {
 export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const { documents } = useUserDocuments();
   const inputRef = useRef<HTMLInputElement>(null);
   const successToastShownRef = useRef(false);
@@ -115,9 +117,9 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
   useEffect(() => {
     if (open && state === "ready" && !successToastShownRef.current) {
       successToastShownRef.current = true;
-      toast.success("Your document is ready");
+      toast.success(t("app.uploadReadyTitle"));
     }
-  }, [open, state, toast]);
+  }, [open, state, t, toast]);
 
   useEffect(() => {
     if (!open) return;
@@ -139,10 +141,10 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
   const handleFile = (next: File) => {
     if (!isPdfFile(next)) {
-      const message = "Only PDF files are supported.";
+      const message = t("app.uploadOnlyPdf");
       setUploadFeedback({
         variant: "warning",
-        title: "PDF files only",
+        title: t("app.uploadPdfOnlyTitle"),
         description: message
       });
       toast.error(message);
@@ -216,8 +218,8 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     setState("selected");
     setProgress(0);
     setWorkflowStep("upload");
-    toast.info("Upload cancelled");
-  }, [toast]);
+    toast.info(t("app.uploadCancelled"));
+  }, [t, toast]);
 
   const startExtraction = async () => {
     if (!file || uploadInFlightRef.current) return;
@@ -462,7 +464,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
         notifyDocumentsUpdated();
         recoverAfterUploadFailure(feedbackForStorageFailure(err.message));
-        toast.error("Upload didn't finish");
+        toast.error(t("app.uploadDidNotFinish"));
 
         trackUploadError({
           documentId: pendingDocumentId,
@@ -541,10 +543,10 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       } else if (err instanceof Error) {
         recoverAfterUploadFailure({
           variant: "error",
-          title: "Could not process this PDF",
-          description: "Try another file, or upload a PDF with selectable text."
+          title: t("app.uploadProcessFailedTitle"),
+          description: t("app.uploadProcessFailedBody")
         });
-        toast.error("Could not process this PDF");
+        toast.error(t("app.uploadProcessFailedTitle"));
 
         trackUploadError({
           documentId: pendingDocumentId,
@@ -559,10 +561,10 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       } else {
         recoverAfterUploadFailure({
           variant: "error",
-          title: "Could not process this PDF",
-          description: "Try another file, or upload a PDF with selectable text."
+          title: t("app.uploadProcessFailedTitle"),
+          description: t("app.uploadProcessFailedBody")
         });
-        toast.error("Could not process this PDF");
+        toast.error(t("app.uploadProcessFailedTitle"));
 
         trackUploadError({
           documentId: pendingDocumentId,
@@ -622,7 +624,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                 id="upload-pdf-title"
                 className="text-lg font-medium tracking-tight text-white sm:text-xl md:text-2xl"
               >
-                Upload PDF
+                {t("app.uploadPdfTitle")}
               </h2>
               <p className="mt-1.5 text-sm text-zinc-400">{PDF_UPLOAD_LIMITS_SHORT}</p>
             </div>
@@ -632,7 +634,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                 onClick={onClose}
                 className="min-h-[40px] shrink-0 rounded-md border border-white/[0.12] px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/[0.04] hover:text-zinc-200"
               >
-                Close
+                {t("app.uploadClose")}
               </button>
             )}
           </div>
@@ -651,7 +653,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="mt-4 text-base font-medium text-white">Your document is ready.</p>
+                <p className="mt-4 text-base font-medium text-white">{t("app.uploadReadyTitle")}</p>
                 {file ? (
                   <p className="mt-2 truncate px-2 text-sm text-zinc-400">
                     {file.name}
@@ -672,14 +674,14 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                   onClick={handleOpenReader}
                   className="min-h-[48px] w-full rounded-lg border border-accent/30 bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-[#6D7EFF]"
                 >
-                  Open in Reader
+                  {t("app.uploadOpenReader")}
                 </button>
                 <button
                   type="button"
                   onClick={handleUploadAnother}
                   className="min-h-[48px] w-full rounded-lg border border-white/[0.12] bg-white/[0.03] px-5 py-3 text-sm text-zinc-300 transition hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-zinc-100"
                 >
-                  Upload another PDF
+                  {t("app.uploadAnotherPdf")}
                 </button>
               </div>
             </div>
@@ -730,10 +732,10 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                 </div>
                 <p className="mt-4 text-sm font-medium text-zinc-200">
                   {isDragging
-                    ? "Release to add your PDF"
+                    ? t("app.uploadReleaseToAdd")
                     : state === "empty"
-                      ? "Drag and drop your PDF here"
-                      : "Drop to replace this file"}
+                      ? t("app.uploadDragDrop")
+                      : t("app.uploadDropReplace")}
                 </p>
                 <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500">
                   {PDF_UPLOAD_LIMITS_SHORT}
@@ -744,7 +746,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                     onClick={() => inputRef.current?.click()}
                     className="mt-5 min-h-[44px] rounded-lg border border-white/[0.14] bg-white/[0.05] px-5 py-2.5 text-sm text-zinc-200 transition hover:border-white/[0.2] hover:bg-white/[0.08]"
                   >
-                    Choose file
+                    {t("app.uploadChooseFile")}
                   </button>
                 )}
                 <input
@@ -791,7 +793,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                   <UploadProgressSteps activeStep={workflowStep} />
                   <div className="mt-4">
                     <div className="mb-1.5 flex justify-between text-xs text-zinc-500">
-                      <span className="text-zinc-400">Preparing your document</span>
+                      <span className="text-zinc-400">{t("app.uploadPreparing")}</span>
                       <span>{progress}%</span>
                     </div>
                     <div className="h-1 overflow-hidden rounded-full bg-white/[0.08]">
@@ -806,7 +808,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                     onClick={() => void handleCancelUpload()}
                     className="mt-4 min-h-[44px] w-full rounded-lg border border-white/[0.12] bg-white/[0.03] px-5 py-2.5 text-sm text-zinc-300 transition hover:border-white/[0.16] hover:bg-white/[0.05]"
                   >
-                    Cancel upload
+                    {t("app.uploadCancel")}
                   </button>
                 </div>
               )}
@@ -819,7 +821,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                     disabled={isBusy || !file}
                     className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-[#6D7EFF] disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {uploadFeedback ? "Try again" : "Extract and prepare"}
+                    {uploadFeedback ? t("app.uploadTryAgain") : t("app.uploadExtractPrepare")}
                   </button>
                   {uploadFeedback ? (
                     <button
@@ -834,7 +836,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                       }}
                       className="min-h-[44px] rounded-lg border border-white/[0.12] bg-white/[0.03] px-5 py-2.5 text-sm text-zinc-400 transition hover:text-zinc-200"
                     >
-                      Choose a different file
+                      {t("app.uploadChooseDifferent")}
                     </button>
                   ) : null}
                 </div>
@@ -842,7 +844,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
 
               {state === "empty" && (
                 <p className="mt-4 text-center text-[12px] leading-relaxed text-zinc-600">
-                  Text is extracted in your browser, then saved securely to your library.
+                  {t("app.uploadBrowserExtractHint")}
                 </p>
               )}
             </>

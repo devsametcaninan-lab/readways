@@ -1,17 +1,19 @@
 import AppStateCard from "@/components/app/AppStateCard";
+import { useI18n } from "@/lib/i18n/provider";
 
 type SavedWordsEmptyStateProps =
   | { variant: "vault" }
   | { variant: "no-results"; onClearFilters: () => void };
 
 export default function SavedWordsEmptyState(props: SavedWordsEmptyStateProps) {
+  const { t } = useI18n();
   if (props.variant === "no-results") {
     return (
       <AppStateCard
         icon="search"
-        title="No matches in your vault"
-        description="Try a different search or filter. Your saved words are still here."
-        action={{ label: "Clear search & filters", onClick: props.onClearFilters, variant: "secondary" }}
+        title={t("app.savedWordsNoResultsTitle")}
+        description={t("app.savedWordsNoResultsBody")}
+        action={{ label: t("app.savedWordsClearSearchFilters"), onClick: props.onClearFilters, variant: "secondary" }}
       />
     );
   }
@@ -19,10 +21,10 @@ export default function SavedWordsEmptyState(props: SavedWordsEmptyStateProps) {
   return (
     <AppStateCard
       icon="library"
-      title="No saved words yet"
-      description="Tap any word while reading to get an explanation, then save it as a flashcard. Your vocabulary will collect here."
-      action={{ label: "Go to Library", href: "/library" }}
-      secondaryAction={{ label: "Open Reader", href: "/reader", variant: "secondary" }}
+      title={t("app.savedWordsEmptyTitle")}
+      description={t("app.savedWordsEmptyBody")}
+      action={{ label: t("app.savedWordsGoLibrary"), href: "/library" }}
+      secondaryAction={{ label: t("app.savedWordsOpenReader"), href: "/reader", variant: "secondary" }}
     />
   );
 }

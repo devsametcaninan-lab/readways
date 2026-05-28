@@ -7,28 +7,30 @@ import { appText } from "@/components/app/app-typography";
 import DeleteDocumentModal from "@/components/documents/DeleteDocumentModal";
 import { useDeleteDocument } from "@/lib/documents/use-delete-document";
 import type { DocumentListItem } from "@/lib/documents/types";
+import { useI18n } from "@/lib/i18n/provider";
 
 type DocumentCardProps = {
   document: DocumentListItem;
   onDeleted?: (documentId: string) => void;
 };
 
-const statusLabel: Record<DocumentListItem["status"], string> = {
-  processing: "Processing",
-  ready: "Ready",
-  needs_ocr: "Needs OCR",
-  failed: "Failed"
-};
-
 export default function DocumentCard({ document: doc, onDeleted }: DocumentCardProps) {
+  const { t } = useI18n();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { isDeleting, deleteDocumentById } = useDeleteDocument();
   const deleting = isDeleting(doc.id);
+  const statusLabel: Record<DocumentListItem["status"], string> = {
+    processing: t("app.documentStatusProcessing"),
+    ready: t("app.documentStatusReady"),
+    needs_ocr: t("app.documentStatusNeedsOcr"),
+    failed: t("app.documentStatusFailed")
+  };
+
   const canRead = doc.status === "ready";
   const href = canRead ? `/reader/${doc.id}` : undefined;
   const readingState = canRead
     ? doc.progress == null
-      ? "Not started"
+      ? t("app.documentNotStarted")
       : `${doc.progress}%`
     : statusLabel[doc.status];
 
@@ -60,7 +62,7 @@ export default function DocumentCard({ document: doc, onDeleted }: DocumentCardP
             disabled={deleting}
             className="min-h-[40px] shrink-0 rounded-md border border-white/[0.1] px-3 py-2 text-[12px] text-zinc-500 transition hover:border-red-500/25 hover:bg-red-500/[0.06] hover:text-red-200/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {deleting ? "Deleting…" : "Delete"}
+            {deleting ? t("app.documentDeleting") : t("app.documentDelete")}
           </button>
         </div>
 
@@ -71,14 +73,14 @@ export default function DocumentCard({ document: doc, onDeleted }: DocumentCardP
           </p>
 
           <div className={`mt-5 flex items-center justify-between ${appText.metaSmall}`}>
-            <span>Reading status</span>
+          <span>{t("app.documentReadingStatus")}</span>
             <span>{readingState}</span>
           </div>
 
           <p className={`mt-4 ${appText.metaSmall}`}>
-            <span className="text-zinc-300">{doc.savedWordsCount}</span> saved words
+          <span className="text-zinc-300">{doc.savedWordsCount}</span> {t("app.documentSavedWordsCount")}
             {doc.pageCount > 0 ? (
-              <span className="text-zinc-600"> · {doc.pageCount} pages</span>
+            <span className="text-zinc-600"> · {doc.pageCount} {t("app.documentPages")}</span>
             ) : null}
           </p>
 
@@ -98,7 +100,7 @@ export default function DocumentCard({ document: doc, onDeleted }: DocumentCardP
                 : "cursor-default border-white/[0.08] bg-white/[0.02] text-zinc-500"
             }`}
           >
-            Continue reading
+            {t("app.documentContinueReading")}
           </Link>
         ) : (
           <span className="mt-5 inline-flex w-full items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-2.5 text-sm text-zinc-500">
