@@ -339,6 +339,20 @@
     "uploadErrCorruptedBody": "We could not read this PDF. The file may be corrupted or incomplete.",
     "uploadErrEmptyBody": "This file is empty. Choose a different PDF.",
     "uploadErrInvalidBody": "This file does not look like a valid PDF.",
-    "uploadErrUnknownBody": "We couldn't prepare this PDF. Try another file, or upload a shorter text-based document."
+    "uploadErrUnknownBody": "We couldn't prepare this PDF. Try another file, or upload a shorter text-based document.",
+    "onboardingGettingStarted": "Getting started",
+    "onboardingWelcomeTitle": "Welcome to ReadWays",
+    "onboardingWelcomeDescription": "Upload your first PDF, tap words while you read, save what matters, and review later.",
+    "onboardingUploadFirstPdf": "Upload your first PDF",
+    "onboardingGotIt": "Got it",
+    "onboardingQuickTips": "Quick tips",
+    "onboardingTapWord": "Tap a word to see its meaning in context.",
+    "onboardingSelectPhrase": "Select a phrase to explain it together.",
+    "onboardingSaveWords": "Save useful words to review later.",
+    "onboardingRateRecallTitle": "Rate your recall",
+    "onboardingRateRecallDescription": "Hard brings a card back soon. Good uses the normal schedule. Easy waits longer before you see it again.",
+    "onboardingPhraseTipLead": "Tip:",
+    "onboardingPhraseTipBody": "Drag across words to select a phrase like “come on” and explain it together.",
+    "onboardingDismissPhraseTip": "Dismiss phrase tip"
   }
 }

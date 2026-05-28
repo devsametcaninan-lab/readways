@@ -339,6 +339,20 @@
     "uploadErrCorruptedBody": "Bu PDF okunamadı. Dosya bozuk veya eksik olabilir.",
     "uploadErrEmptyBody": "Bu dosya boş. Farklı bir PDF seç.",
     "uploadErrInvalidBody": "Bu dosya geçerli bir PDF gibi görünmüyor.",
-    "uploadErrUnknownBody": "Bu PDF hazırlanamadı. Farklı bir dosya veya daha kısa metin tabanlı bir belge dene."
+    "uploadErrUnknownBody": "Bu PDF hazırlanamadı. Farklı bir dosya veya daha kısa metin tabanlı bir belge dene.",
+    "onboardingGettingStarted": "Başlangıç",
+    "onboardingWelcomeTitle": "ReadWays'e hoş geldin",
+    "onboardingWelcomeDescription": "İlk PDF'ini yükle, okurken kelimelere dokun, önemli olanları kaydet ve sonra tekrar et.",
+    "onboardingUploadFirstPdf": "İlk PDF’ini yükle",
+    "onboardingGotIt": "Anladım",
+    "onboardingQuickTips": "Hızlı ipuçları",
+    "onboardingTapWord": "Anlamını görmek için bir kelimeye dokun.",
+    "onboardingSelectPhrase": "Birlikte açıklamak için bir ifadeyi seç.",
+    "onboardingSaveWords": "Kelimeleri daha sonra tekrar etmek için kaydet.",
+    "onboardingRateRecallTitle": "Hatırlamanı puanla",
+    "onboardingRateRecallDescription": "Zor seçersen kart daha erken gelir. İyi normal sırayı izler. Kolay daha uzun aralıkla tekrar görünür.",
+    "onboardingPhraseTipLead": "İpucu:",
+    "onboardingPhraseTipBody": "Birlikte açıklamak için “come on” gibi bir ifadeyi seçmek üzere kelimelerin üzerinde sürükle.",
+    "onboardingDismissPhraseTip": "İfade ipucunu kapat"
   }
 }
