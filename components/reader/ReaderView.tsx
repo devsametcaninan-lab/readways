@@ -38,6 +38,7 @@ import { useOnboardingOptional } from "@/lib/onboarding/OnboardingProvider";
 import { mapSettingsLanguageToApiPreference } from "@/lib/ai-dictionary/explanation-language";
 import { resolveExplanationLanguage } from "@/lib/preferences/resolve-language";
 import { useUserPreferences } from "@/lib/preferences/UserPreferencesProvider";
+import { useI18n } from "@/lib/i18n/provider";
 import VocabularyPanel from "./VocabularyPanel";
 
 type ReaderViewProps = {
@@ -85,6 +86,7 @@ function isAbortError(error: unknown): boolean {
 
 export default function ReaderView({ document }: ReaderViewProps) {
   const toast = useToast();
+  const { t } = useI18n();
   const { preferences } = useUserPreferences();
   const onboarding = useOnboardingOptional();
   const articleRef = useRef<HTMLElement>(null);
@@ -683,7 +685,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
           selection={selection}
           onSave={handleSave}
           onRetry={handleRetryExplain}
-          emptyDescription="Select any word from your document to understand it in context."
+          emptyTitle={t("app.readerEmptySelectWordTitle")}
+          emptyDescription={t("app.readerEmptySelectWordBody")}
           isMobileOpen={Boolean(selection)}
           onClose={handleCloseVocabulary}
           panelRef={vocabularyPanelRef}

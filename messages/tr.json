@@ -291,6 +291,8 @@
     "readerNotReadyBody": "Bu belge şu an okuyucuda açılamıyor. Durumu görmek için kütüphaneye dön.",
     "readerPrepareFailedTitle": "Bu PDF hazırlanamadı",
     "readerPrepareFailedBody": "Metin çıkarma tamamlanamadı. Farklı bir dosya dene veya seçilebilir metin içeren bir PDF yükle.",
+    "readerEmptySelectWordTitle": "Bir kelime seç",
+    "readerEmptySelectWordBody": "Bağlam içinde anlamını görmek için belgendeki herhangi bir kelimeyi seç.",
     "uploadPdfTitle": "PDF Yükle",
     "uploadClose": "Kapat",
     "uploadReadyTitle": "Belgen hazır.",
