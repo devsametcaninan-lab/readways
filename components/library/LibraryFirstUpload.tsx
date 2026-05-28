@@ -2,7 +2,7 @@
 
 import AppStateCard from "@/components/app/AppStateCard";
 import UploadPdfButton from "@/components/upload/UploadPdfButton";
-import { PDF_UPLOAD_LIMITS_DETAIL } from "@/lib/upload/limits-label";
+import { pdfUploadLimitsDetailLabel } from "@/lib/upload/limits-label";
 import { useI18n } from "@/lib/i18n/provider";
 
 export default function LibraryFirstUpload() {
@@ -16,7 +16,7 @@ export default function LibraryFirstUpload() {
       className="max-w-xl mx-auto"
     >
       <p className="mx-auto mt-4 max-w-sm rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[12px] leading-relaxed text-zinc-500">
-        {PDF_UPLOAD_LIMITS_DETAIL}
+        {pdfUploadLimitsDetailLabel(t)}
       </p>
       <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
         <UploadPdfButton

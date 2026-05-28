@@ -29,7 +29,7 @@ import {
   feedbackForStorageFailure,
   type UploadFeedback
 } from "@/lib/app/upload-feedback";
-import { PDF_UPLOAD_LIMITS_SHORT } from "@/lib/upload/limits-label";
+import { pdfUploadLimitsShortLabel } from "@/lib/upload/limits-label";
 import { trackUploadError } from "@/lib/upload/track-upload-error";
 import UploadProgressSteps from "@/components/upload/UploadProgressSteps";
 import {
@@ -155,7 +155,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       validatePdfFileBasics(next);
     } catch (err) {
       if (isPdfUserError(err)) {
-        const feedback = feedbackForPdfErrorCode(err.code);
+        const feedback = feedbackForPdfErrorCode(err.code, t);
         setUploadFeedback(feedback);
         toast.error(feedback.title);
         setFile(null);
@@ -384,7 +384,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       }
 
       if (outcome.kind === "needs_ocr") {
-        const feedback = feedbackForPdfErrorCode("SCANNED");
+        const feedback = feedbackForPdfErrorCode("SCANNED", t);
         recoverAfterUploadFailure(feedback);
         toast.error(feedback.title);
 
@@ -412,7 +412,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         return;
       }
 
-      const feedback = feedbackForPdfErrorCode(outcome.errorCode);
+      const feedback = feedbackForPdfErrorCode(outcome.errorCode, t);
       recoverAfterUploadFailure(feedback);
       toast.error(feedback.title);
 
@@ -463,7 +463,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
         }
 
         notifyDocumentsUpdated();
-        recoverAfterUploadFailure(feedbackForStorageFailure(err.message));
+        recoverAfterUploadFailure(feedbackForStorageFailure(err.message, t));
         toast.error(t("app.uploadDidNotFinish"));
 
         trackUploadError({
@@ -526,7 +526,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
       }
 
       if (isPdfUserError(err)) {
-        const feedback = feedbackForPdfErrorCode(err.code);
+        const feedback = feedbackForPdfErrorCode(err.code, t);
         recoverAfterUploadFailure(feedback);
         toast.error(feedback.title);
 
@@ -626,7 +626,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
               >
                 {t("app.uploadPdfTitle")}
               </h2>
-              <p className="mt-1.5 text-sm text-zinc-400">{PDF_UPLOAD_LIMITS_SHORT}</p>
+              <p className="mt-1.5 text-sm text-zinc-400">{pdfUploadLimitsShortLabel(t)}</p>
             </div>
             {!isBusy && state !== "ready" && (
               <button
@@ -738,7 +738,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                       : t("app.uploadDropReplace")}
                 </p>
                 <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500">
-                  {PDF_UPLOAD_LIMITS_SHORT}
+                  {pdfUploadLimitsShortLabel(t)}
                 </p>
                 {!isBusy && (
                   <button

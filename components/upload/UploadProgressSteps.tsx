@@ -1,27 +1,36 @@
 "use client";
 
 import {
-  UPLOAD_WORKFLOW_STEPS,
+  UPLOAD_WORKFLOW_STEP_IDS,
   workflowStepIndex,
   type UploadWorkflowStepId
 } from "@/lib/upload/workflow-steps";
+import { useI18n } from "@/lib/i18n/provider";
 
 type UploadProgressStepsProps = {
   activeStep: UploadWorkflowStepId;
 };
 
 export default function UploadProgressSteps({ activeStep }: UploadProgressStepsProps) {
+  const { t } = useI18n();
   const activeIndex = workflowStepIndex(activeStep);
+  const stepLabels: Record<UploadWorkflowStepId, string> = {
+    upload: t("app.uploadStepUpload"),
+    extract: t("app.uploadStepExtract"),
+    clean: t("app.uploadStepClean"),
+    save: t("app.uploadStepSave"),
+    ready: t("app.uploadStepReady")
+  };
 
   return (
-    <ol className="space-y-2.5" aria-label="Upload progress">
-      {UPLOAD_WORKFLOW_STEPS.map((step, index) => {
+    <ol className="space-y-2.5" aria-label={t("app.uploadProgressAria")}>
+      {UPLOAD_WORKFLOW_STEP_IDS.map((stepId, index) => {
         const isComplete = index < activeIndex || activeStep === "ready";
         const isActive = activeStep !== "ready" && index === activeIndex;
 
         return (
           <li
-            key={step.id}
+            key={stepId}
             className={`flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors duration-200 ${
               isActive
                 ? "border-accent/25 bg-accent/[0.06]"
@@ -53,7 +62,7 @@ export default function UploadProgressSteps({ activeStep }: UploadProgressStepsP
                 isActive ? "font-medium text-zinc-100" : isComplete ? "text-zinc-400" : "text-zinc-600"
               }`}
             >
-              {step.label}
+              {stepLabels[stepId]}
             </span>
           </li>
         );
