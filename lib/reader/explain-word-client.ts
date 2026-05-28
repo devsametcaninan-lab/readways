@@ -28,9 +28,10 @@ export function explainWordRequestKey(
   documentId: string,
   normalizedWord: string,
   sentence: string,
-  explanationLanguage: string
+  explanationLanguage: string,
+  kind: ExplainClickKind
 ): string {
-  return `${documentId}:${normalizedWord}:${sentence.trim()}:${explanationLanguage}`;
+  return `${documentId}:${kind}:${normalizedWord}:${sentence.trim()}:${explanationLanguage}`;
 }
 
 export async function fetchExplainWord(params: {

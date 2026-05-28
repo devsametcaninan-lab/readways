@@ -27,8 +27,60 @@ import { resolveFinalExplanationLanguage } from "@/lib/ai-dictionary/explanation
 import { validateExplainWordRequest } from "@/lib/ai-dictionary/validate";
 import { cleanDisplayWord } from "@/lib/reader/text-tokens";
 
+type ExplainTimingBreakdown = {
+  totalMs: number;
+  cacheLookupMs?: number;
+  usageSnapshotMs?: number;
+  allowanceMs?: number;
+  openAiMs?: number;
+  insertMs?: number;
+  usageIncrementMs?: number;
+};
+
+function roundedMs(value: number | undefined): number | undefined {
+  if (value == null || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  return Math.max(0, Math.round(value));
+}
+
+function withTimingHeaders<T>(
+  response: Response,
+  cacheStatus: "hit" | "miss",
+  timing: ExplainTimingBreakdown
+): Response {
+  response.headers.set("X-ReadWays-Cache", cacheStatus);
+
+  const totalMs = roundedMs(timing.totalMs) ?? 0;
+  response.headers.set("X-ReadWays-Timing-Total-Ms", String(totalMs));
+
+  const headerParts = [`total;dur=${totalMs}`];
+  const map: Array<[string, number | undefined]> = [
+    ["cache_lookup", timing.cacheLookupMs],
+    ["usage_snapshot", timing.usageSnapshotMs],
+    ["allowance", timing.allowanceMs],
+    ["openai", timing.openAiMs],
+    ["insert", timing.insertMs],
+    ["usage_increment", timing.usageIncrementMs]
+  ];
+
+  for (const [name, value] of map) {
+    const ms = roundedMs(value);
+    if (ms == null) {
+      continue;
+    }
+    response.headers.set(`X-ReadWays-Timing-${name}-Ms`, String(ms));
+    headerParts.push(`${name};dur=${ms}`);
+  }
+
+  response.headers.set("Server-Timing", headerParts.join(", "));
+  return response;
+}
+
 export async function POST(request: Request) {
   try {
+    const routeStartedAt = performance.now();
     const supabase = await createClient();
 
     const {
@@ -86,6 +138,7 @@ export async function POST(request: Request) {
     const plan = await getUserPlan(supabase, user.id);
     const sentenceHash = createSentenceHash(sentence);
 
+    const cacheLookupStartedAt = performance.now();
     const cached = await findCachedWordExplanation({
       supabase,
       userId: user.id,
@@ -94,13 +147,16 @@ export async function POST(request: Request) {
       sentenceHash,
       explanationLanguage
     });
+    const cacheLookupMs = performance.now() - cacheLookupStartedAt;
 
     if (cached) {
+      const usageSnapshotStartedAt = performance.now();
       const usage = await getExplanationUsageSnapshot({
         supabase,
         userId: user.id,
         plan
       });
+      const usageSnapshotMs = performance.now() - usageSnapshotStartedAt;
 
       trackEvent({
         supabase,
@@ -112,7 +168,9 @@ export async function POST(request: Request) {
           explanationLanguage,
           explanationKind,
           cacheStatus: "hit",
-          durationMs: Date.now() - requestStartedAt
+          durationMs: Date.now() - requestStartedAt,
+          cacheLookupMs: roundedMs(cacheLookupMs),
+          usageSnapshotMs: roundedMs(usageSnapshotMs)
         })
       });
 
@@ -128,10 +186,18 @@ export async function POST(request: Request) {
         }
       });
 
-      return jsonExplainWord({
-        ...cachedExplanationToPayload(cached),
-        usage
-      });
+      return withTimingHeaders(
+        jsonExplainWord({
+          ...cachedExplanationToPayload(cached),
+          usage
+        }),
+        "hit",
+        {
+          totalMs: performance.now() - routeStartedAt,
+          cacheLookupMs,
+          usageSnapshotMs
+        }
+      );
     }
 
     trackEvent({
@@ -145,15 +211,18 @@ export async function POST(request: Request) {
         explanationKind,
         cacheStatus: "miss",
         word,
-        sentence
+        sentence,
+        cacheLookupMs: roundedMs(cacheLookupMs)
       })
     });
 
+    const allowanceStartedAt = performance.now();
     const allowance = await checkExplanationAllowance({
       supabase,
       userId: user.id,
       plan
     });
+    const allowanceMs = performance.now() - allowanceStartedAt;
 
     if (!allowance.allowed) {
       trackEvent({
@@ -185,12 +254,20 @@ export async function POST(request: Request) {
         }
       });
 
-      return jsonRateLimited(allowance.message, allowance.usage, {
-        title: allowance.title
-      });
+      return withTimingHeaders(
+        jsonRateLimited(allowance.message, allowance.usage, {
+          title: allowance.title
+        }),
+        "miss",
+        {
+          totalMs: performance.now() - routeStartedAt,
+          cacheLookupMs,
+          allowanceMs
+        }
+      );
     }
 
-    const generationStartedAt = Date.now();
+    const generationStartedAt = performance.now();
 
     const aiResult = await generateExplanationWithOpenAI({
       word,
@@ -199,7 +276,7 @@ export async function POST(request: Request) {
       explanationLanguage
     });
 
-    const generationDurationMs = Date.now() - generationStartedAt;
+    const generationDurationMs = performance.now() - generationStartedAt;
 
     if (!aiResult.ok) {
       const failureEvent =
@@ -248,16 +325,34 @@ export async function POST(request: Request) {
       });
 
       if (aiResult.reason === "not_configured") {
-        return jsonError(
-          503,
-          "Word explanations are temporarily unavailable. Please try again later."
+        return withTimingHeaders(
+          jsonError(
+            503,
+            "Word explanations are temporarily unavailable. Please try again later."
+          ),
+          "miss",
+          {
+            totalMs: performance.now() - routeStartedAt,
+            cacheLookupMs,
+            allowanceMs,
+            openAiMs: generationDurationMs
+          }
         );
       }
 
       if (aiResult.reason === "timeout") {
-        return jsonError(
-          504,
-          "Explanation took too long. Please try again."
+        return withTimingHeaders(
+          jsonError(
+            504,
+            "Explanation took too long. Please try again."
+          ),
+          "miss",
+          {
+            totalMs: performance.now() - routeStartedAt,
+            cacheLookupMs,
+            allowanceMs,
+            openAiMs: generationDurationMs
+          }
         );
       }
 
@@ -265,13 +360,31 @@ export async function POST(request: Request) {
         aiResult.reason === "invalid_response" ||
         aiResult.reason === "empty_response"
       ) {
-        return jsonError(
-          502,
-          "Could not understand the explanation response. Please try again."
+        return withTimingHeaders(
+          jsonError(
+            502,
+            "Could not understand the explanation response. Please try again."
+          ),
+          "miss",
+          {
+            totalMs: performance.now() - routeStartedAt,
+            cacheLookupMs,
+            allowanceMs,
+            openAiMs: generationDurationMs
+          }
         );
       }
 
-      return jsonError(502, "Could not generate explanation. Please try again.");
+      return withTimingHeaders(
+        jsonError(502, "Could not generate explanation. Please try again."),
+        "miss",
+        {
+          totalMs: performance.now() - routeStartedAt,
+          cacheLookupMs,
+          allowanceMs,
+          openAiMs: generationDurationMs
+        }
+      );
     }
 
     if (!isPersistableAiExplanation(aiResult.data)) {
@@ -310,14 +423,24 @@ export async function POST(request: Request) {
         }
       });
 
-      return jsonError(
-        502,
-        "Could not understand the explanation response. Please try again."
+      return withTimingHeaders(
+        jsonError(
+          502,
+          "Could not understand the explanation response. Please try again."
+        ),
+        "miss",
+        {
+          totalMs: performance.now() - routeStartedAt,
+          cacheLookupMs,
+          allowanceMs,
+          openAiMs: generationDurationMs
+        }
       );
     }
 
     const displayWord = cleanDisplayWord(aiResult.data.word) || cleanDisplayWord(word);
 
+    const insertStartedAt = performance.now();
     const wordExplanationId = await insertWordExplanation({
       supabase,
       userId: user.id,
@@ -330,19 +453,43 @@ export async function POST(request: Request) {
       pronunciation: aiResult.data.pronunciation,
       language: explanationLanguage
     });
+    const insertMs = performance.now() - insertStartedAt;
 
     if (!wordExplanationId) {
-      return jsonError(500, "Could not save explanation. Please try again.");
+      return withTimingHeaders(
+        jsonError(500, "Could not save explanation. Please try again."),
+        "miss",
+        {
+          totalMs: performance.now() - routeStartedAt,
+          cacheLookupMs,
+          allowanceMs,
+          openAiMs: generationDurationMs,
+          insertMs
+        }
+      );
     }
 
+    const usageIncrementStartedAt = performance.now();
     const usageAfter = await incrementExplanationUsage({
       supabase,
       userId: user.id,
       plan
     });
+    const usageIncrementMs = performance.now() - usageIncrementStartedAt;
 
     if (!usageAfter) {
-      return jsonError(500, "Could not update usage. Please try again.");
+      return withTimingHeaders(
+        jsonError(500, "Could not update usage. Please try again."),
+        "miss",
+        {
+          totalMs: performance.now() - routeStartedAt,
+          cacheLookupMs,
+          allowanceMs,
+          openAiMs: generationDurationMs,
+          insertMs,
+          usageIncrementMs
+        }
+      );
     }
 
     trackEvent({
@@ -356,6 +503,11 @@ export async function POST(request: Request) {
         explanationKind,
         cacheStatus: "miss",
         durationMs: generationDurationMs,
+        cacheLookupMs: roundedMs(cacheLookupMs),
+        allowanceMs: roundedMs(allowanceMs),
+        openAiMs: roundedMs(generationDurationMs),
+        insertMs: roundedMs(insertMs),
+        usageIncrementMs: roundedMs(usageIncrementMs),
         word,
         sentence,
         definition: aiResult.data.definition,
@@ -376,16 +528,27 @@ export async function POST(request: Request) {
       }
     });
 
-    return jsonExplainWord({
-      ...aiExplanationToPayload({
-        ai: aiResult.data,
-        sentence,
-        language: explanationLanguage,
-        displayWord,
-        wordExplanationId
+    return withTimingHeaders(
+      jsonExplainWord({
+        ...aiExplanationToPayload({
+          ai: aiResult.data,
+          sentence,
+          language: explanationLanguage,
+          displayWord,
+          wordExplanationId
+        }),
+        usage: usageAfter
       }),
-      usage: usageAfter
-    });
+      "miss",
+      {
+        totalMs: performance.now() - routeStartedAt,
+        cacheLookupMs,
+        allowanceMs,
+        openAiMs: generationDurationMs,
+        insertMs,
+        usageIncrementMs
+      }
+    );
   } catch (error) {
     return handleRouteError("POST /api/explain-word", error);
   }

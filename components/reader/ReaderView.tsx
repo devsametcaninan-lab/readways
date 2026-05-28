@@ -44,6 +44,14 @@ type ReaderViewProps = {
   document: ReaderDocument;
 };
 
+const EXPLAIN_LOCAL_CACHE_TTL_MS = 2 * 60 * 1000;
+
+type LocalExplainCacheEntry = {
+  fields: ExplainPanelFields;
+  displayLabel: string;
+  savedAt: number;
+};
+
 function buildInstantSelection(
   click: ExplainClickPayload,
   documentId: string,
@@ -90,6 +98,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
   const fetchAbortRef = useRef<AbortController | null>(null);
   const explainRequestIdRef = useRef(0);
   const loadingExplainKeyRef = useRef<string | null>(null);
+  const localExplainCacheRef = useRef<Map<string, LocalExplainCacheEntry>>(new Map());
   const lastExplainRequestRef = useRef<{
     click: ExplainClickPayload;
     phraseRange: PhraseHighlightRange | null;
@@ -302,8 +311,18 @@ export default function ReaderView({ document }: ReaderViewProps) {
         document.id,
         click.normalizedWord,
         click.sentence,
-        explanationLanguage
+        explanationLanguage,
+        click.kind
       );
+
+      const cachedLocal = localExplainCacheRef.current.get(requestKey);
+      if (cachedLocal && Date.now() - cachedLocal.savedAt <= EXPLAIN_LOCAL_CACHE_TTL_MS) {
+        selectedHighlightKeyRef.current = click.highlightKey;
+        setActiveHighlightKey(click.highlightKey);
+        setActivePhraseRange(phraseRange);
+        applyPanelFields(click, cachedLocal.fields, cachedLocal.displayLabel);
+        return;
+      }
 
       if (
         loadingExplainKeyRef.current === requestKey &&
@@ -379,6 +398,20 @@ export default function ReaderView({ document }: ReaderViewProps) {
             click.kind === "phrase"
               ? cleanPhraseText(click.rawWord) || cleanPhraseText(fields.word)
               : cleanDisplayWord(fields.word) || cleanDisplayWord(click.rawWord);
+
+          localExplainCacheRef.current.set(requestKey, {
+            fields,
+            displayLabel,
+            savedAt: Date.now()
+          });
+          if (localExplainCacheRef.current.size > 80) {
+            const now = Date.now();
+            for (const [key, entry] of localExplainCacheRef.current.entries()) {
+              if (now - entry.savedAt > EXPLAIN_LOCAL_CACHE_TTL_MS) {
+                localExplainCacheRef.current.delete(key);
+              }
+            }
+          }
 
           applyPanelFields(click, fields, displayLabel);
         } catch (error) {

@@ -26,6 +26,12 @@ export type BuildAiUsageMetadataParams = {
   plan?: string;
   used?: number;
   limit?: number;
+  cacheLookupMs?: number;
+  usageSnapshotMs?: number;
+  allowanceMs?: number;
+  openAiMs?: number;
+  insertMs?: number;
+  usageIncrementMs?: number;
 };
 
 export function buildAiUsageMetadata(
@@ -99,6 +105,21 @@ export function buildAiUsageMetadata(
 
   if (typeof params.limit === "number") {
     metadata.limit = params.limit;
+  }
+
+  const timingFields: Array<[string, number | undefined]> = [
+    ["cacheLookupMs", params.cacheLookupMs],
+    ["usageSnapshotMs", params.usageSnapshotMs],
+    ["allowanceMs", params.allowanceMs],
+    ["openAiMs", params.openAiMs],
+    ["insertMs", params.insertMs],
+    ["usageIncrementMs", params.usageIncrementMs]
+  ];
+
+  for (const [key, value] of timingFields) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      metadata[key] = Math.max(0, Math.round(value));
+    }
   }
 
   return metadata;
