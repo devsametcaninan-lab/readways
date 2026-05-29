@@ -1,3 +1,4 @@
+import type { DocumentLanguage } from "@/lib/language/document-language";
 import {
   AI_DIFFICULTY_VALUES,
   type AiDifficulty,
@@ -11,6 +12,8 @@ export type ExplanationSanitizeInput = {
   word: string;
   sentence: string;
   isPhrase: boolean;
+  documentLanguage: DocumentLanguage;
+  explanationLanguage: DocumentLanguage;
 };
 
 const FIELD_LIMITS = {
@@ -93,9 +96,18 @@ function sentencesTooSimilar(a: string, b: string): boolean {
   return left === right || left.includes(right) || right.includes(left);
 }
 
-function fallbackExampleUsage(word: string, contextual: string): string {
-  const snippet = truncate(contextual, 80);
-  return truncate(`Try using "${word}" in a similar situation — ${snippet}`, FIELD_LIMITS.example_usage);
+function fallbackExampleUsage(word: string, documentLanguage: DocumentLanguage): string {
+  if (documentLanguage === "tr") {
+    return truncate(
+      `"${word}" ile doğal bir örnek cümle kurulabilir; kaynak cümleden farklı olsun.`,
+      FIELD_LIMITS.example_usage
+    );
+  }
+
+  return truncate(
+    `Another natural example with "${word}" — different from the source sentence.`,
+    FIELD_LIMITS.example_usage
+  );
 }
 
 function fallbackContextual(definition: string, sentence: string, word: string): string {
@@ -146,7 +158,7 @@ export function sanitizeValidatedExplanation(
     : "";
 
   if (!example || sentencesTooSimilar(example, input.sentence)) {
-    example = fallbackExampleUsage(selectedWord, contextual);
+    example = fallbackExampleUsage(selectedWord, input.documentLanguage);
   }
 
   const pronunciation = isNonEmptyString(record.pronunciation)

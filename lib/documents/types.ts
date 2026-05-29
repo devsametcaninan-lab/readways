@@ -26,6 +26,8 @@ export type DocumentListItem = {
   updatedAtLabel: string;
   savedWordsCount: number;
   status: DocumentStatus;
+  /** True only when the reader route can load this document (not just status=ready). */
+  canOpenInReader: boolean;
   pageCount: number;
   failureMessage: string | null;
 };

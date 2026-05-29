@@ -30,7 +30,7 @@ function DashboardDocumentCard({
     failed: t("app.documentStatusFailed")
   };
 
-  const canRead = doc.status === "ready";
+  const canRead = doc.canOpenInReader;
   const href = canRead ? `/reader/${doc.id}` : "/library";
   const readingState = canRead
     ? doc.progress == null

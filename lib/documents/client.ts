@@ -92,13 +92,19 @@ export async function markDocumentFailed(
 ): Promise<void> {
   const supabase = createClient();
 
-  await supabase
+  const { error } = await supabase
     .from("documents")
     .update({
       status: "failed",
       extracted_text: errorCode ? encodeDocumentFailureReason(errorCode) : null
     })
     .eq("id", documentId);
+
+  if (error) {
+    throw new Error(
+      safeSupabaseClientMessage(error.message, "Could not mark document as failed.")
+    );
+  }
 }
 
 export async function markDocumentNeedsOcr(
@@ -107,18 +113,26 @@ export async function markDocumentNeedsOcr(
 ): Promise<void> {
   const supabase = createClient();
 
-  await supabase.from("documents").update({
+  const { error } = await supabase.from("documents").update({
     status: "needs_ocr",
     extracted_text: encodeDocumentFailureReason(errorCode)
   }).eq("id", documentId);
+
+  if (error) {
+    throw new Error(
+      safeSupabaseClientMessage(error.message, "Could not mark document as needing OCR.")
+    );
+  }
 }
 
 export async function listUserDocuments(limit?: number): Promise<DocumentListItem[]> {
   const supabase = createClient();
+  const userId = await requireUserId();
 
   let query = supabase
     .from("documents")
     .select(LIST_COLUMNS)
+    .eq("user_id", userId)
     .order("updated_at", { ascending: false });
 
   if (limit != null) {

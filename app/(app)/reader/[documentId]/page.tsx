@@ -3,6 +3,8 @@ import ReaderDocumentUnavailable from "@/components/reader/ReaderDocumentUnavail
 import ReaderView from "@/components/reader/ReaderView";
 import { getReaderDocumentForUser } from "@/lib/documents/server";
 
+export const dynamic = "force-dynamic";
+
 export default async function ReaderDocumentPage({
   params
 }: {

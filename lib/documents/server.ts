@@ -39,6 +39,13 @@ export async function getReaderDocumentForUser(
     .maybeSingle();
 
   if (error || !data) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[documents] reader load not_found", {
+        documentId: normalizedId,
+        reason: error?.message ?? "no_row"
+      });
+    }
+
     return { kind: "not_found" };
   }
 
@@ -54,6 +61,15 @@ export async function getReaderDocumentForUser(
 
   const document = toReaderDocument(row);
   if (!document) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[documents] reader load unreadable", {
+        documentId: normalizedId,
+        status: row.status,
+        hasExtractedText: Boolean(row.extracted_text?.trim()),
+        failureCode: parseDocumentFailureReason(row.extracted_text)
+      });
+    }
+
     return {
       kind: "unavailable",
       status: "failed",

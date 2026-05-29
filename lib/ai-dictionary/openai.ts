@@ -115,7 +115,9 @@ export async function generateExplanationWithOpenAI(params: {
   const sanitizeInput = {
     word: params.word,
     sentence: params.sentence,
-    isPhrase: mode === "phrase"
+    isPhrase: mode === "phrase",
+    documentLanguage: params.documentLanguage,
+    explanationLanguage: params.explanationLanguage
   };
 
   const controller = new AbortController();

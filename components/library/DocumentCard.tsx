@@ -26,7 +26,7 @@ export default function DocumentCard({ document: doc, onDeleted }: DocumentCardP
     failed: t("app.documentStatusFailed")
   };
 
-  const canRead = doc.status === "ready";
+  const canRead = doc.canOpenInReader;
   const href = canRead ? `/reader/${doc.id}` : undefined;
   const readingState = canRead
     ? doc.progress == null
