@@ -7,6 +7,7 @@ import { deleteSavedWord, queueSavedWordReview } from "@/lib/saved-words/client"
 import { groupSavedWordsByDocument } from "@/lib/saved-words/group";
 import { filterSavedWords, type SavedWordsFilter } from "@/lib/saved-words/search";
 import type { SavedWordItem } from "@/lib/saved-words/types";
+import { localizeUserMessage } from "@/lib/i18n/localize-user-message";
 import { useI18n } from "@/lib/i18n/provider";
 import SavedWordCard from "./SavedWordCard";
 import SavedWordsEmptyState from "./SavedWordsEmptyState";
@@ -47,8 +48,10 @@ export default function SavedWordsView({ initialWords }: SavedWordsViewProps) {
         toast.success(t("app.savedWordsQueuedReview"));
         router.push("/flashcards");
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : t("app.savedWordsQueueError");
+        const message = localizeUserMessage(
+          error instanceof Error ? error.message : t("toast.queueReviewFailed"),
+          t
+        );
         toast.error(message);
       }
     },
@@ -67,8 +70,10 @@ export default function SavedWordsView({ initialWords }: SavedWordsViewProps) {
 
         toast.success(`“${item.word}” ${t("app.savedWordsRemovedFromVault")}`);
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : t("app.savedWordsRemoveError");
+        const message = localizeUserMessage(
+          error instanceof Error ? error.message : t("toast.removeWordFailed"),
+          t
+        );
         toast.error(message);
         throw error;
       }

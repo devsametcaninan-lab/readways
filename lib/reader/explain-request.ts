@@ -12,13 +12,16 @@ export type ExplainClientValidationResult =
   | { ok: true }
   | { ok: false; message: string };
 
+type Translate = (key: string) => string;
+
 export function validateExplainClick(
-  click: ExplainClickPayload
+  click: ExplainClickPayload,
+  t: Translate
 ): ExplainClientValidationResult {
   const raw = click.rawWord.trim();
 
   if (!raw) {
-    return { ok: false, message: "Select a word or short phrase to explain." };
+    return { ok: false, message: t("toast.explainSelectWord") };
   }
 
   if (click.kind === "phrase") {
@@ -28,21 +31,21 @@ export function validateExplainClick(
     if (wordCount < 2) {
       return {
         ok: false,
-        message: "Select at least two words for a phrase explanation."
+        message: t("toast.explainSelectTwoWords")
       };
     }
 
     if (wordCount > PHRASE_MAX_WORDS) {
       return {
         ok: false,
-        message: `Select up to ${PHRASE_MAX_WORDS} words for a phrase explanation.`
+        message: t("toast.explainMaxPhraseWords").replace("{max}", String(PHRASE_MAX_WORDS))
       };
     }
 
     if (phrase.length > EXPLAIN_PHRASE_MAX_LENGTH) {
       return {
         ok: false,
-        message: "That phrase is too long. Try a shorter selection."
+        message: t("toast.explainPhraseTooLong")
       };
     }
 
@@ -52,7 +55,7 @@ export function validateExplainClick(
   if (raw.length > EXPLAIN_WORD_MAX_LENGTH) {
     return {
       ok: false,
-      message: "That selection is too long. Try a single word or shorter phrase."
+      message: t("toast.explainSelectionTooLong")
     };
   }
 

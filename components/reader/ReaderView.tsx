@@ -4,6 +4,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useToast } from "@/components/feedback/ToastProvider";
 import { appText } from "@/components/app/app-typography";
 import { explainErrorToastMessage, isRateLimitMessage } from "@/lib/feedback/messages";
+import {
+  defaultAiLimitPaywall,
+  localizePaywallState,
+  localizeUserMessage
+} from "@/lib/i18n/localize-user-message";
 import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import type { ReaderDocument } from "@/lib/documents/types";
 import { documentLanguageLabel } from "@/lib/language/document-language";
@@ -155,7 +160,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
 
         return { ...prev, saveState: "already_saved" };
       });
-      toast.info("Already saved");
+      toast.info(t("toast.alreadySaved"));
       return;
     }
 
@@ -189,14 +194,14 @@ export default function ReaderView({ document }: ReaderViewProps) {
       });
 
       if (result.status === "already_saved") {
-        toast.info("Already saved");
+        toast.info(t("toast.alreadySaved"));
       } else {
-        toast.success("Saved to flashcards");
+        toast.success(t("toast.savedToFlashcards"));
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Could not save word.";
-      toast.error(message);
+        error instanceof Error ? error.message : t("toast.saveWordFailed");
+      toast.error(localizeUserMessage(message, t));
 
       setSelection((prev) => {
         if (!prev || prev.highlightKey !== current.highlightKey) {
@@ -208,7 +213,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
     } finally {
       saveInFlightRef.current = false;
     }
-  }, [toast]);
+  }, [t, toast]);
 
   useEffect(() => {
     if (!preferences.autoSaveWords) {
@@ -288,7 +293,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
         });
       }
 
-      toast.error(explainErrorToastMessage(message));
+      const localizedMessage = localizeUserMessage(message, t);
+      toast.error(explainErrorToastMessage(message, t));
 
       setSelection((prev) => {
         if (!prev || prev.highlightKey !== click.highlightKey) {
@@ -298,12 +304,12 @@ export default function ReaderView({ document }: ReaderViewProps) {
         return {
           ...prev,
           status: "error",
-          errorMessage: message,
+          errorMessage: localizedMessage,
           paywall
         };
       });
     },
-    [toast]
+    [t, toast]
   );
 
   const requestExplanation = useCallback(
@@ -343,7 +349,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
         return;
       }
 
-      const clientValidation = validateExplainClick(click);
+      const clientValidation = validateExplainClick(click, t);
       if (!clientValidation.ok) {
         selectedHighlightKeyRef.current = click.highlightKey;
         setActiveHighlightKey(click.highlightKey);
@@ -392,10 +398,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
           const fields = explainWordPayloadToPanelFields(payload);
 
           if (!fields.wordExplanationId || !fields.definition.trim() || !fields.contextMeaning.trim()) {
-            showExplainError(
-              click,
-              "Could not load a complete explanation. Please try again."
-            );
+            showExplainError(click, t("toast.explainIncomplete"));
             return;
           }
 
@@ -439,20 +442,15 @@ export default function ReaderView({ document }: ReaderViewProps) {
               : undefined;
 
           const message =
-            error instanceof Error
-              ? error.message
-              : "Could not load word explanation.";
+            error instanceof Error ? error.message : t("toast.explainLoadFailed");
 
           showExplainError(
             click,
             message,
             paywall
-              ? { title: paywall.title, message: paywall.message }
+              ? localizePaywallState(paywall, t)
               : isRateLimitMessage(message)
-                ? {
-                    title: "Daily AI limit reached",
-                    message: "Upgrade to continue reading without limits."
-                  }
+                ? defaultAiLimitPaywall(t)
                 : undefined
           );
         } finally {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import SettingsOptionGroup from "@/components/settings/SettingsOptionGroup";
 import { submitFeedback } from "@/lib/feedback/client";
-import { FEEDBACK_CONTACT_EMAIL, FEEDBACK_TYPE_LABELS, type FeedbackType } from "@/lib/feedback/types";
+import { FEEDBACK_CONTACT_EMAIL, type FeedbackType } from "@/lib/feedback/types";
+import { localizeUserMessage } from "@/lib/i18n/localize-user-message";
 import { useI18n } from "@/lib/i18n/provider";
 
 type FeedbackModalProps = {
@@ -13,28 +14,6 @@ type FeedbackModalProps = {
   onSuccess: () => void;
   onError: (message: string) => void;
 };
-
-const FEEDBACK_TYPE_OPTIONS: {
-  value: FeedbackType;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "bug",
-    label: FEEDBACK_TYPE_LABELS.bug,
-    description: "Something broke or behaved unexpectedly"
-  },
-  {
-    value: "feature_request",
-    label: FEEDBACK_TYPE_LABELS.feature_request,
-    description: "An idea for a new capability"
-  },
-  {
-    value: "general",
-    label: FEEDBACK_TYPE_LABELS.general,
-    description: "Questions, praise, or other notes"
-  }
-];
 
 export default function FeedbackModal({
   open,
@@ -45,6 +24,27 @@ export default function FeedbackModal({
   const { t } = useI18n();
   const pathname = usePathname();
   const formId = useId();
+  const feedbackTypeOptions = useMemo(
+    () =>
+      [
+        {
+          value: "bug" as const,
+          label: t("feedback.typeBug"),
+          description: t("feedback.typeBugDesc")
+        },
+        {
+          value: "feature_request" as const,
+          label: t("feedback.typeFeature"),
+          description: t("feedback.typeFeatureDesc")
+        },
+        {
+          value: "general" as const,
+          label: t("feedback.typeGeneral"),
+          description: t("feedback.typeGeneralDesc")
+        }
+      ],
+    [t]
+  );
   const [type, setType] = useState<FeedbackType>("general");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +94,12 @@ export default function FeedbackModal({
       onSuccess();
       onClose();
     } catch (error) {
-      onError(error instanceof Error ? error.message : "Could not send feedback.");
+      onError(
+        localizeUserMessage(
+          error instanceof Error ? error.message : t("toast.feedbackSendFailed"),
+          t
+        )
+      );
     } finally {
       setSubmitting(false);
     }
@@ -109,7 +114,7 @@ export default function FeedbackModal({
     >
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t("feedback.close")}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={submitting ? undefined : onClose}
         disabled={submitting}
@@ -124,27 +129,27 @@ export default function FeedbackModal({
             id={`${formId}-title`}
             className="text-lg font-medium tracking-tight text-white sm:text-xl"
           >
-            Send feedback
+            {t("feedback.modalTitle")}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-            Help us improve ReadWays during beta. We read every submission.
+            {t("feedback.modalDescription")}
           </p>
 
           <div className="mt-6 space-y-5">
             <SettingsOptionGroup<FeedbackType>
               name="feedback-type"
-              label="Type"
+              label={t("feedback.typeLabel")}
               value={type}
               onChange={setType}
-              options={FEEDBACK_TYPE_OPTIONS}
+              options={feedbackTypeOptions}
             />
 
             <div>
               <label htmlFor={`${formId}-message`} className="block text-sm font-medium text-zinc-200">
-                Message
+                {t("feedback.messageLabel")}
               </label>
               <p className="mt-1 text-[13px] text-slate-500">
-                Please avoid pasting full documents or private content.
+                {t("feedback.messagePrivacy")}
               </p>
               <textarea
                 id={`${formId}-message`}
@@ -155,13 +160,13 @@ export default function FeedbackModal({
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 disabled={submitting}
-                placeholder="What happened? What would you like to see improved?"
+                placeholder={t("feedback.messagePlaceholder")}
                 className="mt-3 w-full resize-y rounded-lg border border-white/[0.10] bg-white/[0.03] px-3.5 py-3 text-sm text-zinc-100 placeholder:text-slate-600 focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/30 disabled:opacity-60"
               />
             </div>
 
             <p className="text-[13px] leading-relaxed text-slate-500">
-              You can also email us at{" "}
+              {t("feedback.emailReachUs")}{" "}
               <a
                 href={`mailto:${FEEDBACK_CONTACT_EMAIL}`}
                 className="text-slate-400 underline-offset-2 hover:text-zinc-300 hover:underline"
@@ -186,7 +191,7 @@ export default function FeedbackModal({
               disabled={submitting || message.trim().length < 10}
               className="min-h-[44px] rounded-lg border border-accent/30 bg-accent/15 px-5 py-2.5 text-sm font-medium text-[#d4dcff] transition hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Sending..." : t("common.submit")}
+              {submitting ? t("feedback.sending") : t("common.submit")}
             </button>
           </div>
         </form>

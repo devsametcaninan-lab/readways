@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { deleteDocument } from "@/lib/documents/client";
 import { notifyDocumentsUpdated } from "@/lib/documents/events";
+import { localizeUserMessage } from "@/lib/i18n/localize-user-message";
 import { useI18n } from "@/lib/i18n/provider";
 
 export function useDeleteDocument() {
@@ -37,9 +38,12 @@ export function useDeleteDocument() {
         return true;
       } catch (err) {
         toast.error(
-          safeUserFacingMessage(
-            err instanceof Error ? err.message : null,
-            t("app.documentDeleteFailedToast")
+          localizeUserMessage(
+            safeUserFacingMessage(
+              err instanceof Error ? err.message : null,
+              t("toast.deleteDocumentFailed")
+            ),
+            t
           )
         );
         return false;

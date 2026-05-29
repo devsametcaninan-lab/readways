@@ -14,6 +14,7 @@ import type {
   ExplanationStyle,
   HighlightMode
 } from "@/lib/preferences/types";
+import { useI18n } from "@/lib/i18n/provider";
 import FeedbackSettingsSection from "./FeedbackSettingsSection";
 import SettingsOptionGroup from "./SettingsOptionGroup";
 import SettingsSection from "./SettingsSection";
@@ -33,6 +34,7 @@ function planBadgeClass(tier: "free" | "pro" | "admin"): string {
 
 export default function SettingsView() {
   const toast = useToast();
+  const { t } = useI18n();
   const { name, email, avatarUrl, plan, loading: userLoading } = useAppUser();
   const { preferences, updatePreferences } = useUserPreferences();
   const [billing, setBilling] = useState<BillingLimitsResponse | null>(null);
@@ -68,7 +70,7 @@ export default function SettingsView() {
   const displayPlan = billing?.plan ?? plan;
 
   function notifyUpdated() {
-    toast.success("Settings updated");
+    toast.success(t("toast.settingsUpdated"));
   }
 
   function patchPreferences<T extends Partial<typeof preferences>>(patch: T) {
@@ -79,7 +81,7 @@ export default function SettingsView() {
   function handleClearReaderCache() {
     const removed = clearLocalReaderCache();
     toast.success(
-      removed > 0 ? "Local reader cache cleared" : "Reader cache was already empty"
+      removed > 0 ? t("toast.readerCacheCleared") : t("toast.readerCacheAlreadyEmpty")
     );
   }
 

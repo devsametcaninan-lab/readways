@@ -4,6 +4,7 @@ import { useState } from "react";
 import FeedbackModal from "@/components/feedback/FeedbackModal";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { FEEDBACK_CONTACT_EMAIL } from "@/lib/feedback/types";
+import { localizeUserMessage } from "@/lib/i18n/localize-user-message";
 import { useI18n } from "@/lib/i18n/provider";
 import SettingsSection from "./SettingsSection";
 
@@ -15,8 +16,8 @@ export default function FeedbackSettingsSection() {
   return (
     <>
       <SettingsSection
-        title="Feedback"
-        description="Share bugs, ideas, or general notes during the beta."
+        title={t("feedback.sectionTitle")}
+        description={t("feedback.sectionDescription")}
       >
         <button
           type="button"
@@ -26,7 +27,7 @@ export default function FeedbackSettingsSection() {
           {t("common.sendFeedback")}
         </button>
         <p className="text-[13px] leading-relaxed text-slate-500">
-          Prefer email? Reach us at{" "}
+          {t("feedback.emailAlso")}{" "}
           <a
             href={`mailto:${FEEDBACK_CONTACT_EMAIL}`}
             className="text-slate-400 underline-offset-2 hover:text-zinc-300 hover:underline"
@@ -40,8 +41,8 @@ export default function FeedbackSettingsSection() {
       <FeedbackModal
         open={open}
         onClose={() => setOpen(false)}
-        onSuccess={() => toast.success("Thanks — your feedback was sent")}
-        onError={(message) => toast.error(message)}
+        onSuccess={() => toast.success(t("toast.feedbackSent"))}
+        onError={(message) => toast.error(localizeUserMessage(message, t))}
       />
     </>
   );

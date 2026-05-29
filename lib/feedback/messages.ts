@@ -7,9 +7,10 @@ export function isRateLimitMessage(message: string): boolean {
   );
 }
 
-export function explainErrorToastMessage(message: string): string {
-  if (isRateLimitMessage(message)) {
-    return "Daily AI limit reached";
-  }
-  return message;
+import { localizeUserMessage } from "@/lib/i18n/localize-user-message";
+
+type Translate = (key: string) => string;
+
+export function explainErrorToastMessage(message: string, t: Translate): string {
+  return localizeUserMessage(message, t);
 }

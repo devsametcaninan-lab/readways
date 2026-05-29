@@ -12,6 +12,7 @@ import type { FlashcardReviewItem, SessionStats as SessionStatsData } from "@/li
 import type { ReviewRating } from "@/lib/supabase/schema";
 import AppStateCard from "@/components/app/AppStateCard";
 import FlashcardOnboardingHint from "@/components/onboarding/FlashcardOnboardingHint";
+import { localizeUserMessage } from "@/lib/i18n/localize-user-message";
 import { useI18n } from "@/lib/i18n/provider";
 import FlipCard from "./FlipCard";
 import RatingButtons from "./RatingButtons";
@@ -99,8 +100,10 @@ export default function FlashcardsReviewView({
 
       setCurrentIndex((index) => index + 1);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t("app.flashcardsSaveReviewError");
+      const message = localizeUserMessage(
+        error instanceof Error ? error.message : t("toast.reviewSaveFailed"),
+        t
+      );
       setReviewError(message);
       toast.error(message);
     } finally {
