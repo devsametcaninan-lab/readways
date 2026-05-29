@@ -244,7 +244,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
     preferences.defaultExplanationLanguage
   );
 
-  const pageLabel = `${document.pageCount} page${document.pageCount === 1 ? "" : "s"}`;
+  const pageLabel =
+    document.pageCount === 1
+      ? t("app.readerPageSingular").replace("{count}", String(document.pageCount))
+      : t("app.readerPagePlural").replace("{count}", String(document.pageCount));
 
   const applyPanelFields = useCallback(
     (click: ExplainClickPayload, fields: ExplainPanelFields, displayLabel: string) => {
@@ -659,11 +662,15 @@ export default function ReaderView({ document }: ReaderViewProps) {
         className={`flex h-10 shrink-0 items-center justify-between border-b border-white/[0.1] bg-[#0a0b10] px-4 ${appText.metaSmall}`}
       >
         <span className="truncate text-zinc-300">{document.source}</span>
-        <span>{pageLabel} · Reading session</span>
+        <span>
+          {pageLabel} · {t("app.readerReadingSession")}
+        </span>
         <span className="hidden text-zinc-500 sm:inline">
           {documentLanguageLabel(document.language)}
         </span>
-        <span className="hidden text-zinc-400 md:inline">Select words to learn</span>
+        <span className="hidden text-zinc-400 md:inline">
+          {t("app.readerSelectWordsToLearn")}
+        </span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">

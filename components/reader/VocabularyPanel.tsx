@@ -12,6 +12,7 @@ import AppStateCard from "@/components/app/AppStateCard";
 import AppStateInline from "@/components/app/AppStateInline";
 import UpgradeCta from "@/components/billing/UpgradeCta";
 import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
+import { useI18n } from "@/lib/i18n/provider";
 
 type VocabularyPanelProps = {
   selection: PanelVocabularySelection | null;
@@ -27,24 +28,26 @@ type VocabularyPanelProps = {
   emptyDescription?: string;
 };
 
-function sourceLabel(source: "cache" | "ai"): string {
-  return source === "cache" ? "From cache" : "AI generated";
+type Translate = (key: string) => string;
+
+function sourceLabel(source: "cache" | "ai", t: Translate): string {
+  return source === "cache" ? t("app.readerFromCache") : t("app.readerAiGenerated");
 }
 
-function saveButtonLabel(selection: PanelVocabularySelection): string {
+function saveButtonLabel(selection: PanelVocabularySelection, t: Translate): string {
   if (selection.status === "loading") {
-    return "Explanation loading…";
+    return t("app.readerExplanationLoading");
   }
 
   switch (selection.saveState) {
     case "saving":
-      return "Saving…";
+      return t("app.readerSaving");
     case "saved":
-      return "Saved";
+      return t("app.readerSaved");
     case "already_saved":
-      return "Already saved";
+      return t("app.readerAlreadySaved");
     default:
-      return "Save as flashcard";
+      return t("app.readerSaveAsFlashcard");
   }
 }
 
@@ -57,9 +60,10 @@ function VocabularyPanel({
   isMobileOpen,
   onClose,
   panelRef,
-  emptyTitle = "Select a word",
-  emptyDescription = "Select any word from your document to understand it in context."
+  emptyTitle,
+  emptyDescription
 }: VocabularyPanelProps) {
+  const { t } = useI18n();
   const mobileOpen = isMobileOpen ?? Boolean(selection);
   const isLoading = selection?.status === "loading";
   const isError = selection?.status === "error";
@@ -76,11 +80,11 @@ function VocabularyPanel({
     !isSaving;
 
   const saveTitle = isLoading
-    ? "Explanation loading…"
+    ? t("app.readerExplanationLoading")
     : isSaving
-      ? "Saving…"
+      ? t("app.readerSaving")
       : !selection?.wordExplanationId && isReady
-        ? "Explanation unavailable"
+        ? t("app.readerExplanationUnavailable")
         : undefined;
 
   const explanationKey = selection
@@ -105,13 +109,15 @@ function VocabularyPanel({
 
       <div className="border-b border-white/[0.1] px-5 py-3.5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">Vocabulary</p>
+          <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+            {t("app.readerVocabulary")}
+          </p>
           {onClose ? (
             <button
               type="button"
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.10] bg-white/[0.03] text-zinc-300 transition hover:bg-white/[0.06] lg:hidden"
-              aria-label="Close vocabulary panel"
+              aria-label={t("app.readerCloseVocabulary")}
             >
               <span aria-hidden="true">×</span>
             </button>
@@ -124,8 +130,8 @@ function VocabularyPanel({
           <AppStateCard
             compact
             icon="ai"
-            title={emptyTitle}
-            description={emptyDescription}
+            title={emptyTitle ?? t("app.readerEmptySelectWordTitle")}
+            description={emptyDescription ?? t("app.readerEmptySelectWordBody")}
             className="shadow-none"
           />
         ) : (
@@ -149,10 +155,12 @@ function VocabularyPanel({
             {isReady && (selection.explanationSource || selection.explanationLanguageLabel) ? (
               <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] tracking-[0.04em] text-zinc-600">
                 {selection.explanationLanguageLabel ? (
-                  <span>Explanation: {selection.explanationLanguageLabel}</span>
+                  <span>
+                    {t("app.readerExplanationPrefix")} {selection.explanationLanguageLabel}
+                  </span>
                 ) : null}
                 {selection.explanationSource ? (
-                  <span>{sourceLabel(selection.explanationSource)}</span>
+                  <span>{sourceLabel(selection.explanationSource, t)}</span>
                 ) : null}
               </p>
             ) : null}
@@ -160,7 +168,7 @@ function VocabularyPanel({
             <div className="mt-6 space-y-5">
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                  Original sentence
+                  {t("app.readerOriginalSentence")}
                 </p>
                 <p className="mt-2.5 text-[15px] italic leading-relaxed text-zinc-400">
                   &ldquo;{selection.sentence}&rdquo;
@@ -168,7 +176,7 @@ function VocabularyPanel({
               </div>
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                  Source
+                  {t("app.readerSource")}
                 </p>
                 <p className="mt-2.5 text-[15px] leading-relaxed text-zinc-400">
                   {selection.sourceTitle}
@@ -180,13 +188,11 @@ function VocabularyPanel({
               <div className="mt-6">
                 <AppStateInline
                   variant={selection.paywall ? "info" : "error"}
-                  title={
-                    selection.paywall?.title ?? "Explanation unavailable"
-                  }
+                  title={selection.paywall?.title ?? t("app.readerExplanationUnavailable")}
                   description={
                     selection.paywall?.message ??
                     selection.errorMessage ??
-                    "Try selecting the word or phrase again."
+                    t("app.readerTrySelectAgain")
                   }
                 />
                 {selection.paywall ? (
@@ -199,7 +205,7 @@ function VocabularyPanel({
                     onClick={onRetry}
                     className="mt-4 min-h-[44px] w-full rounded-md border border-white/[0.12] bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-200 transition hover:border-white/[0.16] hover:bg-white/[0.06]"
                   >
-                    Try again
+                    {t("app.readerTryAgain")}
                   </button>
                 ) : null}
               </div>
@@ -212,7 +218,7 @@ function VocabularyPanel({
               >
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                    In this sentence
+                    {t("app.readerInThisSentence")}
                   </p>
                   <div className={`mt-2.5 ${EXPLANATION_TEXT_MIN_HEIGHT}`}>
                     {isLoading ? (
@@ -226,7 +232,7 @@ function VocabularyPanel({
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                    General meaning
+                    {t("app.readerGeneralMeaning")}
                   </p>
                   <div className={`mt-2.5 ${EXPLANATION_TEXT_MIN_HEIGHT}`}>
                     {isLoading ? (
@@ -241,7 +247,7 @@ function VocabularyPanel({
                 {isReady && selection.exampleUsage ? (
                   <div className="animate-fade-in">
                     <p className="text-xs font-medium uppercase tracking-[0.1em] text-zinc-500">
-                      Example
+                      {t("app.readerExample")}
                     </p>
                     <p className="mt-2.5 text-[14px] leading-relaxed text-zinc-400">
                       {selection.exampleUsage}
@@ -268,7 +274,7 @@ function VocabularyPanel({
               {selection.saveState === "saved" || selection.saveState === "already_saved" ? (
                 <SuccessCheck />
               ) : null}
-              {saveButtonLabel(selection)}
+              {saveButtonLabel(selection, t)}
             </button>
           </>
         )}
