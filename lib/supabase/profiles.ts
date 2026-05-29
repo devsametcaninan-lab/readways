@@ -10,14 +10,23 @@ export async function ensureProfileExists(supabase: SupabaseClient, user: User) 
   const avatarUrl =
     (typeof user.user_metadata?.avatar_url === "string" && user.user_metadata.avatar_url) || null;
 
-  await supabase.from("profiles").upsert(
-    {
-      id: user.id,
-      email: user.email ?? "",
-      full_name: fullName,
-      avatar_url: avatarUrl,
-      plan: "free"
-    },
-    { onConflict: "id" }
-  );
+  const profileRow = {
+    id: user.id,
+    email: user.email ?? "",
+    full_name: fullName,
+    avatar_url: avatarUrl
+  };
+
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!existing) {
+    await supabase.from("profiles").insert({ ...profileRow, plan: "free" });
+    return;
+  }
+
+  await supabase.from("profiles").update(profileRow).eq("id", user.id);
 }

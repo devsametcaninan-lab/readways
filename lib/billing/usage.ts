@@ -45,29 +45,8 @@ export async function getTodayAiUsageCount(
   return data.ai_explanations_used;
 }
 
-export async function ensureTodayUsageRow(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<void> {
-  const today = getTodayUtcDateString();
-
-  const { data: existing } = await supabase
-    .from("usage_limits")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("date", today)
-    .maybeSingle();
-
-  if (existing) {
-    return;
-  }
-
-  await supabase.from("usage_limits").insert({
-    user_id: userId,
-    date: today,
-    ai_explanations_used: 0,
-    pdf_uploads_used: 0
-  });
+export async function ensureTodayUsageRow(supabase: SupabaseClient): Promise<void> {
+  await supabase.rpc("ensure_today_usage_row");
 }
 
 export async function countDocumentsUploadedThisMonth(
@@ -136,7 +115,7 @@ export async function checkAiExplanationAllowance(params: {
   const { supabase, userId } = params;
   const subscription = await getUserSubscription(supabase, userId);
 
-  await ensureTodayUsageRow(supabase, userId);
+  await ensureTodayUsageRow(supabase);
 
   const usedToday = await getTodayAiUsageCount(supabase, userId);
   const gate = canUseAIExplanations({ subscription, usedToday });
@@ -197,20 +176,12 @@ export async function incrementAiExplanationUsage(params: {
   const { supabase, userId } = params;
   const subscription = await getUserSubscription(supabase, userId);
   const planLimits = getUserPlanLimits(subscription.tier);
-  const today = getTodayUtcDateString();
 
-  await ensureTodayUsageRow(supabase, userId);
+  await ensureTodayUsageRow(supabase);
 
-  const usedBefore = await getTodayAiUsageCount(supabase, userId);
-  const nextUsed = usedBefore + 1;
+  const { data: nextUsed, error } = await supabase.rpc("increment_ai_explanations_used");
 
-  const { error } = await supabase
-    .from("usage_limits")
-    .update({ ai_explanations_used: nextUsed })
-    .eq("user_id", userId)
-    .eq("date", today);
-
-  if (error) {
+  if (error || nextUsed == null) {
     return null;
   }
 

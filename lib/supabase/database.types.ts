@@ -496,7 +496,16 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      ensure_today_usage_row: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
+      increment_ai_explanations_used: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
