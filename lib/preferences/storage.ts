@@ -3,6 +3,7 @@ import {
   DEFAULT_USER_PREFERENCES,
   EXPLANATION_STYLE_VALUES,
   HIGHLIGHT_MODE_VALUES,
+  LEGACY_IMPLICIT_EXPLANATION_LANGUAGE,
   THEME_PREFERENCE_VALUES,
   type DefaultExplanationLanguage,
   type ExplanationStyle,
@@ -78,7 +79,7 @@ export function parseUserPreferences(raw: unknown): UserPreferences {
       record.defaultExplanationLanguage
     )
       ? record.defaultExplanationLanguage
-      : DEFAULT_USER_PREFERENCES.defaultExplanationLanguage
+      : LEGACY_IMPLICIT_EXPLANATION_LANGUAGE,
   };
 }
 

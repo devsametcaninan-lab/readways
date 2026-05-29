@@ -26,5 +26,8 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   phraseSelectionHints: true,
   theme: "dark",
   explanationStyle: "balanced",
-  defaultExplanationLanguage: "document"
+  defaultExplanationLanguage: "tr"
 };
+
+/** Implicit default before Turkish became the first-run default (partial localStorage rows). */
+export const LEGACY_IMPLICIT_EXPLANATION_LANGUAGE: DefaultExplanationLanguage = "document";
