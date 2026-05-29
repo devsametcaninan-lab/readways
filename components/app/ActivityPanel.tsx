@@ -33,6 +33,13 @@ export default function ActivityPanel() {
   }, []);
 
   const stats = dashboard?.stats;
+
+  const formatMessage = (template: string, values: Record<string, string | number>) =>
+    Object.entries(values).reduce(
+      (text, [key, value]) => text.replace(`{${key}}`, String(value)),
+      template
+    );
+
   const masteredPct =
     stats && stats.savedWordsCount > 0
       ? Math.round((stats.masteredWordsCount / stats.savedWordsCount) * 100)
@@ -47,9 +54,9 @@ export default function ActivityPanel() {
       <div className="flex-1 space-y-6 overflow-y-auto p-4">
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className={appText.metaSmall}>Saved words</p>
+            <p className={appText.metaSmall}>{t("app.activitySavedWords")}</p>
             <Link href="/saved-words" className={appText.link}>
-              View all
+              {t("app.activityViewAll")}
             </Link>
           </div>
           <div className="space-y-2">
@@ -72,7 +79,7 @@ export default function ActivityPanel() {
               ))
             ) : (
               <p className={`rounded-lg border border-white/[0.1] bg-[#12141d] px-3 py-2.5 ${appText.metaSmall}`}>
-                No saved words yet
+                {t("app.activityNoSavedWords")}
               </p>
             )}
           </div>
@@ -80,9 +87,9 @@ export default function ActivityPanel() {
 
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className={appText.metaSmall}>Flashcards due</p>
+            <p className={appText.metaSmall}>{t("app.activityFlashcardsDue")}</p>
             <Link href="/flashcards" className={appText.link}>
-              Review
+              {t("app.activityReview")}
             </Link>
           </div>
           <div className="space-y-2">
@@ -108,25 +115,30 @@ export default function ActivityPanel() {
             ) : (
               <p className={`rounded-lg border border-white/[0.1] bg-[#12141d] px-3 py-2.5 ${appText.metaSmall}`}>
                 {stats && stats.flashcardsDueCount > 0
-                  ? `${stats.flashcardsDueCount} due — open review`
-                  : "No cards due"}
+                  ? formatMessage(t("app.activityDueOpenReview"), {
+                      count: stats.flashcardsDueCount
+                    })
+                  : t("app.activityNoCardsDue")}
               </p>
             )}
           </div>
         </div>
 
         <div className="rounded-lg border border-white/[0.12] bg-[#12141d] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <p className={appText.metaSmall}>Vocabulary progress</p>
+          <p className={appText.metaSmall}>{t("app.activityVocabularyProgress")}</p>
           {loading || !stats ? (
             <div className="mt-3 h-8 animate-pulse rounded bg-white/[0.06]" />
           ) : stats.savedWordsCount === 0 ? (
             <p className="mt-2 text-sm text-zinc-500">
-              Upload a PDF and save words to track progress.
+              {t("app.activityTrackProgressHint")}
             </p>
           ) : (
             <>
               <p className="mt-1.5 text-sm font-medium text-zinc-100">
-                {stats.masteredWordsCount} / {stats.savedWordsCount} mastered
+                {formatMessage(t("app.activityMasteredRatio"), {
+                  mastered: stats.masteredWordsCount,
+                  total: stats.savedWordsCount
+                })}
               </p>
               <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-white/[0.1]">
                 <div

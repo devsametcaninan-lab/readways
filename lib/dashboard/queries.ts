@@ -6,7 +6,7 @@ import type {
   DashboardSavedWordPreview,
   DashboardStats
 } from "./types";
-import { buildDashboardProgressStats, isDashboardNewUser } from "./stats-display";
+import { isDashboardNewUser } from "./stats-display";
 
 type SavedWordPreviewRow = {
   id: string;
@@ -222,7 +222,7 @@ export async function fetchDashboardData(
 
   return {
     stats,
-    progressStats: buildDashboardProgressStats(stats),
+    progressStats: [],
     savedWordPreviews,
     dueFlashcardPreviews,
     isNewUser: isDashboardNewUser(stats)

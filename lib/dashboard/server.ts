@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { getServerT } from "@/lib/i18n/server";
 import { fetchUserDisplay } from "@/lib/profile/display";
 import { fetchDashboardData } from "./queries";
+import { buildDashboardProgressStats } from "./stats-display";
 import type { DashboardData } from "./types";
 import type { UserDisplay } from "@/lib/profile/display";
 
@@ -29,5 +31,13 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     return null;
   }
 
-  return { user: userDisplay, dashboard };
+  const t = getServerT();
+
+  return {
+    user: userDisplay,
+    dashboard: {
+      ...dashboard,
+      progressStats: buildDashboardProgressStats(dashboard.stats, t)
+    }
+  };
 }
