@@ -39,11 +39,11 @@ export function sanitizeNextPath(next: string | null | undefined, fallback = "/d
     return fallback;
   }
 
-  if (isAuthPagePath(trimmed)) {
+  if (trimmed === "/" || isAuthPagePath(trimmed)) {
     return fallback;
   }
 
-  if (!isProtectedAppPath(trimmed) && trimmed !== "/") {
+  if (!isProtectedAppPath(trimmed)) {
     return fallback;
   }
 

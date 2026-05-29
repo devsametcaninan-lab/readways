@@ -4,6 +4,7 @@ import { useToast } from "@/components/feedback/ToastProvider";
 import Spinner from "@/components/feedback/Spinner";
 import { useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n/provider";
+import { buildAuthCallbackRedirectTo } from "@/lib/auth/oauth";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 
@@ -37,7 +38,7 @@ export default function AuthCard({ mode, plan, nextPath = "/dashboard" }: AuthCa
     toast.info(t("auth.redirectingGoogle"), 3000);
 
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+    const redirectTo = buildAuthCallbackRedirectTo(nextPath);
 
     await supabase.auth.signInWithOAuth({
       provider: "google",

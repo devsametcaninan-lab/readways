@@ -1,19 +1,39 @@
 import * as Sentry from "@sentry/nextjs";
-import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { getPostAuthRedirectOrigin } from "@/lib/auth/oauth";
 import { sanitizeNextPath } from "@/lib/auth/paths";
-import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/database.types";
+import { requireSupabaseEnv } from "@/lib/supabase/env";
 import { ensureProfileExists } from "@/lib/supabase/profiles";
 
-export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
+export async function GET(request: NextRequest) {
+  const requestUrl = request.nextUrl;
   const code = requestUrl.searchParams.get("code");
   const next = sanitizeNextPath(requestUrl.searchParams.get("next"));
+  const origin = getPostAuthRedirectOrigin(requestUrl.origin);
 
   if (!code) {
-    return NextResponse.redirect(new URL("/login", requestUrl.origin));
+    return NextResponse.redirect(new URL("/login", origin));
   }
 
-  const supabase = await createClient();
+  const redirectUrl = new URL(next, origin);
+  const response = NextResponse.redirect(redirectUrl);
+
+  const { url, anonKey } = requireSupabaseEnv();
+  const supabase = createServerClient<Database>(url, anonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
+      }
+    }
+  });
+
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
@@ -22,7 +42,7 @@ export async function GET(request: Request) {
       tags: { area: "auth", endpoint: "auth-callback" }
     });
 
-    const loginUrl = new URL("/login", requestUrl.origin);
+    const loginUrl = new URL("/login", origin);
     loginUrl.searchParams.set("error", "auth_callback_failed");
     return NextResponse.redirect(loginUrl);
   }
@@ -35,5 +55,5 @@ export async function GET(request: Request) {
     await ensureProfileExists(supabase, user);
   }
 
-  return NextResponse.redirect(new URL(next, requestUrl.origin));
+  return response;
 }
