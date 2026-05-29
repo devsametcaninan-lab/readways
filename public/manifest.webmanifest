@@ -1,7 +1,7 @@
 {
   "name": "ReadWays",
   "short_name": "ReadWays",
-  "description": "Learn vocabulary while reading PDFs.",
+  "description": "PDF okurken AI ile İngilizce öğren. Kelime açıklamaları, flash kartlar ve tekrar sistemi.",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0a0b10",

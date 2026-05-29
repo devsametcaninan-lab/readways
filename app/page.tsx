@@ -10,12 +10,9 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import FinalCta from "@/components/FinalCta";
 import ProductMockup from "@/components/ProductMockup";
 import { getServerT } from "@/lib/i18n/server";
+import { buildHomeMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "ReadWays - Learn vocabulary while reading PDFs",
-  description:
-    "Upload PDFs, click words in context, save vocabulary as flashcards, and review what you learn."
-};
+export const metadata: Metadata = buildHomeMetadata();
 
 export default function Home() {
   const t = getServerT();

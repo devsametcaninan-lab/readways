@@ -9,8 +9,8 @@ type LoginPageProps = {
 };
 
 export const metadata: Metadata = {
-  title: "Giris",
-  description: "ReadWays hesabina giris yap.",
+  title: "Giriş",
+  description: "ReadWays hesabına giriş yap. PDF okurken AI ile İngilizce öğrenmeye devam et.",
   robots: {
     index: false,
     follow: false

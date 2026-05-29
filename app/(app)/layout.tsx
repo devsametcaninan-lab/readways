@@ -4,8 +4,8 @@ import AppLayoutClient from "@/components/app/AppLayoutClient";
 import { requireUser } from "@/lib/auth/require-user";
 
 export const metadata: Metadata = {
-  title: "ReadWays App",
-  description: "Read, learn vocabulary, and review with ReadWays.",
+  title: "Uygulama",
+  description: "ReadWays okuma paneli — PDF okuma, AI kelime açıklamaları ve flash kart tekrarı.",
   robots: {
     index: false,
     follow: false

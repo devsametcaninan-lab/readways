@@ -8,8 +8,9 @@ type SignupPageProps = {
 };
 
 export const metadata: Metadata = {
-  title: "Kayit ol",
-  description: "ReadWays hesabini olustur ve PDF'lerden ogrenmeye basla.",
+  title: "Kayıt ol",
+  description:
+    "ReadWays hesabını oluştur. İngilizce PDF yükle, AI ile kelime öğren ve flash kartlarla tekrar et.",
   robots: {
     index: false,
     follow: false
