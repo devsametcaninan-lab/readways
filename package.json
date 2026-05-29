@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "node scripts/copy-pdf-worker.mjs",
+    "generate:icons": "node scripts/generate-brand-icons.mjs",
     "supabase:types": "node scripts/generate-supabase-types.mjs",
     "supabase:types:local": "node scripts/generate-supabase-types.mjs --local"
   },
@@ -26,8 +27,10 @@
     "@types/react-dom": "19.0.2",
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
+    "sharp": "^0.34.5",
     "supabase": "^2.67.1",
     "tailwindcss": "3.4.17",
+    "to-ico": "^1.1.5",
     "typescript": "5.7.2"
   }
 }

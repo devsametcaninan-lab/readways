@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import AppProviders from "@/components/feedback/AppProviders";
-import { BRAND_LOGO_PATH } from "@/lib/seo/brand-assets";
+import {
+  BRAND_APPLE_TOUCH_ICON_PATH,
+  BRAND_FAVICON_PATH,
+  BRAND_ICON_192_PATH,
+  BRAND_ICON_512_PATH,
+  BRAND_LOGO_PATH,
+  BRAND_MANIFEST_PATH,
+  BRAND_THEME_COLOR
+} from "@/lib/seo/brand-assets";
 import { getSiteUrl } from "@/lib/seo/site-url";
 import "./globals.css";
 
@@ -21,6 +29,16 @@ export const metadata: Metadata = {
     "learn words in context"
   ],
   applicationName: "ReadWays",
+  manifest: BRAND_MANIFEST_PATH,
+  themeColor: BRAND_THEME_COLOR,
+  icons: {
+    icon: [
+      { url: BRAND_FAVICON_PATH },
+      { url: BRAND_ICON_192_PATH, sizes: "192x192", type: "image/png" },
+      { url: BRAND_ICON_512_PATH, sizes: "512x512", type: "image/png" }
+    ],
+    apple: [{ url: BRAND_APPLE_TOUCH_ICON_PATH, sizes: "180x180", type: "image/png" }]
+  },
   openGraph: {
     type: "website",
     siteName: "ReadWays",
