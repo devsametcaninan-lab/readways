@@ -161,6 +161,8 @@
     "backToDashboard": "Panele dön",
     "globalErrorTitle": "ReadWays'te bir sorun oluştu",
     "globalErrorDescription": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
+    "sessionExpiredMessage": "Oturumun güvenlik nedeniyle sona erdi. Devam etmek için lütfen tekrar giriş yap.",
+    "sessionExpiredRedirecting": "Oturumun sona erdi. Giriş sayfasına yönlendiriliyorsun...",
     "globalErrorHome": "Ana sayfa"
   },
   "app": {
@@ -225,6 +227,7 @@
     "documentNotStarted": "Başlanmadı",
     "documentDelete": "Sil",
     "documentDeleting": "Siliniyor...",
+    "documentUpdatedAt": "Güncelleme tarihi",
     "documentReadingStatus": "Okuma durumu",
     "documentSavedWordsCount": "kaydedilen kelime",
     "documentPages": "sayfa",
@@ -361,6 +364,11 @@
     "readerInThisSentence": "Bu cümlede",
     "readerGeneralMeaning": "Genel anlam",
     "readerExample": "Örnek",
+    "partOfSpeechWord": "kelime",
+    "partOfSpeechPhrase": "ifade",
+    "partOfSpeechNoun": "isim",
+    "partOfSpeechVerb": "fiil",
+    "partOfSpeechAdjective": "sıfat",
     "readerTrySelectAgain": "Kelimeyi veya ifadeyi tekrar seçmeyi dene.",
     "readerTryAgain": "Tekrar dene",
     "readerExplainPhrase": "İfadeyi açıkla",

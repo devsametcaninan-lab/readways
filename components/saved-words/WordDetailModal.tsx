@@ -6,6 +6,7 @@ import Spinner from "@/components/feedback/Spinner";
 import { difficultyLabel } from "@/lib/saved-words/format";
 import type { SavedWordItem } from "@/lib/saved-words/types";
 import { useI18n } from "@/lib/i18n/provider";
+import { localizePartOfSpeech } from "@/lib/i18n/part-of-speech";
 import StatusBadge from "./StatusBadge";
 
 type WordDetailModalProps = {
@@ -95,7 +96,7 @@ export default function WordDetailModal({
               {word.word}
             </h2>
             <p className="mt-1 text-sm text-zinc-400">
-              {word.partOfSpeech}
+              {localizePartOfSpeech(word.partOfSpeech, t)}
               {word.pronunciation ? ` · ${word.pronunciation}` : ""}
             </p>
           </div>

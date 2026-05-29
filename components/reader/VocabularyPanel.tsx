@@ -13,6 +13,7 @@ import AppStateInline from "@/components/app/AppStateInline";
 import UpgradeCta from "@/components/billing/UpgradeCta";
 import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
 import { useI18n } from "@/lib/i18n/provider";
+import { localizePartOfSpeech } from "@/lib/i18n/part-of-speech";
 
 type VocabularyPanelProps = {
   selection: PanelVocabularySelection | null;
@@ -138,7 +139,7 @@ function VocabularyPanel({
           <>
             <h3 className="text-2xl font-medium text-white">{selection.word}</h3>
             <p className="mt-2 flex min-h-[1.25rem] flex-wrap items-center gap-x-1.5 text-sm text-zinc-400">
-              <span className="capitalize">{selection.partOfSpeech}</span>
+              <span className="capitalize">{localizePartOfSpeech(selection.partOfSpeech, t)}</span>
               {isLoading ? (
                 <>
                   <span aria-hidden="true">·</span>

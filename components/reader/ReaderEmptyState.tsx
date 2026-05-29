@@ -12,6 +12,7 @@ export default function ReaderEmptyState() {
           title={t("app.readerNoDocumentTitle")}
           description={t("app.readerNoDocumentBody")}
           action={{ label: t("app.savedWordsGoLibrary"), href: "/library" }}
+          secondaryAction={{ label: t("app.uploadPdfTitle"), href: "/library?upload=1", variant: "secondary" }}
         />
       </div>
     </AppStatePage>

@@ -161,6 +161,8 @@
     "backToDashboard": "Back to dashboard",
     "globalErrorTitle": "ReadWays hit a problem",
     "globalErrorDescription": "Something unexpected happened. Please try again.",
+    "sessionExpiredMessage": "Your session expired for security reasons. Please sign in again to continue.",
+    "sessionExpiredRedirecting": "Your session expired. Redirecting you to login...",
     "globalErrorHome": "Home"
   },
   "app": {
@@ -225,6 +227,7 @@
     "documentNotStarted": "Not started",
     "documentDelete": "Delete",
     "documentDeleting": "Deleting...",
+    "documentUpdatedAt": "Updated",
     "documentReadingStatus": "Reading status",
     "documentSavedWordsCount": "saved words",
     "documentPages": "pages",
@@ -361,6 +364,11 @@
     "readerInThisSentence": "In this sentence",
     "readerGeneralMeaning": "General meaning",
     "readerExample": "Example",
+    "partOfSpeechWord": "word",
+    "partOfSpeechPhrase": "phrase",
+    "partOfSpeechNoun": "noun",
+    "partOfSpeechVerb": "verb",
+    "partOfSpeechAdjective": "adjective",
     "readerTrySelectAgain": "Try selecting the word or phrase again.",
     "readerTryAgain": "Try again",
     "readerExplainPhrase": "Explain phrase",

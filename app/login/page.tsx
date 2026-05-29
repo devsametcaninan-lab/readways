@@ -5,7 +5,7 @@ import { sanitizeNextPath } from "@/lib/auth/paths";
 import { getServerT } from "@/lib/i18n/server";
 
 type LoginPageProps = {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; reason?: string }>;
 };
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const t = getServerT();
-  const { next, error } = await searchParams;
+  const { next, error, reason } = await searchParams;
   const nextPath = sanitizeNextPath(next);
 
   return (
@@ -28,6 +28,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         {error === "auth_callback_failed" ? (
           <p className="mb-4 rounded-lg border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200/90">
             {t("auth.callbackFailed")}
+          </p>
+        ) : null}
+        {reason === "session_expired" ? (
+          <p className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-sm text-amber-100/90">
+            {t("auth.sessionExpiredMessage")}
           </p>
         ) : null}
         <AuthCard mode="login" nextPath={nextPath} />

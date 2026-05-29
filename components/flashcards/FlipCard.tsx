@@ -2,6 +2,7 @@
 
 import type { FlashcardReviewItem } from "@/lib/flashcards/types";
 import { useI18n } from "@/lib/i18n/provider";
+import { localizePartOfSpeech } from "@/lib/i18n/part-of-speech";
 
 type FlipCardProps = {
   card: FlashcardReviewItem;
@@ -41,7 +42,7 @@ export default function FlipCard({ card, isFlipped, onFlip }: FlipCardProps) {
               {card.word}
             </p>
             <p className="mt-1.5 text-sm text-zinc-400">
-              {card.partOfSpeech} · {card.pronunciation}
+              {localizePartOfSpeech(card.partOfSpeech, t)} · {card.pronunciation}
             </p>
           </div>
 

@@ -68,7 +68,7 @@ export default function DocumentCard({ document: doc, onDeleted }: DocumentCardP
 
         <div className="flex min-w-0 flex-1 flex-col">
           <p className={`${appText.metaSmall}`}>
-            {doc.source} · Updated {doc.updatedAtLabel}
+            {doc.source} · {t("app.documentUpdatedAt")} {doc.updatedAtLabel}
             {doc.status !== "ready" ? ` · ${statusLabel[doc.status]}` : ""}
           </p>
 
