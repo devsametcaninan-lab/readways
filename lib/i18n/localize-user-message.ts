@@ -42,7 +42,9 @@ const EXACT_MESSAGE_KEYS: Record<string, string> = {
   "Select at least two words for a phrase explanation.": "toast.explainSelectTwoWords",
   "That phrase is too long. Try a shorter selection.": "toast.explainPhraseTooLong",
   "That selection is too long. Try a single word or shorter phrase.":
-    "toast.explainSelectionTooLong"
+    "toast.explainSelectionTooLong",
+  "Document removed from your library. The PDF file could not be deleted from storage.":
+    "toast.documentStorageWarning"
 };
 
 export function localizeUserMessage(message: string, t: Translate): string {

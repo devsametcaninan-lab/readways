@@ -11,11 +11,5 @@ export default function AppError({ error, reset }: { error: Error; reset: () => 
     });
   }, [error]);
 
-  return (
-    <AppRouteError
-      reset={reset}
-      title="Something went wrong"
-      description="We could not load this part of ReadWays. Try again or return to your dashboard."
-    />
-  );
+  return <AppRouteError reset={reset} />;
 }

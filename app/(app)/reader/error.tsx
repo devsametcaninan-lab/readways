@@ -3,8 +3,10 @@
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 import AppRouteError from "@/components/app/AppRouteError";
+import { useI18n } from "@/lib/i18n/provider";
 
 export default function ReaderError({ error, reset }: { error: Error; reset: () => void }) {
+  const { t } = useI18n();
   useEffect(() => {
     Sentry.captureException(error, {
       tags: { boundary: "reader-error" }
@@ -14,10 +16,10 @@ export default function ReaderError({ error, reset }: { error: Error; reset: () 
   return (
     <AppRouteError
       reset={reset}
-      title="Reader unavailable"
-      description="The reader could not load this document. Try again or open your library to pick another PDF."
+      title={t("app.readerErrorTitle")}
+      description={t("app.readerErrorDescription")}
       backHref="/library"
-      backLabel="Back to library"
+      backLabel={t("app.readerBackLibrary")}
     />
   );
 }

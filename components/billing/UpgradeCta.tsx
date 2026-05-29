@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { trackAnalyticsEventClient } from "@/lib/analytics/client";
-import { upgradeCtaLabel } from "@/lib/billing/messages";
+import { useI18n } from "@/lib/i18n/provider";
 
 type UpgradeCtaProps = {
   source: string;
@@ -10,6 +10,8 @@ type UpgradeCtaProps = {
 };
 
 export default function UpgradeCta({ source, className = "" }: UpgradeCtaProps) {
+  const { t } = useI18n();
+
   return (
     <Link
       href="/settings#upgrade"
@@ -21,7 +23,7 @@ export default function UpgradeCta({ source, className = "" }: UpgradeCtaProps) 
       }}
       className={`inline-flex items-center justify-center rounded-md border border-accent/30 bg-accent/10 px-4 py-2.5 text-sm font-medium text-[#c5cdff] transition-colors hover:bg-accent/20 hover:text-white ${className}`}
     >
-      {upgradeCtaLabel()}
+      {t("app.billingUpgradeCta")}
     </Link>
   );
 }

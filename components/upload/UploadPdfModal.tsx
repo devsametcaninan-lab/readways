@@ -610,7 +610,7 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
     >
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t("common.close")}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={isBusy ? undefined : onClose}
         disabled={isBusy}
@@ -658,7 +658,11 @@ export default function UploadPdfModal({ open, onClose }: UploadPdfModalProps) {
                   <p className="mt-2 truncate px-2 text-sm text-zinc-400">
                     {file.name}
                     {pageCount != null
-                      ? ` · ${pageCount} page${pageCount === 1 ? "" : "s"}`
+                      ? ` · ${
+                          pageCount === 1
+                            ? t("app.readerPageSingular").replace("{count}", String(pageCount))
+                            : t("app.readerPagePlural").replace("{count}", String(pageCount))
+                        }`
                       : ""}
                   </p>
                 ) : null}

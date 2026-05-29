@@ -2,6 +2,10 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { DEFAULT_UI_LOCALE } from "@/lib/i18n/constants";
+import { getMessages } from "@/lib/i18n/dictionaries";
+
+const messages = getMessages(DEFAULT_UI_LOCALE);
 
 export default function GlobalError({
   error,
@@ -17,7 +21,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="en">
+    <html lang={DEFAULT_UI_LOCALE}>
       <body
         style={{
           margin: 0,
@@ -32,9 +36,11 @@ export default function GlobalError({
         }}
       >
         <div style={{ maxWidth: "28rem", textAlign: "center" }}>
-          <h1 style={{ fontSize: "1.125rem", fontWeight: 600, margin: 0 }}>ReadWays hit a problem</h1>
+          <h1 style={{ fontSize: "1.125rem", fontWeight: 600, margin: 0 }}>
+            {messages.auth.globalErrorTitle}
+          </h1>
           <p style={{ marginTop: "12px", fontSize: "0.875rem", lineHeight: 1.6, color: "#a1a1aa" }}>
-            Something unexpected happened. Please try again.
+            {messages.auth.globalErrorDescription}
           </p>
           <div style={{ marginTop: "24px", display: "flex", gap: "12px", justifyContent: "center" }}>
             <button
@@ -50,7 +56,7 @@ export default function GlobalError({
                 cursor: "pointer"
               }}
             >
-              Try again
+              {messages.common.tryAgain}
             </button>
             <a
               href="/"
@@ -63,7 +69,7 @@ export default function GlobalError({
                 fontWeight: 500
               }}
             >
-              Home
+              {messages.auth.globalErrorHome}
             </a>
           </div>
         </div>

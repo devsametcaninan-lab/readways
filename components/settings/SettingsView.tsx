@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import UserAvatar from "@/components/app/UserAvatar";
 import { useAppUser } from "@/components/app/use-app-user";
 import { SignOutForm } from "@/components/feedback/SignOutButton";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { fetchBillingLimits, type BillingLimitsResponse } from "@/lib/billing/client";
-import { planDisplayName, planToTier } from "@/lib/billing/plans";
+import { planToTier } from "@/lib/billing/plans";
+import { localizedPlanName } from "@/lib/i18n/plan-label";
 import { clearLocalReaderCache } from "@/lib/preferences/reader-cache";
 import { useUserPreferences } from "@/lib/preferences/UserPreferencesProvider";
 import type {
@@ -32,6 +33,13 @@ function planBadgeClass(tier: "free" | "pro" | "admin"): string {
   return "border-white/[0.10] bg-white/[0.03] text-slate-400";
 }
 
+function formatMessage(template: string, values: Record<string, string | number>): string {
+  return Object.entries(values).reduce(
+    (text, [key, value]) => text.replace(`{${key}}`, String(value)),
+    template
+  );
+}
+
 export default function SettingsView() {
   const toast = useToast();
   const { t } = useI18n();
@@ -39,6 +47,79 @@ export default function SettingsView() {
   const { preferences, updatePreferences } = useUserPreferences();
   const [billing, setBilling] = useState<BillingLimitsResponse | null>(null);
   const [billingLoading, setBillingLoading] = useState(true);
+
+  const comingSoon = t("settings.comingSoon");
+
+  const highlightOptions = useMemo(
+    () =>
+      [
+        { value: "subtle" as const, label: t("settings.highlightSubtle"), description: t("settings.highlightSubtleDesc") },
+        {
+          value: "focused" as const,
+          label: t("settings.highlightFocused"),
+          description: t("settings.highlightFocusedDesc")
+        },
+        { value: "off" as const, label: t("settings.highlightOff"), description: t("settings.highlightOffDesc") }
+      ],
+    [t]
+  );
+
+  const themeOptions = useMemo(
+    () =>
+      [
+        { value: "dark" as const, label: t("settings.themeDark"), description: t("settings.themeDarkDesc") },
+        {
+          value: "light" as const,
+          label: t("settings.themeLight"),
+          description: t("settings.themeLightDesc"),
+          disabled: true,
+          badge: comingSoon
+        }
+      ],
+    [comingSoon, t]
+  );
+
+  const explanationStyleOptions = useMemo(
+    () =>
+      [
+        {
+          value: "concise" as const,
+          label: t("settings.styleConcise"),
+          description: t("settings.styleConciseDesc"),
+          disabled: true,
+          badge: comingSoon
+        },
+        {
+          value: "balanced" as const,
+          label: t("settings.styleBalanced"),
+          description: t("settings.styleBalancedDesc"),
+          disabled: true,
+          badge: comingSoon
+        },
+        {
+          value: "detailed" as const,
+          label: t("settings.styleDetailed"),
+          description: t("settings.styleDetailedDesc"),
+          disabled: true,
+          badge: comingSoon
+        }
+      ],
+    [comingSoon, t]
+  );
+
+  const explanationLanguageOptions = useMemo(
+    () =>
+      [
+        {
+          value: "document" as const,
+          label: t("settings.langSameAsDocument"),
+          description: t("settings.langSameAsDocumentDesc")
+        },
+        { value: "tr" as const, label: t("settings.langTurkish") },
+        { value: "en" as const, label: t("settings.langEnglish") }
+      ],
+    [t]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +149,7 @@ export default function SettingsView() {
   const tier = billing?.tier ?? planToTier(plan);
   const isProOrAdmin = tier === "pro" || tier === "admin";
   const displayPlan = billing?.plan ?? plan;
+  const displayPlanLabel = localizedPlanName(displayPlan, t);
 
   function notifyUpdated() {
     toast.success(t("toast.settingsUpdated"));
@@ -88,32 +170,32 @@ export default function SettingsView() {
   return (
     <div className="p-6 md:p-8 lg:p-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-medium tracking-tight text-white md:text-3xl">Settings</h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Account, reading preferences, and appearance for your ReadWays workspace.
-        </p>
+        <h1 className="text-2xl font-medium tracking-tight text-white md:text-3xl">
+          {t("settings.title")}
+        </h1>
+        <p className="mt-2 text-sm text-slate-400">{t("settings.subtitle")}</p>
       </div>
 
       <div className="mx-auto max-w-xl space-y-4">
-        <SettingsSection title="Account">
+        <SettingsSection title={t("settings.sectionAccount")}>
           <div className="flex items-center gap-4">
             <UserAvatar
-              name={userLoading ? "Reader" : name}
+              name={userLoading ? t("settings.fallbackName") : name}
               avatarUrl={avatarUrl}
               size="lg"
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-base font-medium text-white">
-                {userLoading ? "Loading…" : name}
+                {userLoading ? t("common.loading") : name}
               </p>
               <p className="mt-0.5 truncate text-sm text-slate-400">
-                {userLoading ? "…" : email || "No email on file"}
+                {userLoading ? "…" : email || t("settings.noEmail")}
               </p>
               <p className="mt-2">
                 <span
                   className={`inline-flex rounded-md border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] ${planBadgeClass(tier)}`}
                 >
-                  {userLoading ? "…" : planDisplayName(displayPlan)}
+                  {userLoading ? "…" : displayPlanLabel}
                 </span>
               </p>
             </div>
@@ -125,200 +207,150 @@ export default function SettingsView() {
         </SettingsSection>
 
         <SettingsSection
-          title="Reading"
-          description="Customize how you read and save vocabulary in the reader."
+          title={t("settings.sectionReading")}
+          description={t("settings.readingDescription")}
         >
           <SettingsOptionGroup<HighlightMode>
             name="highlight-mode"
-            label="Highlight mode"
-            description="How strongly selected words stand out in your document."
+            label={t("settings.highlightMode")}
+            description={t("settings.highlightModeDesc")}
             value={preferences.highlightMode}
             onChange={(highlightMode) => patchPreferences({ highlightMode })}
-            options={[
-              { value: "subtle", label: "Subtle", description: "Light underline on selection" },
-              {
-                value: "focused",
-                label: "Focused",
-                description: "Stronger accent highlight (recommended)"
-              },
-              { value: "off", label: "Off", description: "Minimal styling while reading" }
-            ]}
+            options={highlightOptions}
           />
 
           <SettingsToggle
             id="auto-save-words"
-            label="Auto-save words"
-            description="Automatically save explained words to your collection after each explanation."
+            label={t("settings.autoSave")}
+            description={t("settings.autoSaveDesc")}
             checked={preferences.autoSaveWords}
             onChange={(autoSaveWords) => patchPreferences({ autoSaveWords })}
           />
 
           <SettingsToggle
             id="phrase-selection-hints"
-            label="Phrase selection hints"
-            description="Show a short tip about selecting multi-word phrases in the reader."
+            label={t("settings.phraseHints")}
+            description={t("settings.phraseHintsDesc")}
             checked={preferences.phraseSelectionHints}
             onChange={(phraseSelectionHints) => patchPreferences({ phraseSelectionHints })}
           />
         </SettingsSection>
 
-        <SettingsSection title="Appearance">
+        <SettingsSection title={t("settings.sectionAppearance")}>
           <SettingsOptionGroup<"dark" | "light">
             name="theme"
-            label="Theme"
+            label={t("settings.theme")}
             value={preferences.theme}
             onChange={(theme) => {
               if (theme === "dark") {
                 patchPreferences({ theme: "dark" });
               }
             }}
-            options={[
-              {
-                value: "dark",
-                label: "Dark",
-                description: "Premium dark UI (default)"
-              },
-              {
-                value: "light",
-                label: "Light",
-                description: "Bright theme for daytime reading",
-                disabled: true,
-                badge: "Coming soon"
-              }
-            ]}
+            options={themeOptions}
           />
         </SettingsSection>
 
         <SettingsSection
-          title="AI preferences"
-          description="Default explanation language applies to your next word or phrase in the reader."
+          title={t("settings.sectionAi")}
+          description={t("settings.sectionAiDesc")}
         >
           <SettingsOptionGroup<ExplanationStyle>
             name="explanation-style"
-            label="Explanation style"
+            label={t("settings.explanationStyle")}
             value={preferences.explanationStyle}
             onChange={() => undefined}
-            options={[
-              {
-                value: "concise",
-                label: "Concise",
-                description: "Shorter definitions",
-                disabled: true,
-                badge: "Coming soon"
-              },
-              {
-                value: "balanced",
-                label: "Balanced",
-                description: "Default depth",
-                disabled: true,
-                badge: "Coming soon"
-              },
-              {
-                value: "detailed",
-                label: "Detailed",
-                description: "More context and nuance",
-                disabled: true,
-                badge: "Coming soon"
-              }
-            ]}
+            options={explanationStyleOptions}
           />
 
           <SettingsOptionGroup<DefaultExplanationLanguage>
             name="default-explanation-language"
-            label="Default explanation language"
-            description="Used when you request a word explanation in the reader."
+            label={t("settings.defaultExplanationLanguage")}
+            description={t("settings.defaultExplanationLanguageDesc")}
             value={preferences.defaultExplanationLanguage}
             onChange={(defaultExplanationLanguage) =>
               patchPreferences({ defaultExplanationLanguage })
             }
-            options={[
-              {
-                value: "document",
-                label: "Same as document",
-                description: "Match the PDF language"
-              },
-              { value: "tr", label: "Turkish" },
-              { value: "en", label: "English" }
-            ]}
+            options={explanationLanguageOptions}
           />
         </SettingsSection>
 
         <FeedbackSettingsSection />
 
         <div id="upgrade">
-          <SettingsSection title="Upgrade">
+          <SettingsSection title={t("settings.sectionUpgrade")}>
             {billingLoading ? (
-              <p className="text-sm text-slate-500">Loading plan details…</p>
+              <p className="text-sm text-slate-500">{t("settings.loadingPlan")}</p>
             ) : isProOrAdmin ? (
               <div className="rounded-lg border border-accent/20 bg-accent/[0.06] px-4 py-4">
                 <p className="text-sm font-medium text-[#d4dcff]">
-                  {planDisplayName(displayPlan)} is active
+                  {formatMessage(t("settings.planActive"), { plan: displayPlanLabel })}
                 </p>
                 <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
-                  You have higher AI and PDF limits on your current plan. Thank you for supporting
-                  ReadWays.
+                  {t("settings.planActiveBody")}
                 </p>
                 {billing ? (
                   <p className="mt-3 text-xs text-slate-500">
-                    AI today: {billing.ai.used}/{billing.ai.limit} · PDFs this month:{" "}
-                    {billing.pdf.used}/{billing.pdf.limit}
+                    {formatMessage(t("settings.usageToday"), {
+                      aiUsed: billing.ai.used,
+                      aiLimit: billing.ai.limit,
+                      pdfUsed: billing.pdf.used,
+                      pdfLimit: billing.pdf.limit
+                    })}
                   </p>
                 ) : null}
               </div>
             ) : (
               <div className="rounded-lg border border-white/[0.10] bg-white/[0.02] px-4 py-4">
-                <p className="text-sm font-medium text-zinc-200">
-                  Unlock higher AI limits, more PDFs, and advanced reviews.
-                </p>
+                <p className="text-sm font-medium text-zinc-200">{t("settings.upgradeTeaser")}</p>
                 <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
-                  Free: {billing?.ai.limit ?? 20} AI explanations/day · {billing?.pdf.limit ?? 3}{" "}
-                  PDFs/month. Pro plans add substantially more capacity.
+                  {formatMessage(t("settings.upgradeLimits"), {
+                    aiLimit: billing?.ai.limit ?? 20,
+                    pdfLimit: billing?.pdf.limit ?? 3
+                  })}
                 </p>
                 <button
                   type="button"
                   disabled
                   className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-md border border-accent/25 bg-accent/10 px-4 py-2.5 text-sm font-medium text-[#c5cdff] opacity-80 sm:w-auto"
                 >
-                  Upgrade coming soon
+                  {t("settings.upgradeComingSoon")}
                 </button>
               </div>
             )}
           </SettingsSection>
         </div>
 
-        <SettingsSection title="Danger zone">
+        <SettingsSection title={t("settings.sectionDanger")}>
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-zinc-200">Clear local reader cache</p>
+              <p className="text-sm font-medium text-zinc-200">{t("settings.clearCacheTitle")}</p>
               <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
-                Removes legacy offline document copies stored in this browser. Your cloud library is
-                not affected.
+                {t("settings.clearCacheDesc")}
               </p>
               <button
                 type="button"
                 onClick={handleClearReaderCache}
                 className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-md border border-white/[0.12] bg-white/[0.03] px-4 py-2 text-sm text-zinc-300 transition hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-zinc-100"
               >
-                Clear local reader cache
+                {t("settings.clearCacheAction")}
               </button>
             </div>
 
             <div className="border-t border-white/[0.08] pt-4">
-              <p className="text-sm font-medium text-zinc-200">Delete account</p>
+              <p className="text-sm font-medium text-zinc-200">{t("settings.deleteAccountTitle")}</p>
               <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
-                Permanently remove your account and all learning data.
+                {t("settings.deleteAccountDesc")}
               </p>
               <button
                 type="button"
                 disabled
                 className="mt-3 inline-flex min-h-[44px] cursor-not-allowed items-center justify-center rounded-md border border-red-500/15 bg-red-500/[0.04] px-4 py-2 text-sm text-red-300/50"
               >
-                Delete account — coming soon
+                {t("settings.deleteAccountAction")}
               </button>
             </div>
           </div>
         </SettingsSection>
-
       </div>
     </div>
   );

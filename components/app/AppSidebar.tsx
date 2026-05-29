@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/provider";
+import { localizedPlanName } from "@/lib/i18n/plan-label";
 import { appNavItems, isNavActive } from "./nav-config";
 import SidebarNavIcon from "./SidebarNavIcon";
 import SidebarUserMenu from "./SidebarUserMenu";
@@ -33,7 +34,7 @@ export default function AppSidebar({
           />
         </Link>
         <p className="mt-2 text-[11px] font-medium text-zinc-400">
-          {appUser.loading ? "…" : appUser.planLabel}
+          {appUser.loading ? "…" : localizedPlanName(appUser.plan, t)}
         </p>
       </div>
 

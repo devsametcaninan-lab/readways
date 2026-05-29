@@ -3,8 +3,10 @@
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 import AppRouteError from "@/components/app/AppRouteError";
+import { useI18n } from "@/lib/i18n/provider";
 
 export default function LibraryError({ error, reset }: { error: Error; reset: () => void }) {
+  const { t } = useI18n();
   useEffect(() => {
     Sentry.captureException(error, {
       tags: { boundary: "library-error" }
@@ -14,10 +16,10 @@ export default function LibraryError({ error, reset }: { error: Error; reset: ()
   return (
     <AppRouteError
       reset={reset}
-      title="Library unavailable"
-      description="Your library could not load right now. Try again — uploads and documents are not affected."
+      title={t("app.libraryErrorTitle")}
+      description={t("app.libraryErrorDescription")}
       backHref="/dashboard"
-      backLabel="Back to dashboard"
+      backLabel={t("auth.backToDashboard")}
     />
   );
 }

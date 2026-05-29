@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
 
 type PhraseExplainButtonProps = {
@@ -12,6 +13,7 @@ function PhraseExplainButton({
   rect,
   onExplain
 }: PhraseExplainButtonProps) {
+  const { t } = useI18n();
   const estimatedButtonHeight = 34;
   const safeBottomPx = 24; // mobile nav / safe area spacing (approx)
   const safeTopPx = 56; // keep clear of the reader header
@@ -58,7 +60,7 @@ function PhraseExplainButton({
           onExplain();
         }}
       >
-        Explain phrase
+        {t("app.readerExplainPhrase")}
       </button>
     </div>
   );

@@ -32,7 +32,7 @@ export function useDeleteDocument() {
         toast.success(t("app.documentDeletedToast"));
 
         if (result.storageWarning) {
-          toast.error(result.storageWarning);
+          toast.error(localizeUserMessage(result.storageWarning, t));
         }
 
         return true;
