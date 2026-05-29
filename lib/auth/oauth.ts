@@ -1,7 +1,7 @@
 import { sanitizeNextPath } from "@/lib/auth/paths";
 
-/** Canonical apex origin — always used for OAuth on readways.com (including www). */
-export const PRODUCTION_AUTH_ORIGIN = "https://readways.com";
+/** Canonical production origin (Vercel primary domain). */
+export const PRODUCTION_AUTH_ORIGIN = "https://www.readways.com";
 
 const READWAYS_HOSTS = new Set(["readways.com", "www.readways.com"]);
 
@@ -17,7 +17,7 @@ function parseSiteUrlOrigin(siteUrl: string | undefined): string | null {
   }
 }
 
-/** True when OAuth must use apex readways.com (never window.location.origin). */
+/** True when OAuth should use the production readways.com domain (not window fallback). */
 export function isReadwaysProductionRuntime(): boolean {
   if (typeof window !== "undefined") {
     return READWAYS_HOSTS.has(window.location.hostname);
@@ -27,7 +27,8 @@ export function isReadwaysProductionRuntime(): boolean {
 }
 
 /**
- * Returns NEXT_PUBLIC_SITE_URL origin only when it normalizes to apex readways.com.
+ * Returns NEXT_PUBLIC_SITE_URL origin when it is a valid readways.com host.
+ * Apex env values normalize to www canonical.
  */
 function getValidatedEnvAuthOrigin(): string | null {
   const fromEnv = parseSiteUrlOrigin(process.env.NEXT_PUBLIC_SITE_URL);
@@ -37,7 +38,10 @@ function getValidatedEnvAuthOrigin(): string | null {
 
   try {
     const hostname = new URL(fromEnv).hostname;
-    if (hostname === "readways.com" || hostname === "www.readways.com") {
+    if (hostname === "www.readways.com") {
+      return fromEnv;
+    }
+    if (hostname === "readways.com") {
       return PRODUCTION_AUTH_ORIGIN;
     }
   } catch {
@@ -47,13 +51,17 @@ function getValidatedEnvAuthOrigin(): string | null {
   return null;
 }
 
+function getReadwaysProductionOrigin(): string {
+  return getValidatedEnvAuthOrigin() ?? PRODUCTION_AUTH_ORIGIN;
+}
+
 /**
  * Origin used for OAuth redirectTo in the browser.
- * Production readways.com / www.readways.com always → https://readways.com (never www).
+ * Production readways.com / www.readways.com → https://www.readways.com.
  */
 export function getOAuthRedirectOrigin(): string {
   if (isReadwaysProductionRuntime()) {
-    return getValidatedEnvAuthOrigin() ?? PRODUCTION_AUTH_ORIGIN;
+    return getReadwaysProductionOrigin();
   }
 
   if (typeof window !== "undefined") {
@@ -110,7 +118,7 @@ export function getPostAuthRedirectOrigin(requestOrigin: string): string {
   try {
     const hostname = new URL(requestOrigin).hostname;
     if (READWAYS_HOSTS.has(hostname)) {
-      return getValidatedEnvAuthOrigin() ?? PRODUCTION_AUTH_ORIGIN;
+      return getReadwaysProductionOrigin();
     }
   } catch {
     // fall through
