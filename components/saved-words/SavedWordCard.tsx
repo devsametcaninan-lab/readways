@@ -28,7 +28,7 @@ export default function SavedWordCard({
 
   const definitionPreview = previewText(item.definition || item.meaning, 100);
   const contextPreview = previewText(item.contextualMeaning, 110);
-  const level = difficultyLabel(item.difficulty);
+  const level = difficultyLabel(item.difficulty, t);
 
   const handleReview = async (event: React.MouseEvent) => {
     event.stopPropagation();

@@ -6,6 +6,8 @@ import { appText } from "@/components/app/app-typography";
 import DashboardRecentDocuments from "@/components/dashboard/DashboardRecentDocuments";
 import UploadPdfButton from "@/components/upload/UploadPdfButton";
 import type { DashboardPageData } from "@/lib/dashboard/server";
+import { formatDueLabel } from "@/lib/flashcards/format-due";
+import { DEFAULT_UI_LOCALE } from "@/lib/i18n/constants";
 import { getServerT } from "@/lib/i18n/server";
 
 type DashboardViewProps = {
@@ -117,7 +119,8 @@ export default function DashboardView({ data }: DashboardViewProps) {
                     <p className={`mt-1 truncate ${appText.metaSmall}`}>{card.context}</p>
                   </div>
                   <span className={`shrink-0 ${appText.metaSmall}`}>
-                    {t("app.dashboardDuePrefix")} {card.dueLabel}
+                    {t("app.flashcardsDuePrefix")}{" "}
+                    {formatDueLabel(card.nextReviewAt, t, DEFAULT_UI_LOCALE)}
                   </span>
                 </div>
               ))

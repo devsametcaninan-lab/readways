@@ -6,6 +6,7 @@ import { appText } from "@/components/app/app-typography";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import { useOnboardingOptional } from "@/lib/onboarding/OnboardingProvider";
+import { formatReviewFeedbackMessage } from "@/lib/flashcards/format-due";
 import { submitFlashcardReview } from "@/lib/flashcards/client";
 import type { FlashcardReviewItem, SessionStats as SessionStatsData } from "@/lib/flashcards/types";
 import type { ReviewRating } from "@/lib/supabase/schema";
@@ -75,8 +76,9 @@ export default function FlashcardsReviewView({
         rating
       });
 
-      setScheduleFeedback(result.feedbackMessage);
-      toast.info(result.feedbackMessage);
+      const feedbackMessage = formatReviewFeedbackMessage(result.intervalDays, t);
+      setScheduleFeedback(feedbackMessage);
+      toast.info(feedbackMessage);
 
       const nextReviewed = reviewedCount + 1;
       setReviewedCount(nextReviewed);
@@ -136,9 +138,10 @@ export default function FlashcardsReviewView({
           <div className="mx-auto flex max-w-2xl flex-col items-center">
             <div className="mb-6 flex w-full max-w-xl items-center justify-between text-sm">
               <p className="tabular-nums text-zinc-400">
+                {t("app.flashcardsSession")}:{" "}
                 <span className="font-medium text-zinc-200">{reviewedCount}</span>
                 <span className="text-zinc-600"> / </span>
-                {total} {t("app.flashcardsReviewedCount")}
+                {total}
               </p>
               <p className="text-zinc-500">
                 {t("app.flashcardsCardOf")} {currentIndex + 1} / {total}

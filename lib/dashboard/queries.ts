@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatDueLabel } from "@/lib/flashcards/format-due";
 import type {
   DashboardData,
   DashboardDueFlashcardPreview,
@@ -145,7 +144,8 @@ function mapDueFlashcardPreview(row: DueFlashcardRow): DashboardDueFlashcardPrev
     id: row.id,
     word: row.front,
     context,
-    dueLabel: formatDueLabel(row.next_review_at)
+    dueLabel: "",
+    nextReviewAt: row.next_review_at
   };
 }
 

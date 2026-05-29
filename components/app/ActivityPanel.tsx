@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/provider";
 import { appText } from "./app-typography";
+import { formatDueLabel } from "@/lib/flashcards/format-due";
 import { fetchDashboardDataForCurrentUser } from "@/lib/dashboard/client";
 import type { DashboardData } from "@/lib/dashboard/types";
 
 export default function ActivityPanel() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -108,7 +109,10 @@ export default function ActivityPanel() {
                 >
                   <div className="flex items-center justify-between">
                     <p className={appText.title}>{card.word}</p>
-                    <span className={appText.metaSmall}>Due {card.dueLabel}</span>
+                    <span className={appText.metaSmall}>
+                      {t("app.flashcardsDuePrefix")}{" "}
+                      {formatDueLabel(card.nextReviewAt, t, locale)}
+                    </span>
                   </div>
                 </div>
               ))

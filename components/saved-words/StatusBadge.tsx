@@ -1,4 +1,4 @@
-import { statusLabels, type WordStatus } from "@/lib/saved-words/types";
+import type { WordStatus } from "@/lib/saved-words/types";
 import { useI18n } from "@/lib/i18n/provider";
 
 const styles: Record<WordStatus, string> = {
@@ -20,7 +20,7 @@ export default function StatusBadge({ status }: { status: WordStatus }) {
     <span
       className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${styles[status]}`}
     >
-      {localizedLabel || statusLabels[status]}
+      {localizedLabel}
     </span>
   );
 }

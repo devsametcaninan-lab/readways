@@ -26,6 +26,7 @@ export type DashboardDueFlashcardPreview = {
   word: string;
   context: string;
   dueLabel: string;
+  nextReviewAt: string | null;
 };
 
 export type DashboardData = {

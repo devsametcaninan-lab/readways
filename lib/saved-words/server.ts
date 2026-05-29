@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_UI_LOCALE } from "@/lib/i18n/constants";
+import { getServerT } from "@/lib/i18n/server";
 import { formatSavedDate } from "./format";
 import {
   computeReviewProgress,
@@ -45,16 +47,16 @@ function pickFlashcard(
   return embed;
 }
 
-function mapSavedWordRow(row: SavedWordRow): SavedWordItem {
+function mapSavedWordRow(row: SavedWordRow, t: (key: string) => string): SavedWordItem {
   const explanation = row.word_explanations;
   const document = row.documents;
   const flashcard = pickFlashcard(row.flashcards);
 
   const definition = explanation?.definition?.trim() ?? "";
   const contextualMeaning = explanation?.contextual_meaning?.trim() ?? "";
-  const meaning = contextualMeaning || definition || "No definition available.";
+  const meaning = contextualMeaning || definition || t("app.savedWordsNoDefinition");
   const pronunciation = explanation?.pronunciation?.trim() || null;
-  const source = document?.title ?? document?.file_name ?? "Unknown document";
+  const source = document?.title ?? document?.file_name ?? t("app.savedWordsUnknownDocument");
 
   return {
     id: row.id,
@@ -67,7 +69,7 @@ function mapSavedWordRow(row: SavedWordRow): SavedWordItem {
     source,
     documentId: row.document_id,
     status: row.status,
-    savedAt: formatSavedDate(row.created_at),
+    savedAt: formatSavedDate(row.created_at, DEFAULT_UI_LOCALE),
     savedAtIso: row.created_at,
     reviewProgress: computeReviewProgress({
       status: row.status,
@@ -124,5 +126,6 @@ export async function getSavedWordsForUser(): Promise<SavedWordItem[]> {
     return [];
   }
 
-  return (data as SavedWordRow[]).map(mapSavedWordRow);
+  const t = getServerT();
+  return (data as SavedWordRow[]).map((row) => mapSavedWordRow(row, t));
 }

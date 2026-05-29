@@ -44,7 +44,7 @@ export default function WordDetailModal({
     return null;
   }
 
-  const level = difficultyLabel(word.difficulty);
+  const level = difficultyLabel(word.difficulty, t);
   const statusLabel =
     word.status === "learning"
       ? t("app.statusLearning")

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getServerT } from "@/lib/i18n/server";
 import type { FlashcardReviewItem, SessionStats } from "./types";
 
 type FlashcardRow = {
@@ -21,7 +22,10 @@ type FlashcardRow = {
   } | null;
 };
 
-function mapFlashcardRow(row: FlashcardRow): FlashcardReviewItem | null {
+function mapFlashcardRow(
+  row: FlashcardRow,
+  t: (key: string) => string
+): FlashcardReviewItem | null {
   const saved = row.saved_words;
   const explanation = saved?.word_explanations;
 
@@ -43,7 +47,9 @@ function mapFlashcardRow(row: FlashcardRow): FlashcardReviewItem | null {
     contextualMeaning,
     contextSentence,
     source:
-      saved.documents?.title ?? saved.documents?.file_name ?? "Unknown document"
+      saved.documents?.title ??
+      saved.documents?.file_name ??
+      t("app.savedWordsUnknownDocument")
   };
 }
 
@@ -110,8 +116,9 @@ export async function getDueFlashcardsForUser(): Promise<{
     };
   }
 
+  const t = getServerT();
   const deck = (dueRows as FlashcardRow[])
-    .map(mapFlashcardRow)
+    .map((row) => mapFlashcardRow(row, t))
     .filter((card): card is FlashcardReviewItem => card !== null);
 
   return {

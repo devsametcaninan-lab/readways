@@ -11,18 +11,25 @@ export function previewText(text: string, maxLength = 140): string {
   return `${trimmed.slice(0, maxLength).trimEnd()}…`;
 }
 
-export function formatSavedDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
+import type { UiLocale } from "@/lib/i18n/constants";
+
+export function formatSavedDate(iso: string, locale: UiLocale = "tr"): string {
+  return new Date(iso).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", {
     month: "short",
     day: "numeric",
     year: "numeric"
   });
 }
 
-export function difficultyLabel(level: number | null | undefined): string | null {
+type Translate = (key: string) => string;
+
+export function difficultyLabel(
+  level: number | null | undefined,
+  t: Translate
+): string | null {
   if (level == null || level < 1 || level > 5) {
     return null;
   }
 
-  return `Level ${level}`;
+  return t("app.savedWordLevel").replace("{level}", String(level));
 }
