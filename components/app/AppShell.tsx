@@ -18,7 +18,13 @@ export default function AppShell({
   const { t } = useI18n();
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-[#0a0b10] text-[#f5f7ff]">
+    <div
+      className={
+        fullHeightMain
+          ? "flex h-screen overflow-x-hidden overflow-y-hidden bg-[#0a0b10] text-[#f5f7ff]"
+          : "flex min-h-screen overflow-x-hidden bg-[#0a0b10] text-[#f5f7ff]"
+      }
+    >
       <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">

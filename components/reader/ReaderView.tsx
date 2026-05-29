@@ -671,7 +671,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
         </span>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row lg:overflow-visible">
         <ReaderDocumentColumn
           title={document.title}
           articleRef={articleRef}

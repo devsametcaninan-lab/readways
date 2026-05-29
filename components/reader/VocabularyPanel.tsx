@@ -98,17 +98,18 @@ function VocabularyPanel({
       {...{ [READER_INTERACTION.vocabulary]: "" }}
       className={[
         "flex w-full shrink-0 flex-col overflow-hidden border-t border-white/[0.1] bg-[#0e0f14]",
-        "fixed left-0 right-0 bottom-0 z-40 max-h-[70vh] rounded-t-2xl shadow-[0_-18px_60px_rgba(0,0,0,0.6)]",
+        "fixed inset-x-0 bottom-0 z-40 max-h-[70vh] rounded-t-2xl shadow-[0_-18px_60px_rgba(0,0,0,0.6)]",
         "transition-transform duration-200 ease-out",
         mobileOpen ? "translate-y-0 pointer-events-auto" : "translate-y-full pointer-events-none",
-        "lg:static lg:translate-y-0 lg:pointer-events-auto lg:max-h-none lg:rounded-none lg:shadow-none lg:flex lg:w-[320px] lg:border-l lg:border-t-0",
+        "lg:static lg:z-auto lg:h-full lg:min-h-0 lg:max-h-none lg:w-[320px] lg:shrink-0 lg:self-stretch",
+        "lg:translate-y-0 lg:pointer-events-auto lg:rounded-none lg:shadow-none lg:border-l lg:border-t-0",
       ].join(" ")}
     >
       <div className="lg:hidden px-5 pt-2 pb-1">
         <div className="mx-auto h-1.5 w-12 rounded-full bg-white/[0.15]" />
       </div>
 
-      <div className="border-b border-white/[0.1] px-5 py-3.5">
+      <div className="shrink-0 border-b border-white/[0.1] px-5 py-3.5">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
             {t("app.readerVocabulary")}
@@ -126,7 +127,7 @@ function VocabularyPanel({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6 lg:pb-6">
         {!selection ? (
           <AppStateCard
             compact
