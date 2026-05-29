@@ -5,6 +5,7 @@ import {
   BRAND_ICON_192_PATH,
   BRAND_ICON_512_PATH,
   BRAND_MANIFEST_PATH,
+  BRAND_OG_IMAGE_PATH,
   BRAND_THEME_COLOR
 } from "@/lib/seo/brand-assets";
 import { getSiteUrl } from "@/lib/seo/site-url";
@@ -39,9 +40,9 @@ export const SEO_KEYWORDS = [
 ] as const;
 
 const OG_IMAGE = {
-  url: BRAND_ICON_512_PATH,
-  width: 512,
-  height: 512,
+  url: BRAND_OG_IMAGE_PATH,
+  width: 1200,
+  height: 630,
   alt: "ReadWays — PDF okurken AI ile İngilizce öğren"
 } as const;
 
@@ -74,7 +75,7 @@ function sharedTwitter(overrides?: Partial<Metadata["twitter"]>): Metadata["twit
     card: "summary_large_image",
     title: SEO_OG_TITLE,
     description: SEO_OG_DESCRIPTION,
-    images: [BRAND_ICON_512_PATH],
+    images: [BRAND_OG_IMAGE_PATH],
     ...overrides
   };
 }

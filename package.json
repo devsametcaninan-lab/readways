@@ -9,6 +9,7 @@
     "lint": "next lint",
     "postinstall": "node scripts/copy-pdf-worker.mjs",
     "generate:icons": "node scripts/generate-brand-icons.mjs",
+    "generate:og": "node scripts/generate-og-image.mjs",
     "supabase:types": "node scripts/generate-supabase-types.mjs",
     "supabase:types:local": "node scripts/generate-supabase-types.mjs --local"
   },
