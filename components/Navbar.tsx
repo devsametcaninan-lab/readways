@@ -8,6 +8,7 @@ const navLinks = [
   { labelKey: "nav.product", href: "#workflow" },
   { labelKey: "nav.features", href: "#features" },
   { labelKey: "nav.pricing", href: "#pricing" },
+  { labelKey: "nav.contact", href: "#contact" },
   { labelKey: "nav.login", href: "/login" }
 ];
 

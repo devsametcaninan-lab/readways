@@ -16,24 +16,26 @@ export default function PricingSection() {
         t("landing.pricingFreeFeature4"),
         t("landing.pricingFreeFeature5")
       ],
-      cta: t("common.getStarted"),
-      highlighted: false
+      cta: t("landing.pricingFreeCta"),
+      href: "/signup",
+      highlighted: false,
+      comingSoon: false
     },
     {
       name: t("landing.pricingProName"),
-      price: "$12",
-      priceNote: t("landing.pricingProPerMonth"),
-      badge: t("landing.pricingProBadge"),
+      price: t("landing.pricingProPrice"),
+      priceNote: null,
+      badge: null,
       features: [
         t("landing.pricingProFeature1"),
         t("landing.pricingProFeature2"),
         t("landing.pricingProFeature3"),
-        t("landing.pricingProFeature4"),
-        t("landing.pricingProFeature5"),
-        t("landing.pricingProFeature6")
+        t("landing.pricingProFeature4")
       ],
       cta: t("landing.pricingProCta"),
-      highlighted: true
+      href: "/signup?plan=pro",
+      highlighted: true,
+      comingSoon: true
     }
   ];
 
@@ -64,12 +66,13 @@ export default function PricingSection() {
                   : "border-white/[0.08] bg-card/30 md:hover:border-white/20 md:hover:shadow-[0_20px_50px_rgba(0,0,0,0.35)]"
               }`}
             >
-              {plan.badge && (
+              {plan.badge ? (
                 <span className="mb-6 inline-flex w-fit rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-medium tracking-wide text-accentSoft">
                   {plan.badge}
                 </span>
+              ) : (
+                <div className="mb-6 h-[26px]" />
               )}
-              {!plan.badge && <div className="mb-6 h-[26px]" />}
 
               <p className="text-sm text-slate-500">{plan.name}</p>
               <div className="mt-2 flex items-baseline gap-1">
@@ -93,16 +96,29 @@ export default function PricingSection() {
                 ))}
               </ul>
 
-              <Link
-                href={plan.highlighted ? "/signup?plan=pro" : "/signup?plan=free"}
-                className={`mt-10 w-full rounded-full px-6 py-3 text-sm font-medium transition-all duration-300 md:duration-500 ${
-                  plan.highlighted
-                    ? "border border-accent/30 bg-accent text-white shadow-premium hover:bg-[#6D7EFF]"
-                    : "border border-white/[0.12] bg-white/[0.04] text-slate-200 hover:border-white/20 hover:bg-white/[0.06]"
-                }`}
-              >
-                {plan.cta}
-              </Link>
+              {plan.comingSoon ? (
+                <span
+                  aria-disabled="true"
+                  className={`mt-10 w-full rounded-full px-6 py-3 text-center text-sm font-medium transition-all duration-300 md:duration-500 ${
+                    plan.highlighted
+                      ? "border border-accent/20 bg-accent/40 text-white/70"
+                      : "border border-white/[0.08] bg-white/[0.02] text-slate-500"
+                  }`}
+                >
+                  {plan.cta}
+                </span>
+              ) : (
+                <Link
+                  href={plan.href}
+                  className={`mt-10 w-full rounded-full px-6 py-3 text-sm font-medium transition-all duration-300 md:duration-500 ${
+                    plan.highlighted
+                      ? "border border-accent/30 bg-accent text-white shadow-premium hover:bg-[#6D7EFF]"
+                      : "border border-white/[0.12] bg-white/[0.04] text-slate-200 hover:border-white/20 hover:bg-white/[0.06]"
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+              )}
             </article>
           ))}
         </div>

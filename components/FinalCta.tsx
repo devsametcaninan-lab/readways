@@ -4,6 +4,7 @@ import { getServerT } from "@/lib/i18n/server";
 const footerLinks = [
   { labelKey: "nav.features", href: "#features" },
   { labelKey: "nav.pricing", href: "#pricing" },
+  { labelKey: "nav.contact", href: "#contact" },
   { labelKey: "nav.login", href: "/login" }
 ];
 
@@ -47,9 +48,9 @@ export default function FinalCta() {
         </div>
       </section>
 
-      <footer className="border-t border-white/[0.06] py-10 md:py-12">
+      <footer id="contact" className="border-t border-white/[0.06] py-10 md:py-12">
         <div className="flex flex-col items-center justify-between gap-8 md:flex-row md:items-center">
-          <a href="#" className="inline-flex shrink-0 items-center">
+          <a href="#hero" className="inline-flex shrink-0 items-center">
             <img
               src="/readways-logo-navbar-transparent.png"
               alt="ReadWays"
@@ -70,9 +71,17 @@ export default function FinalCta() {
             ))}
           </nav>
 
-          <p className="text-xs text-slate-600 md:text-right">
-            © {year} ReadWays. {t("landing.footerRights")}
-          </p>
+          <div className="flex flex-col items-center gap-2 md:items-end">
+            <a
+              href={`mailto:${t("landing.footerContactEmail")}`}
+              className="text-sm text-slate-400 transition-colors duration-300 hover:text-slate-200"
+            >
+              {t("landing.footerContactEmail")}
+            </a>
+            <p className="text-xs text-slate-600">
+              © {year} ReadWays. {t("landing.footerRights")}
+            </p>
+          </div>
         </div>
       </footer>
     </>
