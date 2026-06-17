@@ -26,56 +26,36 @@ import {
 import { resolveFinalExplanationLanguage } from "@/lib/ai-dictionary/explanation-language";
 import { validateExplainWordRequest } from "@/lib/ai-dictionary/validate";
 import { cleanDisplayWord } from "@/lib/reader/text-tokens";
+import {
+  logExplainApiTiming,
+  roundedMs,
+  withTimingHeaders,
+  type ExplainApiTimingBreakdown
+} from "@/lib/explain-word/timing";
 
-type ExplainTimingBreakdown = {
-  totalMs: number;
-  cacheLookupMs?: number;
-  usageSnapshotMs?: number;
-  allowanceMs?: number;
-  openAiMs?: number;
-  insertMs?: number;
-  usageIncrementMs?: number;
-};
-
-function roundedMs(value: number | undefined): number | undefined {
-  if (value == null || !Number.isFinite(value)) {
-    return undefined;
-  }
-
-  return Math.max(0, Math.round(value));
+function buildApiTiming(
+  routeStartedAt: number,
+  partial: Omit<ExplainApiTimingBreakdown, "totalMs">
+): ExplainApiTimingBreakdown {
+  return {
+    ...partial,
+    totalMs: performance.now() - routeStartedAt
+  };
 }
 
-function withTimingHeaders<T>(
+function logAndReturn(
   response: Response,
   cacheStatus: "hit" | "miss",
-  timing: ExplainTimingBreakdown
-): Response {
-  response.headers.set("X-ReadWays-Cache", cacheStatus);
-
-  const totalMs = roundedMs(timing.totalMs) ?? 0;
-  response.headers.set("X-ReadWays-Timing-Total-Ms", String(totalMs));
-
-  const headerParts = [`total;dur=${totalMs}`];
-  const map: Array<[string, number | undefined]> = [
-    ["cache_lookup", timing.cacheLookupMs],
-    ["usage_snapshot", timing.usageSnapshotMs],
-    ["allowance", timing.allowanceMs],
-    ["openai", timing.openAiMs],
-    ["insert", timing.insertMs],
-    ["usage_increment", timing.usageIncrementMs]
-  ];
-
-  for (const [name, value] of map) {
-    const ms = roundedMs(value);
-    if (ms == null) {
-      continue;
-    }
-    response.headers.set(`X-ReadWays-Timing-${name}-Ms`, String(ms));
-    headerParts.push(`${name};dur=${ms}`);
+  timing: ExplainApiTimingBreakdown,
+  meta: {
+    documentId: string;
+    wordLength: number;
+    sentenceLength: number;
+    explanationKind: "word" | "phrase";
   }
-
-  response.headers.set("Server-Timing", headerParts.join(", "));
-  return response;
+): Response {
+  logExplainApiTiming(cacheStatus, timing, meta);
+  return withTimingHeaders(response, cacheStatus, timing);
 }
 
 export async function POST(request: Request) {
@@ -83,22 +63,27 @@ export async function POST(request: Request) {
     const routeStartedAt = performance.now();
     const supabase = await createClient();
 
+    const authStartedAt = performance.now();
     const {
       data: { user },
       error: authError
     } = await supabase.auth.getUser();
+    const authMs = performance.now() - authStartedAt;
 
     if (authError || !user) {
       return jsonError(401, "Authentication required.");
     }
 
+    const parseBodyStartedAt = performance.now();
     let body: unknown;
     try {
       body = await request.json();
     } catch {
       return jsonError(400, "Invalid JSON body.");
     }
+    const parseBodyMs = performance.now() - parseBodyStartedAt;
 
+    const validationStartedAt = performance.now();
     const validation = validateExplainWordRequest(body);
     if (!validation.ok) {
       return jsonError(400, validation.error);
@@ -110,22 +95,27 @@ export async function POST(request: Request) {
     if (!normalizedWord) {
       return jsonError(400, "word is required.");
     }
+    const validationMs = performance.now() - validationStartedAt;
 
+    const documentOwnershipStartedAt = performance.now();
     const ownsDocument = await documentBelongsToUser(
       supabase,
       documentId,
       user.id
     );
+    const documentOwnershipMs = performance.now() - documentOwnershipStartedAt;
 
     if (!ownsDocument) {
       return jsonError(403, "You do not have access to this document.");
     }
 
+    const documentLanguageStartedAt = performance.now();
     const documentLanguage = await getDocumentLanguageForUser({
       supabase,
       documentId,
       userId: user.id
     });
+    const documentLanguageMs = performance.now() - documentLanguageStartedAt;
 
     const explanationLanguage = resolveFinalExplanationLanguage(
       explanationLanguagePreference,
@@ -134,6 +124,21 @@ export async function POST(request: Request) {
 
     const explanationKind = explanationProductEventName(word);
     const requestStartedAt = Date.now();
+    const timingMeta = {
+      documentId,
+      wordLength: word.length,
+      sentenceLength: sentence.length,
+      explanationKind: (explanationKind === "phrase_explained" ? "phrase" : "word") as
+        | "word"
+        | "phrase"
+    };
+    const sharedTiming = {
+      authMs,
+      parseBodyMs,
+      validationMs,
+      documentOwnershipMs,
+      documentLanguageMs
+    };
 
     const plan = await getUserPlan(supabase, user.id);
     const sentenceHash = createSentenceHash(sentence);
@@ -186,17 +191,18 @@ export async function POST(request: Request) {
         }
       });
 
-      return withTimingHeaders(
+      return logAndReturn(
         jsonExplainWord({
           ...cachedExplanationToPayload(cached),
           usage
         }),
         "hit",
-        {
-          totalMs: performance.now() - routeStartedAt,
+        buildApiTiming(routeStartedAt, {
+          ...sharedTiming,
           cacheLookupMs,
           usageSnapshotMs
-        }
+        }),
+        timingMeta
       );
     }
 
@@ -254,16 +260,17 @@ export async function POST(request: Request) {
         }
       });
 
-      return withTimingHeaders(
+      return logAndReturn(
         jsonRateLimited(allowance.message, allowance.usage, {
           title: allowance.title
         }),
         "miss",
-        {
-          totalMs: performance.now() - routeStartedAt,
+        buildApiTiming(routeStartedAt, {
+          ...sharedTiming,
           cacheLookupMs,
           allowanceMs
-        }
+        }),
+        timingMeta
       );
     }
 
@@ -324,35 +331,36 @@ export async function POST(request: Request) {
         }
       });
 
+      const missGenerationTiming = (extra?: Partial<ExplainApiTimingBreakdown>) =>
+        buildApiTiming(routeStartedAt, {
+          ...sharedTiming,
+          cacheLookupMs,
+          allowanceMs,
+          openAiMs: generationDurationMs,
+          ...extra
+        });
+
       if (aiResult.reason === "not_configured") {
-        return withTimingHeaders(
+        return logAndReturn(
           jsonError(
             503,
             "Word explanations are temporarily unavailable. Please try again later."
           ),
           "miss",
-          {
-            totalMs: performance.now() - routeStartedAt,
-            cacheLookupMs,
-            allowanceMs,
-            openAiMs: generationDurationMs
-          }
+          missGenerationTiming(),
+          timingMeta
         );
       }
 
       if (aiResult.reason === "timeout") {
-        return withTimingHeaders(
+        return logAndReturn(
           jsonError(
             504,
             "Explanation took too long. Please try again."
           ),
           "miss",
-          {
-            totalMs: performance.now() - routeStartedAt,
-            cacheLookupMs,
-            allowanceMs,
-            openAiMs: generationDurationMs
-          }
+          missGenerationTiming(),
+          timingMeta
         );
       }
 
@@ -360,34 +368,30 @@ export async function POST(request: Request) {
         aiResult.reason === "invalid_response" ||
         aiResult.reason === "empty_response"
       ) {
-        return withTimingHeaders(
+        return logAndReturn(
           jsonError(
             502,
             "Could not understand the explanation response. Please try again."
           ),
           "miss",
-          {
-            totalMs: performance.now() - routeStartedAt,
-            cacheLookupMs,
-            allowanceMs,
-            openAiMs: generationDurationMs
-          }
+          missGenerationTiming(),
+          timingMeta
         );
       }
 
-      return withTimingHeaders(
+      return logAndReturn(
         jsonError(502, "Could not generate explanation. Please try again."),
         "miss",
-        {
-          totalMs: performance.now() - routeStartedAt,
-          cacheLookupMs,
-          allowanceMs,
-          openAiMs: generationDurationMs
-        }
+        missGenerationTiming(),
+        timingMeta
       );
     }
 
-    if (!isPersistableAiExplanation(aiResult.data)) {
+    const aiValidationStartedAt = performance.now();
+    const persistable = isPersistableAiExplanation(aiResult.data);
+    const aiValidationMs = performance.now() - aiValidationStartedAt;
+
+    if (!persistable) {
       const incompleteMetadata = buildAiUsageMetadata({
         documentId,
         documentLanguage,
@@ -423,18 +427,20 @@ export async function POST(request: Request) {
         }
       });
 
-      return withTimingHeaders(
+      return logAndReturn(
         jsonError(
           502,
           "Could not understand the explanation response. Please try again."
         ),
         "miss",
-        {
-          totalMs: performance.now() - routeStartedAt,
+        buildApiTiming(routeStartedAt, {
+          ...sharedTiming,
           cacheLookupMs,
           allowanceMs,
-          openAiMs: generationDurationMs
-        }
+          openAiMs: generationDurationMs,
+          aiValidationMs
+        }),
+        timingMeta
       );
     }
 
@@ -456,16 +462,18 @@ export async function POST(request: Request) {
     const insertMs = performance.now() - insertStartedAt;
 
     if (!wordExplanationId) {
-      return withTimingHeaders(
+      return logAndReturn(
         jsonError(500, "Could not save explanation. Please try again."),
         "miss",
-        {
-          totalMs: performance.now() - routeStartedAt,
+        buildApiTiming(routeStartedAt, {
+          ...sharedTiming,
           cacheLookupMs,
           allowanceMs,
           openAiMs: generationDurationMs,
+          aiValidationMs,
           insertMs
-        }
+        }),
+        timingMeta
       );
     }
 
@@ -478,17 +486,19 @@ export async function POST(request: Request) {
     const usageIncrementMs = performance.now() - usageIncrementStartedAt;
 
     if (!usageAfter) {
-      return withTimingHeaders(
+      return logAndReturn(
         jsonError(500, "Could not update usage. Please try again."),
         "miss",
-        {
-          totalMs: performance.now() - routeStartedAt,
+        buildApiTiming(routeStartedAt, {
+          ...sharedTiming,
           cacheLookupMs,
           allowanceMs,
           openAiMs: generationDurationMs,
+          aiValidationMs,
           insertMs,
           usageIncrementMs
-        }
+        }),
+        timingMeta
       );
     }
 
@@ -528,7 +538,7 @@ export async function POST(request: Request) {
       }
     });
 
-    return withTimingHeaders(
+    return logAndReturn(
       jsonExplainWord({
         ...aiExplanationToPayload({
           ai: aiResult.data,
@@ -540,14 +550,16 @@ export async function POST(request: Request) {
         usage: usageAfter
       }),
       "miss",
-      {
-        totalMs: performance.now() - routeStartedAt,
+      buildApiTiming(routeStartedAt, {
+        ...sharedTiming,
         cacheLookupMs,
         allowanceMs,
         openAiMs: generationDurationMs,
+        aiValidationMs,
         insertMs,
         usageIncrementMs
-      }
+      }),
+      timingMeta
     );
   } catch (error) {
     return handleRouteError("POST /api/explain-word", error);

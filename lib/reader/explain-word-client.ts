@@ -9,6 +9,11 @@ import {
 } from "@/lib/language/document-language";
 import { safeUserFacingMessage } from "@/lib/api/client-error";
 import type { ApiErrorBody, ExplainWordPayload } from "@/lib/ai-dictionary/types";
+import {
+  parseExplainCacheStatus,
+  parseExplainTimingHeaders,
+  type ExplainClientTiming
+} from "@/lib/explain-word/timing";
 import { parseExplainLimitPaywall } from "./explain-limit";
 
 export type ExplainClickKind = "word" | "phrase";
@@ -41,11 +46,16 @@ export async function fetchExplainWord(params: {
   documentLanguage: DocumentLanguage | string;
   explanationLanguagePreference: ExplanationLanguagePreference;
   signal?: AbortSignal;
+  timing?: ExplainClientTiming;
 }): Promise<ExplainWordPayload> {
   const documentLanguage = normalizeDocumentLanguage(params.documentLanguage);
   const explanationLanguagePreference =
     parseExplanationLanguagePreference(params.explanationLanguagePreference) ??
     "same_as_document";
+
+  if (params.timing) {
+    params.timing.requestSentAt = performance.now();
+  }
 
   const response = await fetch("/api/explain-word", {
     method: "POST",
@@ -60,6 +70,12 @@ export async function fetchExplainWord(params: {
       explanationLanguagePreference
     })
   });
+
+  if (params.timing) {
+    params.timing.responseReceivedAt = performance.now();
+    params.timing.cacheStatus = parseExplainCacheStatus(response);
+    params.timing.server = parseExplainTimingHeaders(response);
+  }
 
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as ApiErrorBody | null;

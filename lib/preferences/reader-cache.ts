@@ -1,3 +1,5 @@
+import { EXPLAIN_LOCAL_CACHE_STORAGE_PREFIX } from "@/lib/reader/explain-local-cache";
+
 const LEGACY_DOC_PREFIX = "readways:doc:";
 const LEGACY_DOC_INDEX = "readways:document-ids";
 const PHRASE_HINT_SESSION_KEY = "readways:phrase-hint:dismissed";
@@ -10,7 +12,11 @@ export function clearLocalReaderCache(): number {
   let removed = 0;
 
   for (const key of Object.keys(window.localStorage)) {
-    if (key.startsWith(LEGACY_DOC_PREFIX) || key === LEGACY_DOC_INDEX) {
+    if (
+      key.startsWith(LEGACY_DOC_PREFIX) ||
+      key === LEGACY_DOC_INDEX ||
+      key.startsWith(EXPLAIN_LOCAL_CACHE_STORAGE_PREFIX)
+    ) {
       window.localStorage.removeItem(key);
       removed += 1;
     }

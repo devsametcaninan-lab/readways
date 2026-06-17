@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { appText } from "@/components/app/app-typography";
 import { explainErrorToastMessage, isRateLimitMessage } from "@/lib/feedback/messages";
@@ -19,7 +19,12 @@ import {
   type ExplainClickPayload,
   type ExplainPanelFields
 } from "@/lib/reader/explain-word-client";
+import {
+  logExplainClientTiming,
+  type ExplainClientTiming
+} from "@/lib/explain-word/timing";
 import { validateExplainClick } from "@/lib/reader/explain-request";
+import { createExplainLocalCache } from "@/lib/reader/explain-local-cache";
 import {
   hasActiveTextSelectionIn,
   isReaderProtectedTarget
@@ -48,14 +53,6 @@ import VocabularyPanel from "./VocabularyPanel";
 
 type ReaderViewProps = {
   document: ReaderDocument;
-};
-
-const EXPLAIN_LOCAL_CACHE_TTL_MS = 2 * 60 * 1000;
-
-type LocalExplainCacheEntry = {
-  fields: ExplainPanelFields;
-  displayLabel: string;
-  savedAt: number;
 };
 
 function buildInstantSelection(
@@ -105,7 +102,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
   const fetchAbortRef = useRef<AbortController | null>(null);
   const explainRequestIdRef = useRef(0);
   const loadingExplainKeyRef = useRef<string | null>(null);
-  const localExplainCacheRef = useRef<Map<string, LocalExplainCacheEntry>>(new Map());
+  const explainLocalCache = useMemo(
+    () => createExplainLocalCache(document.id),
+    [document.id]
+  );
   const lastExplainRequestRef = useRef<{
     click: ExplainClickPayload;
     phraseRange: PhraseHighlightRange | null;
@@ -115,6 +115,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
   const savedWordKeysRef = useRef(new Set<string>());
   const autoSavedKeysRef = useRef(new Set<string>());
   const pendingPhraseRef = useRef<PhraseSelectionResolved | null>(null);
+  const explainClientTimingRef = useRef<ExplainClientTiming | null>(null);
   const [isLgUp, setIsLgUp] = useState(false);
   const [mobileVocabPaddingBottomPx, setMobileVocabPaddingBottomPx] = useState(0);
 
@@ -256,6 +257,11 @@ export default function ReaderView({ document }: ReaderViewProps) {
 
   const applyPanelFields = useCallback(
     (click: ExplainClickPayload, fields: ExplainPanelFields, displayLabel: string) => {
+      const timing = explainClientTimingRef.current;
+      if (timing) {
+        timing.panelDispatchAt = performance.now();
+      }
+
       setSelection({
         saveKey: `${click.highlightKey}:${click.normalizedWord}`,
         highlightKey: click.highlightKey,
@@ -279,6 +285,17 @@ export default function ReaderView({ document }: ReaderViewProps) {
     },
     [document.id, document.title]
   );
+
+  useLayoutEffect(() => {
+    const timing = explainClientTimingRef.current;
+    if (!timing || selection?.status !== "ready" || !selection.definition.trim()) {
+      return;
+    }
+
+    explainClientTimingRef.current = null;
+    timing.panelRenderedAt = performance.now();
+    logExplainClientTiming(timing);
+  }, [selection]);
 
   const showExplainError = useCallback(
     (click: ExplainClickPayload, message: string, paywall?: PanelVocabularySelection["paywall"]) => {
@@ -326,8 +343,16 @@ export default function ReaderView({ document }: ReaderViewProps) {
         click.kind
       );
 
-      const cachedLocal = localExplainCacheRef.current.get(requestKey);
-      if (cachedLocal && Date.now() - cachedLocal.savedAt <= EXPLAIN_LOCAL_CACHE_TTL_MS) {
+      const clientTiming: ExplainClientTiming = {
+        clickAt: performance.now(),
+        kind: click.kind,
+        wordLength: click.rawWord.trim().length,
+        sentenceLength: click.sentence.trim().length
+      };
+
+      const cachedLocal = explainLocalCache.get(requestKey);
+      if (cachedLocal) {
+        explainClientTimingRef.current = { ...clientTiming, cacheStatus: "hit" };
         selectedHighlightKeyRef.current = click.highlightKey;
         setActiveHighlightKey(click.highlightKey);
         setActivePhraseRange(phraseRange);
@@ -375,6 +400,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
       setActiveHighlightKey(click.highlightKey);
       setActivePhraseRange(phraseRange);
       setSelection(buildInstantSelection(click, document.id, document.title));
+      explainClientTimingRef.current = clientTiming;
 
       void (async () => {
         try {
@@ -384,7 +410,8 @@ export default function ReaderView({ document }: ReaderViewProps) {
             documentId: document.id,
             documentLanguage: document.language,
             explanationLanguagePreference,
-            signal: controller.signal
+            signal: controller.signal,
+            timing: clientTiming
           });
 
           if (
@@ -392,12 +419,18 @@ export default function ReaderView({ document }: ReaderViewProps) {
             requestId !== explainRequestIdRef.current ||
             selectedHighlightKeyRef.current !== click.highlightKey
           ) {
+            if (explainClientTimingRef.current === clientTiming) {
+              explainClientTimingRef.current = null;
+            }
             return;
           }
 
           const fields = explainWordPayloadToPanelFields(payload);
 
           if (!fields.wordExplanationId || !fields.definition.trim() || !fields.contextMeaning.trim()) {
+            if (explainClientTimingRef.current === clientTiming) {
+              explainClientTimingRef.current = null;
+            }
             showExplainError(click, t("toast.explainIncomplete"));
             return;
           }
@@ -407,19 +440,11 @@ export default function ReaderView({ document }: ReaderViewProps) {
               ? cleanPhraseText(click.rawWord) || cleanPhraseText(fields.word)
               : cleanDisplayWord(fields.word) || cleanDisplayWord(click.rawWord);
 
-          localExplainCacheRef.current.set(requestKey, {
+          explainLocalCache.set(requestKey, {
             fields,
             displayLabel,
             savedAt: Date.now()
           });
-          if (localExplainCacheRef.current.size > 80) {
-            const now = Date.now();
-            for (const [key, entry] of localExplainCacheRef.current.entries()) {
-              if (now - entry.savedAt > EXPLAIN_LOCAL_CACHE_TTL_MS) {
-                localExplainCacheRef.current.delete(key);
-              }
-            }
-          }
 
           applyPanelFields(click, fields, displayLabel);
         } catch (error) {
@@ -428,6 +453,9 @@ export default function ReaderView({ document }: ReaderViewProps) {
             controller.signal.aborted ||
             requestId !== explainRequestIdRef.current
           ) {
+            if (explainClientTimingRef.current === clientTiming) {
+              explainClientTimingRef.current = null;
+            }
             return;
           }
 
@@ -453,6 +481,10 @@ export default function ReaderView({ document }: ReaderViewProps) {
                 ? defaultAiLimitPaywall(t)
                 : undefined
           );
+
+          if (explainClientTimingRef.current === clientTiming) {
+            explainClientTimingRef.current = null;
+          }
         } finally {
           if (loadingExplainKeyRef.current === requestKey) {
             loadingExplainKeyRef.current = null;
@@ -469,6 +501,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
       document.id,
       document.title,
       document.language,
+      explainLocalCache,
       explanationLanguage,
       explanationLanguagePreference,
       onboarding,
