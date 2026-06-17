@@ -17,6 +17,7 @@ type SelectableParagraphProps = {
   activeHighlightKey: string | null;
   activePhraseRange: PhraseHighlightRange | null;
   onWordClick: (payload: ExplainClickPayload) => void;
+  onWordIntent?: (token: WordToken, paragraph: PreparedParagraph) => void;
 };
 
 function hasNonCollapsedTextSelection(): boolean {
@@ -28,7 +29,8 @@ function SelectableParagraph({
   paragraph,
   activeHighlightKey,
   activePhraseRange,
-  onWordClick
+  onWordClick,
+  onWordIntent
 }: SelectableParagraphProps) {
   const { preferences } = useUserPreferences();
   const { text, tokens, index: paragraphIndex } = paragraph;
@@ -55,6 +57,13 @@ function SelectableParagraph({
       });
     },
     [onWordClick, paragraphIndex, text]
+  );
+
+  const handleWordIntent = useCallback(
+    (token: WordToken) => {
+      onWordIntent?.(token, paragraph);
+    },
+    [onWordIntent, paragraph]
   );
 
   const renderedTokens = useMemo(
@@ -89,6 +98,7 @@ function SelectableParagraph({
             isWordActive={isWordActive}
             isPhraseActive={isPhraseActive}
             onActivate={handleWordActivate}
+            onIntent={handleWordIntent}
           />
         );
       }),
@@ -98,7 +108,8 @@ function SelectableParagraph({
       activeHighlightKey,
       activePhraseRange,
       isPhraseHighlightActive,
-      handleWordActivate
+      handleWordActivate,
+      handleWordIntent
     ]
   );
 
@@ -117,7 +128,8 @@ export default memo(SelectableParagraph, (prev, next) =>
       tokens: prev.paragraph.tokens,
       activeHighlightKey: prev.activeHighlightKey,
       activePhraseRange: prev.activePhraseRange,
-      onWordClick: prev.onWordClick
+      onWordClick: prev.onWordClick,
+      onWordIntent: prev.onWordIntent
     },
     {
       paragraphIndex: next.paragraph.index,
@@ -125,7 +137,8 @@ export default memo(SelectableParagraph, (prev, next) =>
       tokens: next.paragraph.tokens,
       activeHighlightKey: next.activeHighlightKey,
       activePhraseRange: next.activePhraseRange,
-      onWordClick: next.onWordClick
+      onWordClick: next.onWordClick,
+      onWordIntent: next.onWordIntent
     }
   )
 );

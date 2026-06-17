@@ -4,6 +4,7 @@ import { memo, type RefObject } from "react";
 import type { ExplainClickPayload } from "@/lib/reader/explain-word-client";
 import type { PhraseHighlightRange } from "@/lib/reader/phrase-selection";
 import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
+import type { WordToken } from "@/lib/reader/text-tokens";
 import { READER_INTERACTION } from "@/lib/reader/reader-interaction";
 import { readerArticleClass } from "./reader-typography";
 import SelectableParagraph from "./SelectableParagraph";
@@ -14,6 +15,7 @@ export type ReaderArticleProps = {
   activeHighlightKey: string | null;
   activePhraseRange: PhraseHighlightRange | null;
   onWordClick: (payload: ExplainClickPayload) => void;
+  onWordIntent?: (token: WordToken, paragraph: PreparedParagraph) => void;
 };
 
 function ReaderArticle({
@@ -21,7 +23,8 @@ function ReaderArticle({
   paragraphs,
   activeHighlightKey,
   activePhraseRange,
-  onWordClick
+  onWordClick,
+  onWordIntent
 }: ReaderArticleProps) {
   return (
     <article
@@ -36,6 +39,7 @@ function ReaderArticle({
           activeHighlightKey={activeHighlightKey}
           activePhraseRange={activePhraseRange}
           onWordClick={onWordClick}
+          onWordIntent={onWordIntent}
         />
       ))}
     </article>
@@ -48,6 +52,7 @@ function readerArticlePropsEqual(prev: ReaderArticleProps, next: ReaderArticlePr
     prev.activeHighlightKey === next.activeHighlightKey &&
     prev.activePhraseRange === next.activePhraseRange &&
     prev.onWordClick === next.onWordClick &&
+    prev.onWordIntent === next.onWordIntent &&
     prev.articleRef === next.articleRef
   );
 }

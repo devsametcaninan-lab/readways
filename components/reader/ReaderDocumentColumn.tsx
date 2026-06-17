@@ -5,6 +5,7 @@ import type { ExplainClickPayload } from "@/lib/reader/explain-word-client";
 import type { PhraseHighlightRange } from "@/lib/reader/phrase-selection";
 import type { PhraseSelectionResolved } from "@/lib/reader/phrase-selection";
 import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
+import type { WordToken } from "@/lib/reader/text-tokens";
 import ReaderOnboardingHints from "@/components/onboarding/ReaderOnboardingHints";
 import PhraseSelectionHint from "./PhraseSelectionHint";
 import PhraseExplainButton from "./PhraseExplainButton";
@@ -22,6 +23,7 @@ export type ReaderDocumentColumnProps = {
   activePhraseRange: PhraseHighlightRange | null;
   pendingPhrase: PhraseSelectionResolved | null;
   onWordClick: (payload: ExplainClickPayload) => void;
+  onWordIntent?: (token: WordToken, paragraph: PreparedParagraph) => void;
   onExplainPhrase: () => void;
   /** Mobile-only: adds extra bottom padding so the vocabulary bottom sheet doesn't cover reading text. */
   mobileExtraPaddingBottomPx?: number;
@@ -37,6 +39,7 @@ function ReaderDocumentColumn({
   activePhraseRange,
   pendingPhrase,
   onWordClick,
+  onWordIntent,
   onExplainPhrase,
   mobileExtraPaddingBottomPx,
   onReaderPointerUp
@@ -65,6 +68,7 @@ function ReaderDocumentColumn({
           activeHighlightKey={activeHighlightKey}
           activePhraseRange={activePhraseRange}
           onWordClick={onWordClick}
+          onWordIntent={onWordIntent}
         />
       )}
 
@@ -87,6 +91,7 @@ function readerDocumentColumnPropsEqual(
   if (prev.activeHighlightKey !== next.activeHighlightKey) return false;
   if (prev.activePhraseRange !== next.activePhraseRange) return false;
   if (prev.onWordClick !== next.onWordClick) return false;
+  if (prev.onWordIntent !== next.onWordIntent) return false;
   if (prev.onExplainPhrase !== next.onExplainPhrase) return false;
   if (prev.articleRef !== next.articleRef) return false;
   if (prev.mobileExtraPaddingBottomPx !== next.mobileExtraPaddingBottomPx)

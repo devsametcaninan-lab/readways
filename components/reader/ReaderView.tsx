@@ -13,7 +13,6 @@ import { trackAnalyticsEventClient } from "@/lib/analytics/client";
 import type { ReaderDocument } from "@/lib/documents/types";
 import { documentLanguageLabel } from "@/lib/language/document-language";
 import {
-  explainWordPayloadToPanelFields,
   explainWordRequestKey,
   fetchExplainWord,
   type ExplainClickPayload,
@@ -25,6 +24,10 @@ import {
 } from "@/lib/explain-word/timing";
 import { validateExplainClick } from "@/lib/reader/explain-request";
 import { createExplainLocalCache } from "@/lib/reader/explain-local-cache";
+import { resolveExplainIntoCache } from "@/lib/reader/explain-fetch-coordinator";
+import { buildPrefetchTargetFromToken } from "@/lib/reader/explain-prefetch";
+import type { PreparedParagraph } from "@/lib/reader/prepare-paragraphs";
+import type { WordToken } from "@/lib/reader/text-tokens";
 import {
   hasActiveTextSelectionIn,
   isReaderProtectedTarget
@@ -50,6 +53,7 @@ import { resolveExplanationLanguage } from "@/lib/preferences/resolve-language";
 import { useUserPreferences } from "@/lib/preferences/UserPreferencesProvider";
 import { useI18n } from "@/lib/i18n/provider";
 import VocabularyPanel from "./VocabularyPanel";
+import { useExplainParagraphPrefetch } from "./useExplainParagraphPrefetch";
 
 type ReaderViewProps = {
   document: ReaderDocument;
@@ -250,10 +254,39 @@ export default function ReaderView({ document }: ReaderViewProps) {
     preferences.defaultExplanationLanguage
   );
 
+  const { prioritizePrefetch } = useExplainParagraphPrefetch({
+    documentId: document.id,
+    documentLanguage: document.language,
+    explanationLanguage,
+    explanationLanguagePreference,
+    explainLocalCache,
+    paragraphs: preparedParagraphs,
+    articleRef,
+    isPreparing,
+    userExplainBusy: selection?.status === "loading"
+  });
+
   const pageLabel =
     document.pageCount === 1
       ? t("app.readerPageSingular").replace("{count}", String(document.pageCount))
       : t("app.readerPagePlural").replace("{count}", String(document.pageCount));
+
+  const handleWordIntent = useCallback(
+    (token: WordToken, paragraph: PreparedParagraph) => {
+      const target = buildPrefetchTargetFromToken({
+        paragraph,
+        token,
+        documentId: document.id,
+        explanationLanguage,
+        cache: explainLocalCache
+      });
+
+      if (target) {
+        prioritizePrefetch(target);
+      }
+    },
+    [document.id, explanationLanguage, explainLocalCache, prioritizePrefetch]
+  );
 
   const applyPanelFields = useCallback(
     (click: ExplainClickPayload, fields: ExplainPanelFields, displayLabel: string) => {
@@ -404,14 +437,22 @@ export default function ReaderView({ document }: ReaderViewProps) {
 
       void (async () => {
         try {
-          const payload = await fetchExplainWord({
-            word: click.rawWord,
-            sentence: click.sentence,
-            documentId: document.id,
-            documentLanguage: document.language,
-            explanationLanguagePreference,
+          const cachedEntry = await resolveExplainIntoCache({
+            requestKey,
+            cache: explainLocalCache,
+            rawWord: click.rawWord,
+            kind: click.kind,
             signal: controller.signal,
-            timing: clientTiming
+            fetchPayload: () =>
+              fetchExplainWord({
+                word: click.rawWord,
+                sentence: click.sentence,
+                documentId: document.id,
+                documentLanguage: document.language,
+                explanationLanguagePreference,
+                signal: controller.signal,
+                timing: clientTiming
+              })
           });
 
           if (
@@ -425,9 +466,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
             return;
           }
 
-          const fields = explainWordPayloadToPanelFields(payload);
-
-          if (!fields.wordExplanationId || !fields.definition.trim() || !fields.contextMeaning.trim()) {
+          if (!cachedEntry) {
             if (explainClientTimingRef.current === clientTiming) {
               explainClientTimingRef.current = null;
             }
@@ -435,18 +474,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
             return;
           }
 
-          const displayLabel =
-            click.kind === "phrase"
-              ? cleanPhraseText(click.rawWord) || cleanPhraseText(fields.word)
-              : cleanDisplayWord(fields.word) || cleanDisplayWord(click.rawWord);
-
-          explainLocalCache.set(requestKey, {
-            fields,
-            displayLabel,
-            savedAt: Date.now()
-          });
-
-          applyPanelFields(click, fields, displayLabel);
+          applyPanelFields(click, cachedEntry.fields, cachedEntry.displayLabel);
         } catch (error) {
           if (
             isAbortError(error) ||
@@ -528,6 +556,13 @@ export default function ReaderView({ document }: ReaderViewProps) {
     clearPendingRef.current();
     clearBrowserSelection();
     requestExplanationRef.current(click, null);
+  }, []);
+
+  const handleWordIntentRef = useRef(handleWordIntent);
+  handleWordIntentRef.current = handleWordIntent;
+
+  const stableOnWordIntent = useCallback((token: WordToken, paragraph: PreparedParagraph) => {
+    handleWordIntentRef.current(token, paragraph);
   }, []);
 
   const handleExplainPhrase = useCallback(() => {
@@ -714,6 +749,7 @@ export default function ReaderView({ document }: ReaderViewProps) {
           activePhraseRange={activePhraseRange}
           pendingPhrase={pendingPhrase}
           onWordClick={stableOnWordClick}
+          onWordIntent={stableOnWordIntent}
           onExplainPhrase={stableOnExplainPhrase}
           mobileExtraPaddingBottomPx={mobileVocabPaddingBottomPx}
           onReaderPointerUp={handleReaderPointerUp}

@@ -38,6 +38,7 @@ export type SelectableParagraphRenderProps = {
   activeHighlightKey: string | null;
   activePhraseRange: PhraseHighlightRange | null;
   onWordClick: (payload: ExplainClickPayload) => void;
+  onWordIntent?: (token: import("./text-tokens").WordToken, paragraph: import("./prepare-paragraphs").PreparedParagraph) => void;
 };
 
 export function selectableParagraphPropsEqual(
@@ -53,6 +54,10 @@ export function selectableParagraphPropsEqual(
   }
 
   if (prev.onWordClick !== next.onWordClick) {
+    return false;
+  }
+
+  if (prev.onWordIntent !== next.onWordIntent) {
     return false;
   }
 

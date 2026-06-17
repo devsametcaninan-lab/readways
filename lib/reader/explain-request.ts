@@ -14,6 +14,11 @@ export type ExplainClientValidationResult =
 
 type Translate = (key: string) => string;
 
+export function isPrefetchableExplainWord(rawWord: string): boolean {
+  const raw = rawWord.trim();
+  return raw.length > 0 && raw.length <= EXPLAIN_WORD_MAX_LENGTH;
+}
+
 export function validateExplainClick(
   click: ExplainClickPayload,
   t: Translate

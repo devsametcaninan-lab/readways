@@ -11,6 +11,7 @@ type ClickableWordProps = {
   isWordActive: boolean;
   isPhraseActive: boolean;
   onActivate: (token: WordToken) => void;
+  onIntent?: (token: WordToken) => void;
 };
 
 function hasNonCollapsedTextSelection(): boolean {
@@ -22,7 +23,8 @@ function ClickableWord({
   token,
   isWordActive,
   isPhraseActive,
-  onActivate
+  onActivate,
+  onIntent
 }: ClickableWordProps) {
   const { preferences } = useUserPreferences();
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -60,6 +62,10 @@ function ClickableWord({
     [onActivate, token]
   );
 
+  const handleMouseEnter = useCallback(() => {
+    onIntent?.(token);
+  }, [onIntent, token]);
+
   const highlightMode = preferences.highlightMode;
   const className =
     isPhraseActive || isWordActive
@@ -73,6 +79,7 @@ function ClickableWord({
       {...{ [READER_INTERACTION.word]: "" }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
+      onMouseEnter={handleMouseEnter}
       onKeyDown={handleKeyDown}
       className={className}
     >
@@ -87,5 +94,6 @@ export default memo(
     prev.token === next.token &&
     prev.isWordActive === next.isWordActive &&
     prev.isPhraseActive === next.isPhraseActive &&
-    prev.onActivate === next.onActivate
+    prev.onActivate === next.onActivate &&
+    prev.onIntent === next.onIntent
 );
